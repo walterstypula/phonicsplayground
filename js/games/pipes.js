@@ -16,13 +16,28 @@
       var MAX_LEAKS = api.mode === 'pictures' ? 2 : (api.level.id <= 2 ? 3 : 4);
       /* ages 3 and 4 blend picture words by ear */
       var WORDS = api.pre ? PH.PICTURES : api.words;
+      /* Onset and rime - "c" and "at" - only works on a word with one syllable in it.
+         Applied to a longer one it splits off the first letter and leaves the remains:
+         "spider" becomes "s" and "pider", which is not a thing anybody says, and which
+         the voice duly reads out as nonsense because no such recording exists. So a word
+         of more than one syllable is blended syllable by syllable at every pre-reader
+         level, not only in picture mode. */
+      /* A piece that is really just one of the 43 sounds is played as that sound: the
+         "ee" of bee, the "ar" of car, the middle "i" of helicopter. Left as written they
+         are looked for among the syllable recordings, are not there, and get read out by
+         the device voice as the letters they are spelled with. */
+      function sayable(part) {
+        var hint = PH.soundHint(part);
+        return hint.charAt(0) === '/' ? hint : part;
+      }
+
       function partsOf(w) {
         if (api.pre) {
-          if (api.mode === 'pictures' && w.g.length > 1) { return w.g; }          /* ba - na - na */
+          if (w.g.length > 1) { return w.g.map(sayable); }                         /* ba - na - na */
           var first = PH.firstSound(w);
-          return [PH.soundHint(first), w.w.slice(first.length)];                   /* c - at */
+          return [PH.soundHint(first), sayable(w.w.slice(first.length))];          /* c - at */
         }
-        return syllables ? w.g : PH.soundHintsFor(w);
+        return syllables ? w.g.map(sayable) : PH.soundHintsFor(w);
       }
       var syllables = api.level.id === 5;
       var spots = [], drops = [], recent = [];
