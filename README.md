@@ -84,8 +84,8 @@ voice the device has (Edge "Natural", Chrome "Google", Apple "Enhanced" voices f
 the **Voice** button on the front page steps through the others and remembers the pick.
 
 A built-in voice cannot say a single sound on its own, so sounding out ("s... ee... d")
-is only really clear with the recorded sounds. See `audio/README.md` for the list of 44
-sounds and how to add them. Nothing is ever fetched from an online service.
+uses the 41 sound clips in `audio/sounds/`, made offline by `tools/make-sounds.ps1`.
+See `audio/README.md` for how they are made and how to swap in human recordings. Nothing is ever fetched from an online service.
 
 The **Sound** button mutes everything. If a browser has no voice installed, the
 games still work and the word is shown instead.

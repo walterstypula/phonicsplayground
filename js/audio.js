@@ -56,7 +56,7 @@
     window.speechSynthesis.onvoiceschanged = chooseVoice;
   }
 
-  /* ---------------- The 44 sounds of American English ----------------
+  /* ---------------- The 43 sounds of American English the games use ----------------
      A sound is passed around as "/id" (for example "/ee"), never as a made-up spelling,
      so it can be played from a recording. `say` is only the fallback text for the device
      voice, which cannot say a sound on its own and has to be nudged with a spelling.    */
@@ -69,11 +69,13 @@
     w: { say: 'wuh', as: 'web' }, y: { say: 'yyuh', as: 'yes' }, z: { say: 'zah', as: 'zip' },
     kw: { say: 'kwuh', as: 'queen' }, ks: { say: 'ukss', as: 'box (the end sound)' },
     sh: { say: 'shuh', as: 'ship' }, ch: { say: 'chuh', as: 'chip' }, th: { say: 'thuh', as: 'thin' },
+    dh: { say: 'thuh', as: 'that, this (the buzzing one)' },
     ng: { say: 'ing', as: 'ring (the end sound)' },
     a: { say: 'ah', as: 'cat' }, e: { say: 'eh', as: 'bed' }, i: { say: 'ihh', as: 'sit' },
     o: { say: 'aw', as: 'hot' }, u: { say: 'uh', as: 'cup' },
     ay: { say: 'eigh', as: 'rain, cake' }, ee: { say: 'eeh', as: 'seed, me' }, igh: { say: 'eye', as: 'night, bike' },
     oh: { say: 'oh', as: 'boat, home' }, yoo: { say: 'yoo', as: 'cube' }, oo: { say: 'ooh', as: 'moon' },
+    uu: { say: 'uuh', as: 'book, foot (the short one)' },
     ow: { say: 'ow', as: 'cow, out' }, oi: { say: 'oy', as: 'coin, boy' }, aw: { say: 'aw', as: 'saw' },
     ar: { say: 'are', as: 'car' }, or: { say: 'or', as: 'fork' }, er: { say: 'irr', as: 'her, bird, fur' }
   };
@@ -101,8 +103,26 @@
   /* The spoken sounds of a whole word, in order. A magic e (c-a-k-e) is silent and
      turns the vowel before it long, so "cake" is /k/ /ay/ /k/, never /k/ /a/ /k/. */
   var LONG = { a: 'ay', e: 'ee', i: 'igh', o: 'oh', u: 'yoo' };
+
+  /* The words in the bank whose letters do not make their usual sounds. English writes
+     one sound several ways and one spelling several sounds, and no rule short of a
+     dictionary sorts them out: the s of "nose" buzzes but the s of "house" hisses, the
+     oo of "book" is not the oo of "moon". So these few words simply say what they sound
+     like, one sound per chunk the child sees. */
+  var WORD_SOUNDS = {
+    nose: ['n', 'oh', 'z'], rose: ['r', 'oh', 'z'],          /* s says /z/ */
+    book: ['b', 'uu', 'k'], look: ['l', 'uu', 'k'],          /* the short oo */
+    cook: ['k', 'uu', 'k'], foot: ['f', 'uu', 't'],
+    that: ['dh', 'a', 't'],                                  /* voiced th, not the th of "thin" */
+    tune: ['t', 'oo', 'n']                                   /* toon, not tyoon */
+  };
+
   PH.soundHintsFor = function (word) {
     var sounds = PH.soundGraphemes(word);
+    var said = WORD_SOUNDS[word.w];
+    if (said && said.length === sounds.length) {
+      return said.map(function (id) { return '/' + id; });
+    }
     var magic = sounds.length < word.g.length;   /* soundGraphemes dropped a final e */
     return sounds.map(function (g, i) {
       if (magic && i === sounds.length - 2 && LONG[g]) { return '/' + LONG[g]; }
@@ -112,14 +132,17 @@
 
   /* ---------------- Recordings ---------------- */
   function clips() { return PH.CLIPS || { sounds: [], words: [] }; }
+  /* the listed file whose name (without .wav / .mp3) is `name` */
+  function listed(files, folder, name) {
+    for (var i = 0; i < files.length; i++) {
+      if (files[i].replace(/\.[a-z0-9]+$/i, '') === name) { return folder + files[i]; }
+    }
+    return null;
+  }
   function clipFor(text) {
     var c = clips();
-    if (text.charAt(0) === '/') {
-      var id = text.slice(1);
-      return c.sounds.indexOf(id) >= 0 ? 'audio/sounds/' + id + '.mp3' : null;
-    }
-    var w = text.toLowerCase().replace(/[.?!,]/g, '').trim();
-    return c.words.indexOf(w) >= 0 ? 'audio/words/' + w + '.mp3' : null;
+    if (text.charAt(0) === '/') { return listed(c.sounds, 'audio/sounds/', text.slice(1)); }
+    return listed(c.words, 'audio/words/', text.toLowerCase().replace(/[.?!,]/g, '').trim());
   }
 
   /* ---------------- One queue for recordings and the device voice ----------------

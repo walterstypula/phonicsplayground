@@ -1,0 +1,89 @@
+# Whole words and syllables to record into audio/words/, one per line.
+#
+#   powershell -ExecutionPolicy Bypass -File tools/make-sounds-azure.ps1 -WordsFile tools\word-clips.txt
+#
+# The longest words are sounded out in syllables rather than single sounds (rab.bit,
+# pen.cil), and a syllable is not one of the 43 sounds, so it has to be recorded as a
+# piece of speech. Without a recording here the device's own voice says it, which stands
+# out now that every sound is the same neural voice.
+#
+# This list is the syllables the level 5 words split into. To rebuild it after changing
+# the word bank, open the game and run in the browser console:
+#
+#   var c=new Set(); PH.LEVELS.filter(l=>l.id>=1).forEach(l=>l.words.forEach(w=>
+#     PH.soundHintsFor(w).forEach(h=>{if(h[0]!=='/')c.add(h);})));
+#   console.log([...c].sort().join('\n'));
+
+ad
+bas
+birth
+bit
+blan
+brel
+but
+chic
+cil
+com
+croc
+day
+den
+der
+di
+dile
+dra
+el
+est
+fast
+fin
+fly
+ful
+gar
+gon
+hel
+hos
+ing
+jac
+jump
+ken
+ket
+kind
+kit
+la
+mag
+mer
+met
+mon
+muf
+nel
+ness
+net
+nic
+ning
+no
+pen
+pet
+phant
+pi
+pic
+pu
+pup
+rab
+roc
+run
+sand
+saur
+set
+ster
+sum
+sun
+tal
+ten
+ter
+thun
+tun
+ture
+um
+ven
+wich
+win
+won

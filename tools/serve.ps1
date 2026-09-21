@@ -20,6 +20,8 @@ while ($listener.IsListening) {
         '.css'  { $type = 'text/css; charset=utf-8' }
         '.js'   { $type = 'application/javascript; charset=utf-8' }
         '.json' { $type = 'application/json; charset=utf-8' }
+        '.wav'  { $type = 'audio/wav' }
+        '.mp3'  { $type = 'audio/mpeg' }
         default { $type = 'application/octet-stream' }
       }
       $ctx.Response.ContentType = $type
