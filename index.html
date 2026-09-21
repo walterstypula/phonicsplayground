@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Phonics Playground</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ MENU ============ -->
+<section id="menu" class="screen">
+  <h1 class="logo"><span>Phonics</span> <em>Playground</em></h1>
+  <p class="tagline">Listen, look, and play!</p>
+
+  <div class="agebar">
+    <span class="agebar-label">How old are you?</span>
+    <div id="ages" class="ages"></div>
+  </div>
+
+  <p id="level-note" class="level-note"></p>
+
+  <div id="cards" class="cards"></div>
+
+  <footer class="grownups">
+    <button id="btn-sound" class="mini" aria-pressed="true">🔊 Sound: on</button>
+    <button id="btn-voice" class="mini">🗣️ Voice</button>
+    <span class="hint">Tip: headphones help a lot. Works offline.</span>
+  </footer>
+</section>
+
+<!-- ============ PLAY ============ -->
+<section id="play" class="screen hidden">
+  <header id="hud">
+    <button id="btn-back" class="hud-btn">◀ Menu</button>
+
+    <div id="prompt" class="prompt">
+      <button id="btn-say" class="say" title="Say it again">🔊</button>
+      <span id="prompt-text">Listen…</span>
+      <button id="btn-peek" class="peek hidden" title="Show the word">👀</button>
+    </div>
+
+    <div class="hud-right">
+      <span id="progress" class="progress">0 / 0</span>
+      <span id="stars" class="starcount">⭐ 0</span>
+    </div>
+  </header>
+
+  <div id="stage">
+    <canvas id="canvas" width="1000" height="640"></canvas>
+    <p class="rotate-hint">&#8635; Turn your phone sideways for bigger words</p>
+
+    <div id="results" class="results hidden">
+      <div class="results-card">
+        <h2 id="results-title">Great job!</h2>
+        <div id="results-stars" class="results-stars"></div>
+        <p id="results-sub"></p>
+        <div class="results-btns">
+          <button id="btn-again" class="big">Play again</button>
+          <button id="btn-menu" class="big ghost">Another game</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="js/words.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/games/wordhunt.js"></script>
+<script src="js/games/claw.js"></script>
+<script src="js/games/bubbles.js"></script>
+<script src="js/games/builder.js"></script>
+<script src="js/games/rhyme.js"></script>
+<script src="js/games/fishing.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
