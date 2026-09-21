@@ -170,4 +170,15 @@
       '<br><small>This browser has no speech voice, so words are shown instead of spoken.</small>');
   }
 
+  /* Opened straight off the disk everything plays, but the sounds arrive one after
+     another instead of running into each other - and running into each other is the
+     whole of blending. Better to say so than to let a grown-up conclude the game simply
+     sounds like that. */
+  if (location.protocol === 'file:') {
+    dom.levelNote.insertAdjacentHTML('beforeend',
+      '<br><small>Opened from a folder, so the sounds play one at a time rather than ' +
+      'blending. Run <code>tools/serve.ps1</code> and open ' +
+      '<code>http://localhost:5173</code> to hear them blended.</small>');
+  }
+
 })(window.PH = window.PH || {});

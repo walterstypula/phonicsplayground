@@ -546,7 +546,14 @@
   }
 
   var blend = {
-    supported: !!(window.AudioContext || window.webkitAudioContext) && !!window.fetch,
+    /* Blending needs the clips decoded, decoding needs them fetched, and a page opened
+       straight off the disk is not allowed to fetch its own folder - window.fetch exists
+       there, it just refuses every file:// URL. Saying so up front is better than firing
+       off requests that are certain to fail: the games then go directly to playing each
+       sound as a plain audio element, which does work from a disk. They arrive one after
+       another rather than running together, which is the part that cannot be helped. */
+    supported: !!(window.AudioContext || window.webkitAudioContext) && !!window.fetch &&
+      window.location.protocol !== 'file:',
 
     /* decode the sounds a word needs before the child reaches them */
     warm: function (keys) {
