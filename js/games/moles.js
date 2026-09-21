@@ -20,6 +20,7 @@
       var round = 0, target = null, choices = [], got = 0, recent = [];
       var hits = 0, misses = 0, streak = 0, state = 'play', timer = 0, spawnT = 1;
       var hammer = { x: 500, y: 320, swing: 0 };
+      var shake = 0, pows = [];
       var flowers = [], i;
       for (i = 0; i < 16; i++) { flowers.push({ x: U.rand(20, 980), y: U.rand(150, 630), c: U.pick(PH.COLORS) }); }
 
@@ -31,9 +32,13 @@
       /* letters that are easy to mix up, so lowercase practice is real practice */
       var LOOKALIKE = { b: 'dpq', d: 'bpq', p: 'bdq', q: 'bdp', m: 'nw', n: 'mhu', u: 'nv', w: 'mv', h: 'nb', f: 't', t: 'f', i: 'l', l: 'i' };
 
+      /* How long a mole stays up. This is reading time, not reaction time: a child has to
+         look at "said", decide whether it is the word they heard, and only then swing. A
+         second of that is not enough, so the floor is set where a slow reader can still
+         finish looking. It quickens with a streak, but gently. */
       function upTime() {
-        var base = api.pre ? 2.8 : 2.1;
-        return Math.max(api.pre ? 1.8 : 1.05, base - streak * 0.12);   /* quicker as the child gets better */
+        var base = api.pre ? 3.6 : 3;
+        return Math.max(api.pre ? 2.8 : 2, base - streak * 0.08);
       }
 
       function newRound() {
@@ -78,16 +83,45 @@
         api.sayWord(target, { queue: true });
       }
 
+      /* A mole is announced before it arrives: the earth over its hole humps up and
+         shivers for a moment first. It is the telegraph that makes a pop-up feel like
+         something happening rather than something appearing, and it gives a child a
+         breath to look across before there is anything to read. */
       function spawn() {
-        var empty = holes.filter(function (h) { return !h.mole; });
+        var empty = holes.filter(function (h) { return !h.mole && !h.pending; });
         if (!empty.length) { return; }
-        var showing = holes.some(function (h) { return h.mole && h.mole.label === target && h.mole.phase !== 'down'; });
+        var showing = holes.some(function (h) {
+          return (h.mole && h.mole.label === target && h.mole.phase !== 'down') ||
+            (h.pending && h.pending === target);
+        });
         var wantTarget = !showing && Math.random() < 0.5;
         var h = U.pick(empty);
+        h.pending = wantTarget ? target : U.pick(choices);
+        h.warn = 0.45;
+      }
+
+      function emerge(h) {
         h.mole = {
-          label: wantTarget ? target : U.pick(choices),
-          up: 0, phase: 'rise', life: upTime(), hit: 0, raz: 0
+          label: h.pending, up: 0, phase: 'rise', life: upTime(),
+          hit: 0, raz: 0, t: 0, wob: 1, squash: 0, sway: U.rand(0, 6)
         };
+        h.pending = null;
+        /* earth thrown up by the digging */
+        api.burst(h.x, h.y - 6, ['#a47148', '#6f4524', '#8b5a2b', '#c08a5a'], 14,
+          { gravity: 420, minSpeed: 70, maxSpeed: 190 });
+        api.sfx.hop();
+      }
+
+      /* a small scatter of earth as it drops back down its hole */
+      function duck(h) {
+        api.burst(h.x, h.y - 2, ['#8b5a2b', '#6f4524'], 7,
+          { gravity: 460, minSpeed: 40, maxSpeed: 110 });
+      }
+
+      /* a pop with a bit of overshoot, so the mole springs up rather than slides up */
+      function easeOutBack(k) {
+        var c1 = 1.9, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2);
       }
 
       /* ---------------- input ---------------- */
@@ -113,6 +147,11 @@
         if (!pick) { api.sfx.whoosh(); return; }
         var h = pick, m = pick.mole;
         api.sfx.bonk();
+        /* every bonk lands: the mole squashes, the ground jolts, and a ring of impact
+           snaps outward from where the hammer hit */
+        m.squash = 1;
+        shake = 0.22;
+        pows.push({ x: h.x, y: h.y + 70 - m.up * 120 - 60, t: 0, good: m.label === target });
         if (m.label === target) {
           m.hit = 1; m.phase = 'stay';
           hits++; got++; streak++;
@@ -150,19 +189,32 @@
       /* ---------------- update ---------------- */
       function update(dt) {
         if (hammer.swing > 0) { hammer.swing -= dt; }
+        if (shake > 0) { shake -= dt; }
+        for (var pi = pows.length - 1; pi >= 0; pi--) {
+          pows[pi].t += dt * 2.6;
+          if (pows[pi].t >= 1) { pows.splice(pi, 1); }
+        }
         holes.forEach(function (h) {
+          if (h.pending) {
+            h.warn -= dt;
+            if (h.warn <= 0) { emerge(h); }
+            return;
+          }
           var m = h.mole;
           if (!m) { return; }
+          m.t += dt;
+          m.wob = Math.max(0, m.wob - dt * 1.6);
+          if (m.squash > 0) { m.squash -= dt * 3.4; }
           if (m.phase === 'rise') {
-            m.up = Math.min(1, m.up + dt * 5);
-            if (m.up >= 1) { m.phase = 'up'; }
+            m.up = easeOutBack(Math.min(1, m.t / 0.34));
+            if (m.t >= 0.34) { m.up = 1; m.phase = 'up'; }
           } else if (m.phase === 'up') {
             m.life -= dt;
-            if (m.life <= 0) { m.phase = 'down'; }
+            if (m.life <= 0) { m.phase = 'down'; duck(h); }
           } else if (m.phase === 'stay') {
             m.hit = m.hit ? m.hit + dt : 0;
             m.raz = m.raz ? m.raz + dt : 0;
-            if ((m.hit || m.raz) > 0.9) { m.phase = 'down'; }
+            if ((m.hit || m.raz) > 0.9) { m.phase = 'down'; duck(h); }
           } else if (m.phase === 'down') {
             m.up -= dt * 4;
             if (m.up <= 0) { h.mole = null; }
@@ -172,7 +224,7 @@
           spawnT -= dt;
           if (spawnT <= 0) {
             spawn();
-            spawnT = api.pre ? U.rand(0.9, 1.4) : U.rand(0.5, 1.0);
+            spawnT = api.pre ? U.rand(1.3, 2) : U.rand(0.9, 1.5);
           }
         } else if (state === 'between') {
           timer += dt;
@@ -193,17 +245,30 @@
         /* only the part above the hole is visible */
         ctx.beginPath(); ctx.rect(h.x - 120, h.y - 330, 240, 330); ctx.clip();
         ctx.translate(h.x, h.y + 70 - rise);
-        /* sign on a stick */
+        /* a slow sway while it waits, and a squash when the hammer lands */
+        if (m.phase === 'up') { ctx.rotate(Math.sin((t + m.sway) * 2.1) * 0.035); }
+        if (m.squash > 0) {
+          var sq = Math.max(0, m.squash);
+          ctx.translate(0, 50);
+          ctx.scale(1 + 0.28 * sq, 1 - 0.32 * sq);
+          ctx.translate(0, -50);
+        }
+        /* sign on a stick, swinging on the way up and settling */
         var text = api.label(m.label);
         var fs = signFont(m);
         ctx.font = U.font(fs);
         var tw = Math.max(70, ctx.measureText(text).width + 30);
+        ctx.save();
+        ctx.translate(48, -38);
+        ctx.rotate(Math.sin(m.t * 17) * 0.22 * m.wob);
+        ctx.translate(-48, 38);
         U.roundRect(ctx, 44, -150, 8, 112, 4);
         art.fillLit(ctx, '#9a6a3c', -150, -38, { lineWidth: 2.5 });
         U.plate(ctx, 48 - tw / 2, -190, tw, fs + 22, { fill: '#fff4d6', r: 10, edge: '#b07a3a' });
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(text, 48, -190 + (fs + 22) / 2 + 1);
+        ctx.restore();
         /* the hand holding the sign */
         art.ball(ctx, 48, -64, 11, '#8d5a3b', { lineWidth: 2.5, shine: false });
 
@@ -333,6 +398,12 @@
 
       function draw(ctx) {
         var now = performance.now() / 1000;
+        /* the whole garden jolts on a bonk - but not the hammer, which is the child's
+           own hand and would look wrong shaking with the thing it just hit */
+        ctx.save();
+        if (shake > 0) {
+          ctx.translate(Math.sin(now * 72) * shake * 26, Math.cos(now * 91) * shake * 16);
+        }
         var sky = ctx.createLinearGradient(0, 0, 0, 170);
         sky.addColorStop(0, '#74c0fc');
         sky.addColorStop(1, '#e7f5ff');
@@ -376,11 +447,17 @@
         });
 
         holes.forEach(function (h) {
-          /* a mound of dug-up earth, then the dark hole in it */
+          /* a mound of dug-up earth, then the dark hole in it. While a mole is on its way
+             the mound humps up and shivers, which is the only warning a child gets - and
+             the only one they need. */
+          var heave = h.pending ? Math.max(0, 1 - h.warn / 0.45) : 0;
+          var shiver = heave ? Math.sin(now * 34) * 3 * heave : 0;
           var mound = ctx.createRadialGradient(h.x, h.y - 6, 20, h.x, h.y, 96);
           mound.addColorStop(0, '#a47148'); mound.addColorStop(1, '#6f4524');
           ctx.fillStyle = mound;
-          ctx.beginPath(); ctx.ellipse(h.x, h.y + 2, 92, 32, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(h.x + shiver, h.y + 2 - heave * 7, 92 + heave * 5, 32 + heave * 7, 0, 0, Math.PI * 2);
+          ctx.fill();
           ctx.fillStyle = '#2b1a0c';
           ctx.beginPath(); ctx.ellipse(h.x, h.y + 2, 64, 18, 0, 0, Math.PI * 2); ctx.fill();
           if (h.mole) { drawMole(ctx, h); }
@@ -392,6 +469,28 @@
           ctx.fillStyle = 'rgba(255,255,255,.12)';
           ctx.beginPath(); ctx.ellipse(h.x - 30, h.y + 14, 18, 4, 0, 0, Math.PI * 2); ctx.fill();
         });
+
+        /* the ring of impact, snapping outward from where the hammer landed */
+        pows.forEach(function (p) {
+          var k = p.t, r = 26 + k * 74;
+          ctx.save();
+          ctx.globalAlpha = 1 - k;
+          ctx.strokeStyle = p.good ? '#ffd23f' : '#ffffff';
+          ctx.lineWidth = 9 * (1 - k) + 2;
+          ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.stroke();
+          /* spikes, so it reads as a bonk rather than a ripple */
+          ctx.lineWidth = 6 * (1 - k) + 1.5;
+          for (var a = 0; a < 8; a++) {
+            var ang = a * Math.PI / 4 + k * 0.6;
+            ctx.beginPath();
+            ctx.moveTo(p.x + Math.cos(ang) * (r + 4), p.y + Math.sin(ang) * (r + 4));
+            ctx.lineTo(p.x + Math.cos(ang) * (r + 18), p.y + Math.sin(ang) * (r + 18));
+            ctx.stroke();
+          }
+          ctx.restore();
+        });
+
+        ctx.restore();          /* end of the shake */
 
         U.badge(ctx, 16, 14, 'Bonked ' + got + ' of ' + NEED, { icon: '🔨' });
         if (streak >= 3) {
