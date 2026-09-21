@@ -1,6 +1,6 @@
 # Phonics Playground
 
-Fifteen listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
+Twenty listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
 JavaScript: no build step, no frameworks, no asset files, no network calls.
 
 ## Playing
@@ -30,6 +30,16 @@ level can be nudged up or down with the **change level** button.
 | Burger Time | Sends a chef up ladders to stomp sound chunks onto the burger in order | Building a word sound by sound |
 | Leaky Pipes | Hears a word only as separate sounds, then fixes the leak showing it | Blending sounds into a word |
 | Space Jumper | Runs and jumps through a space platformer, head-bumping the block with the spoken word to open each star gate | Word recognition, in a Mario-style level |
+| Wizard's Spellbook | Reads a spell card with no voice help, then taps the picture it means; older children read short phrases | Independent reading for meaning |
+| Comet Trails | Drags a comet along a dotted letter in the right order and direction | Letter formation (handwriting) |
+| Frog Hop | Changes one sound to turn one word into the next (cat, hat, hot, dot) to hop up to a fly | Swapping sounds within a word |
+| Whack-a-Mole | Bonks the mole holding the tricky word it hears; moles speed up with a streak | Sight words that break the phonics rules |
+| Sentence Train | Hooks word carriages onto an engine in order to build a sentence, then watches it chug away | Word order, capital letters and full stops |
+
+Sentence Train keeps a count of carriages earned in the browser, and the menu card
+shows the child's train growing. At ages 8 and 9 the sentence is not read aloud:
+the words are lower case, the first one gets its capital as it couples on, and
+the child chooses between a full stop and a question mark caboose.
 
 Space Jumper plays with the arrow keys and space, with the on-screen buttons, or
 by tapping a block, which sends the astronaut to run over and bump it. At the
@@ -84,6 +94,7 @@ js/words.js         the word bank, graded into five levels
 js/audio.js         speech synthesis wrapper and generated sound effects
 js/engine.js        canvas fitting, input, game loop, particles, scoring
 js/rules.js         shared "find every word that ..." rules
+js/strokes.js       how each letter is written, stroke by stroke
 js/main.js          menu and wiring
 js/games/*.js       one file per game
 ```
@@ -103,3 +114,11 @@ child sounds out and the rime is optional:
 'cake|c.a.k.e|ake'     -> magic e, rime given because it cannot be derived
 'rabbit|rab.bit|abbit' -> level 5 chunks are syllables
 ```
+
+## Other word lists
+
+`js/words.js` also holds pictures for the reading words (used by Wizard's
+Spellbook), phrase parts for the oldest Spellbook levels, and the tricky words
+for Whack-a-Mole, and the sentences for Sentence Train (with any other fair word
+order listed beside each one). Tricky words are kept apart from the phonics bank on purpose,
+because they break the sound rules the other games rely on.

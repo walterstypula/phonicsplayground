@@ -6,7 +6,7 @@
   PH.games.munchers = {
     id: 'munchers',
     name: 'Word Munchers',
-    icon: '🐸',
+    icon: '😋',
     blurb: 'Walk your Muncher around the grid and gobble every word that fits the rule. Watch out for the Troggle!',
 
     create: function (api) {

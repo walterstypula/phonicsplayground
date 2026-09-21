@@ -3,7 +3,8 @@
   'use strict';
 
   var ORDER = ['wordhunt', 'claw', 'bubbles', 'builder', 'rhyme', 'fishing',
-    'octopus', 'lava', 'pilot', 'munchers', 'soccer', 'giant', 'burger', 'pipes', 'space'];
+    'octopus', 'lava', 'pilot', 'munchers', 'soccer', 'giant', 'burger', 'pipes', 'space',
+    'wizard', 'tracing', 'ladder', 'moles', 'train'];
   var $ = function (id) { return document.getElementById(id); };
 
   var dom = {
@@ -53,6 +54,16 @@
     });
   }
 
+  /* a little extra line on some cards: the child's own growing train */
+  function extraFor(id) {
+    if (id !== 'train' || !PH.trainCars) { return ''; }
+    var n = PH.trainCars();
+    if (!n) { return '<span class="train-line">Your train is waiting for its first carriage!</span>'; }
+    var shown = Math.min(n, 10);
+    return '<span class="train-line">🚂' + new Array(shown + 1).join('🚃') +
+      (n > shown ? ' +' + (n - shown) : '') + '</span>';
+  }
+
   function renderCards() {
     dom.cards.innerHTML = '';
     ORDER.forEach(function (id, i) {
@@ -62,7 +73,7 @@
       b.className = 'card c' + (i % 6);
       b.innerHTML = '<span class="icon">' + g.icon + '</span>' +
         '<span class="name">' + g.name + '</span>' +
-        '<span class="blurb">' + g.blurb + '</span>';
+        '<span class="blurb">' + g.blurb + '</span>' + extraFor(id);
       b.addEventListener('click', function () { startGame(id); });
       dom.cards.appendChild(b);
     });
@@ -86,6 +97,7 @@
     dom.results.classList.add('hidden');
     dom.play.classList.add('hidden');
     dom.menu.classList.remove('hidden');
+    renderCards();   /* the Sentence Train card shows carriages earned so far */
   }
 
   /* ---------- buttons ---------- */

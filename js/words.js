@@ -186,6 +186,114 @@
   PH.picFor = {};
   PICTURES.forEach(function (p) { PH.picFor[p.w] = p.pic; });
 
+  /* Pictures for reading-level words, used where a child reads a word and must find
+     what it means (Wizard's Spellbook). Only words that can be drawn are listed, and
+     no two words that share a level share a picture.                                */
+  var READ_PICS = {
+    /* level 1 */
+    cat: '🐱', hat: '🎩', bat: '🦇', rat: '🐀', map: '🗺️',
+    cap: '🧢', bag: '👜', ham: '🍖', van: '🚐', man: '👨',
+    sad: '😢', sun: '☀️', run: '🏃', bus: '🚌', cup: '🥤',
+    mug: '☕', bug: '🐛', hug: '🤗', nut: '🥜', cut: '✂️',
+    red: '🟥', bed: '🛏️', net: '🥅', ten: '🔟', hen: '🐔',
+    leg: '🦵', pig: '🐷', dig: '⛏️', pin: '📌', win: '🏆',
+    tin: '🥫', lip: '👄', zip: '🤐', fix: '🔧', fox: '🦊',
+    box: '📦', dog: '🐶', hot: '🔥', dot: '⚫', mop: '🧹',
+    /* level 2 */
+    ship: '🚢', shop: '🏪', shell: '🐚', fish: '🐟', dish: '🍽️',
+    wish: '🌠', cash: '💵', chip: '🍟', rich: '🤑', bath: '🛁',
+    duck: '🦆', sock: '🧦', luck: '🍀', frog: '🐸', flag: '🚩',
+    clap: '👏', crab: '🦀', drum: '🥁', drip: '💧', stop: '🛑',
+    swim: '🏊', lamp: '💡', hand: '✋', sand: '🏖️', milk: '🥛',
+    help: '🆘',
+    /* level 3 */
+    cake: '🍰', lake: '🏞️', game: '🎮', wave: '🌊', bike: '🚲',
+    time: '⏰', ride: '🎢', hide: '🙈', home: '🏠', nose: '👃',
+    rose: '🌹', bone: '🦴', note: '🎵', cube: '🧊', rain: '🌧️',
+    snail: '🐌', seed: '🌱', feet: '👣', tree: '🌳', sleep: '😴',
+    leaf: '🍃', read: '📖', boat: '⛵', coat: '🧥', road: '🛣️',
+    soap: '🧼', toad: '🐸', moon: '🌙', food: '🍲', spoon: '🥄',
+    book: '📕', look: '👀', foot: '🦶',
+    /* level 4 */
+    star: '⭐', car: '🚗', farm: '🚜', card: '🃏', bird: '🐦',
+    girl: '👧', shirt: '👕', corn: '🌽', horn: '📯', fork: '🍴',
+    storm: '⛈️', burn: '🔥', hurt: '🤕', night: '🌃', light: '💡',
+    fight: '🥊', cow: '🐄', down: '⬇️', town: '🏘️', brown: '🟫',
+    house: '🏠', mouse: '🐭', cloud: '☁️', round: '⭕', boy: '👦',
+    toy: '🧸', joy: '😄', point: '👉', paw: '🐾', yawn: '🥱',
+    /* level 5 */
+    rabbit: '🐰', basket: '🧺', sunset: '🌇', magnet: '🧲', helmet: '⛑️',
+    kitten: '🐈', muffin: '🧁', dragon: '🐉', garden: '🌷', monster: '👾',
+    pencil: '✏️', jacket: '🧥', rocket: '🚀', winter: '⛄', thunder: '⚡',
+    chicken: '🐔', hospital: '🏥', elephant: '🐘', computer: '💻',
+    dinosaur: '🦕', butterfly: '🦋', umbrella: '☂️', crocodile: '🐊',
+    sandwich: '🥪', birthday: '🎂', running: '🏃'
+  };
+  PH.picOf = function (word) { return PH.picFor[word] || READ_PICS[word] || null; };
+
+  /* Short phrases for the oldest Spellbook levels: the picture shows both things,
+     so the child has to read both nouns, not just the first one they spot. */
+  PH.PHRASE_PARTS = {
+    4: {
+      who: ['cat', 'dog', 'fox', 'pig', 'hen', 'frog', 'duck', 'bird', 'cow', 'mouse'],
+      what: ['box', 'bus', 'bed', 'boat', 'car', 'hat', 'cup', 'tree', 'house', 'moon'],
+      frames: ['a %s in a %o', 'a %s on a %o', 'a %s and a %o', 'the %s by the %o']
+    },
+    5: {
+      who: ['rabbit', 'kitten', 'dragon', 'monster', 'chicken', 'elephant', 'dinosaur', 'crocodile', 'butterfly'],
+      what: ['basket', 'rocket', 'garden', 'helmet', 'jacket', 'sandwich', 'umbrella', 'computer', 'muffin'],
+      frames: ['a %s in a %o', 'a %s with a %o', 'the %s and the %o', 'a %s next to a %o']
+    }
+  };
+
+  /* Sentences for Sentence Train: "text|picture" or "text|picture|another fair order".
+     Levels 1-3 are read aloud, so the capital and full stop ride on the words.
+     Levels 4-5 are not read aloud: words are lower case and the full stop or question
+     mark is its own carriage (" ." at the end). Every sentence was checked for other
+     orders a child could fairly build; those are listed after the second bar.        */
+  PH.SENTENCES = {
+    1: ['The cat is big.|🐱', 'A dog can dig.|🐶⛏️', 'I see a bug.|🐛',
+      'The sun is hot.|☀️🔥', 'The fox ran.|🦊🏃', 'I got a pet.|🐶',
+      'The bus is red.|🚌🟥', 'Mum has a hat.|🎩', 'A pig can run.|🐷🏃',
+      'The man is sad.|😢', 'I can hop.|🐇', 'The cup is hot.|☕🔥',
+      'I had ten pins.|📌', 'The van is big.|🚐'],
+    2: ['The ship is big.|🚢', 'A duck can swim.|🦆🏊', 'The fish can swim.|🐟',
+      'I can clap.|👏', 'The frog can jump.|🐸', 'Stop the bus.|🛑🚌',
+      'I wish for a ship.|🌠🚢', 'The crab is red.|🦀', 'That is my sock.|🧦',
+      'The shop is shut.|🏪', 'I hit the drum.|🥁', 'The lamp is on.|💡',
+      'The chick can peck.|🐤'],
+    3: ['They like to ride a bike.|🚲', 'The snail was very slow.|🐌', 'We have a green boat.|⛵',
+      'Come and see the moon.|🌙', 'Some bees are in the tree.|🐝🌳',
+      'The toad said no.|🐸', 'Look at my new coat.|👀🧥',
+      'There is soap on my nose.|🧼👃', 'My feet are in the rain.|👣🌧️',
+      'What is in the green box?|📦', 'You can play a game.|🎮', 'The little cake is for me.|🍰'],
+    4: ['the cow is in the barn .|🐄', 'the mouse ran into the house .|🐭🏠',
+      'can you see the star ?|⭐', 'the boy found a toy car .|👦🚗|a boy found the toy car .',
+      'a cloud is in the sky .|☁️|the cloud is in a sky .', 'the owl hoots at night .|🦉🌃',
+      'where is the dog ?|🐶', 'my cat likes to sleep .|🐱😴',
+      'did the bird fly away ?|🐦', 'the girl has a red shirt .|👧👕|a girl has the red shirt .',
+      'we went to the farm .|🚜', 'is the light on ?|💡'],
+    5: ['the dragon flew over the garden .|🐉🌷',
+      'a rabbit is hiding in the basket .|🐰🧺|the rabbit is hiding in a basket .',
+      'my kitten likes to chase butterflies .|🐈🦋', 'the rocket zoomed into space .|🚀',
+      'have you seen my umbrella ?|☂️', 'the elephant ate my sandwich .|🐘🥪',
+      'a crocodile swam under the bridge .|🐊🌉|the crocodile swam under a bridge .',
+      'why is the monster so happy ?|👾', 'the dinosaur stomped through the forest .|🦕🌲',
+      'it was snowing all winter .|⛄|all winter it was snowing .',
+      'we baked muffins for her birthday .|🧁🎂|for her birthday we baked muffins .',
+      'can chickens really fly ?|🐔']
+  };
+
+  /* Tricky words: common words that break the phonics rules, learnt by sight.
+     Kept apart from the phonics bank so they never confuse the sound games. */
+  PH.TRICKY = {
+    1: ['the', 'to', 'I', 'no', 'go', 'into', 'is', 'he', 'she', 'we', 'me', 'be', 'my', 'you', 'was', 'of'],
+    2: ['they', 'all', 'are', 'said', 'have', 'like', 'so', 'do', 'some', 'come', 'were', 'there', 'little', 'one', 'what', 'out'],
+    3: ['door', 'floor', 'poor', 'because', 'find', 'kind', 'child', 'wild', 'most', 'only', 'both', 'old', 'every', 'great', 'pretty', 'after', 'father', 'who'],
+    4: ['beautiful', 'water', 'again', 'half', 'money', 'busy', 'people', 'whole', 'any', 'many', 'clothes', 'sure', 'sugar', 'eye', 'hour', 'move', 'could', 'should'],
+    5: ['actually', 'answer', 'believe', 'breath', 'build', 'caught', 'certain', 'different', 'early', 'enough', 'eight', 'heard', 'heart', 'island', 'minute', 'often', 'promise', 'question', 'though', 'through', 'weight', 'women']
+  };
+
   PH.LEVELS = [
     { id: -1, name: 'Tiny Tots · Pictures', focus: 'Listening, matching, rhymes and clapping', mode: 'pictures', words: PICTURES },
     { id: 0, name: 'Little Letters', focus: 'Letter shapes and the sounds they make', mode: 'letters', words: LETTERS }

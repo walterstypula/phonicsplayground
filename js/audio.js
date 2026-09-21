@@ -203,6 +203,31 @@
     poof: function () { noise(0, 0.18, 400, 0.12); },
     rumble: function () { slide(90, 50, 0, 0.9, 'sawtooth', 0.14); noise(0, 0.8, 150, 0.2); },
     drip: function () { slide(1400, 700, 0, 0.08, 'sine', 0.12); },
+    zap: function () { slide(300, 1800, 0, 0.25, 'sawtooth', 0.08); noise(0.1, 0.3, 3000, 0.1); },
+    bonk: function () { slide(700, 200, 0, 0.1, 'square', 0.14); noise(0, 0.06, 900, 0.18); },
+    raspberry: function () {
+      var a = ac(); if (!a || !sfxOn) { return; }
+      /* a buzzy wobbling tone: a low saw wobbled by a fast LFO */
+      var t = a.currentTime, osc = a.createOscillator(), lfo = a.createOscillator();
+      var lg = a.createGain(), g = a.createGain();
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(110, t);
+      lfo.frequency.setValueAtTime(28, t); lg.gain.setValueAtTime(40, t);
+      lfo.connect(lg); lg.connect(osc.frequency);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.12, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      osc.connect(g); g.connect(a.destination);
+      osc.start(t); lfo.start(t); osc.stop(t + 0.52); lfo.stop(t + 0.52);
+    },
+    ribbit: function () { slide(220, 140, 0, 0.09, 'square', 0.12); slide(260, 150, 0.12, 0.11, 'square', 0.12); },
+    twinkle: function () {
+      [1318, 1760, 2093].forEach(function (f, i) { tone(f, i * 0.05, 0.18, 'sine', 0.09); });
+    },
+    whistle: function () {
+      tone(880, 0, 0.35, 'sine', 0.12); tone(1108, 0, 0.35, 'sine', 0.1);
+      tone(880, 0.42, 0.5, 'sine', 0.12); tone(1108, 0.42, 0.5, 'sine', 0.1);
+    },
+    chug: function () { noise(0, 0.12, 300, 0.14); },
     kick: function () { slide(160, 60, 0, 0.12, 'sine', 0.35); noise(0, 0.05, 600, 0.2); },
     win: function () {
       [523, 659, 784, 1046, 1318].forEach(function (f, i) { tone(f, i * 0.09, 0.3, 'triangle', 0.2); });
