@@ -163,22 +163,21 @@
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(keeper.dir * keeper.dive * 1.2);
-        ctx.fillStyle = '#1f2340';
-        ctx.fillRect(-16, 0, 12, 30); ctx.fillRect(4, 0, 12, 30);
-        ctx.fillStyle = '#ffd23f';
-        U.roundRect(ctx, -24, -54, 48, 58, 12); ctx.fill();
-        ctx.fillStyle = '#1f2340';
-        ctx.font = U.font(22);
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('1', 0, -26);
-        ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 11; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(-22, -46); ctx.lineTo(-50, -80); ctx.moveTo(22, -46); ctx.lineTo(50, -80); ctx.stroke();
-        ctx.fillStyle = '#3ddc84';
-        ctx.beginPath(); ctx.arc(-52, -84, 11, 0, Math.PI * 2); ctx.arc(52, -84, 11, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#c68a5a';
-        ctx.beginPath(); ctx.arc(0, -74, 19, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#1f2340';
-        ctx.beginPath(); ctx.arc(-6, -76, 3, 0, Math.PI * 2); ctx.arc(6, -76, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.translate(0, 32);
+        ctx.scale(1.12, 1.12);
+        var sway = Math.sin(performance.now() / 260) * 0.12;
+        PH.art.kid(ctx, {
+          skin: '#b97a4f', hair: '#2b1a12', hairStyle: 'curly', iris: '#3b2414',
+          shirt: '#ffd23f', pants: '#2f3a73', shoes: '#3ddc84', hands: '#3ddc84',
+          arms: [2.3 + sway, 2.3 - sway], look: [0, 0.6], blinkSeed: 3,
+          mouth: keeper.dive > 0.5 ? 'o' : 'smile',
+          body: function (c) {
+            c.fillStyle = '#2b2346';
+            c.font = U.font(18);
+            c.textAlign = 'center'; c.textBaseline = 'middle';
+            c.fillText('1', 0, -42);
+          }
+        });
         ctx.restore();
       }
 

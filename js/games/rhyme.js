@@ -138,36 +138,69 @@
       }
 
       function drawRocket(ctx) {
+        var art = PH.art;
+        var now = performance.now() / 1000;
         ctx.save();
         ctx.translate(rocket.x, rocket.y);
         ctx.rotate(rocket.rot + (rocket.wobble > 0 ? Math.sin(rocket.wobble * 50) * 0.18 : 0));
         ctx.scale(1.5, 1.5);
-        var flame = state === 'fly' ? 1 : 0.45 + Math.sin(performance.now() / 90) * 0.2;
-        ctx.fillStyle = '#ff9f40';
-        ctx.beginPath();
-        ctx.moveTo(-16, 42); ctx.lineTo(0, 42 + 48 * flame); ctx.lineTo(16, 42);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#ffd23f';
-        ctx.beginPath();
-        ctx.moveTo(-8, 42); ctx.lineTo(0, 42 + 26 * flame); ctx.lineTo(8, 42);
-        ctx.closePath(); ctx.fill();
-
-        ctx.fillStyle = '#ff5d8f';
-        ctx.beginPath();
-        ctx.moveTo(-26, 30); ctx.lineTo(-14, 6); ctx.lineTo(-14, 34); ctx.closePath(); ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(26, 30); ctx.lineTo(14, 6); ctx.lineTo(14, 34); ctx.closePath(); ctx.fill();
-
-        ctx.fillStyle = '#f2f4ff';
+        /* a flickering flame, three layers deep */
+        var flame = state === 'fly' ? 1 : 0.45 + Math.sin(now * 11) * 0.2;
+        [['#ff5d5d', 20, 56], ['#ff9f40', 15, 44], ['#fff3a8', 8, 26]].forEach(function (f, i) {
+          ctx.fillStyle = f[0];
+          ctx.beginPath();
+          ctx.moveTo(-f[1] + i, 40);
+          ctx.quadraticCurveTo(-f[1] * 0.6, 40 + f[2] * flame * 0.6, Math.sin(now * 30 + i) * 2, 40 + f[2] * flame);
+          ctx.quadraticCurveTo(f[1] * 0.6, 40 + f[2] * flame * 0.6, f[1] - i, 40);
+          ctx.closePath(); ctx.fill();
+        });
+        /* fins */
+        [-1, 1].forEach(function (s) {
+          ctx.beginPath();
+          ctx.moveTo(s * 14, 2); ctx.quadraticCurveTo(s * 30, 14, s * 30, 38); ctx.lineTo(s * 14, 32); ctx.closePath();
+          art.fillLit(ctx, '#ff5d8f', 2, 38, { lineWidth: 2.5 });
+        });
+        /* nozzle */
+        U.roundRect(ctx, -12, 36, 24, 8, 3);
+        art.fillLit(ctx, '#9aa3bf', 36, 44, { lineWidth: 2.5 });
+        /* the body */
         ctx.beginPath();
         ctx.moveTo(0, -56);
-        ctx.quadraticCurveTo(20, -16, 18, 42);
-        ctx.lineTo(-18, 42);
-        ctx.quadraticCurveTo(-20, -16, 0, -56);
-        ctx.closePath(); ctx.fill();
-
+        ctx.quadraticCurveTo(21, -16, 18, 40);
+        ctx.lineTo(-18, 40);
+        ctx.quadraticCurveTo(-21, -16, 0, -56);
+        ctx.closePath();
+        var g = ctx.createLinearGradient(-20, 0, 20, 0);
+        g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#eef1ff'); g.addColorStop(1, '#b9c2e6');
+        ctx.fillStyle = g; ctx.fill();
+        ctx.save(); ctx.clip();
+        ctx.fillStyle = '#ff5d8f';                           /* a red nose cone */
+        ctx.beginPath(); ctx.moveTo(-30, -30); ctx.quadraticCurveTo(0, -38, 30, -30); ctx.lineTo(30, -70); ctx.lineTo(-30, -70); ctx.fill();
         ctx.fillStyle = '#4d8dff';
-        ctx.beginPath(); ctx.arc(0, -8, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.fillRect(-30, 8, 60, 4);
+        ctx.restore();
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, -56); ctx.quadraticCurveTo(21, -16, 18, 40); ctx.lineTo(-18, 40); ctx.quadraticCurveTo(-21, -16, 0, -56);
+        ctx.closePath(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-16, -30); ctx.quadraticCurveTo(0, -38, 16, -30); ctx.stroke();
+        /* a porthole with a little astronaut waving inside */
+        ctx.beginPath(); ctx.arc(0, -10, 12.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#c9ced9'; ctx.fill(); ctx.stroke();
+        ctx.save();
+        ctx.beginPath(); ctx.arc(0, -10, 9.5, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = '#243268'; ctx.fillRect(-12, -22, 24, 24);
+        ctx.fillStyle = '#f6c9a0';
+        ctx.beginPath(); ctx.arc(0, -7, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#6b3f24';
+        ctx.beginPath(); ctx.arc(0, -10, 7, Math.PI, Math.PI * 2); ctx.fill();
+        art.eyes(ctx, 0, -7, 5, 1.3, { dot: true, blink: art.blink(25) });
+        art.mouth(ctx, 0, -4, 4, state === 'fly' ? 'o' : 'smile', { lineWidth: 1 });
+        var wv = Math.sin(now * 8) * 2;
+        art.ball(ctx, 6 + wv * 0.3, -12 + wv, 2.2, '#f6c9a0', { lineWidth: 1, shine: false });
+        ctx.restore();
+        ctx.fillStyle = 'rgba(255,255,255,.6)';
+        ctx.beginPath(); ctx.ellipse(-4, -15, 4, 2, -0.6, 0, Math.PI * 2); ctx.fill();
 
         ctx.fillStyle = '#1f2340';
         ctx.font = U.font(target && api.label(target.w).length > 6 ? 14 : 19);
@@ -176,6 +209,7 @@
         ctx.fillText(target ? api.label(target.w) : '', 0, 24);
         ctx.restore();
       }
+
 
       function draw(ctx) {
         var bg = ctx.createLinearGradient(0, 0, 0, api.H);

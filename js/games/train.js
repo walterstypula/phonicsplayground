@@ -294,63 +294,83 @@
       }
 
       function drawEngine(ctx) {
+        var art = PH.art;
+        var now = performance.now() / 1000;
         var x = ENGINE.x + trainX, base = RAIL - 14;
+        var chug = state === 'chug' ? Math.abs(Math.sin(now * 12)) * 2 : 0;
         U.shadow(ctx, x + ENGINE.w / 2, base + 16, ENGINE.w * 0.6, 8, 0.3);
-        /* boiler: a red cylinder with gold bands */
-        var boiler = ctx.createLinearGradient(0, base - 70, 0, base - 6);
-        boiler.addColorStop(0, '#ff8787'); boiler.addColorStop(0.45, '#e03131'); boiler.addColorStop(1, '#a51d1d');
-        ctx.fillStyle = boiler;
-        U.roundRect(ctx, x, base - 70, ENGINE.w - 50, 64, 12); ctx.fill();
-        ctx.fillStyle = '#fab005';
-        ctx.fillRect(x + 50, base - 70, 6, 64); ctx.fillRect(x + 78, base - 70, 6, 64);
-        /* cab */
-        U.plate(ctx, x + ENGINE.w - 60, base - 118, 60, 112, { fill: '#1971c2', r: 10, shadow: false, edge: '#0b3d73' });
-        ctx.fillStyle = '#fff9db';
-        U.roundRect(ctx, x + ENGINE.w - 50, base - 104, 40, 30, 6); ctx.fill();
-        ctx.fillStyle = '#0b3d73';
-        U.roundRect(ctx, x + ENGINE.w - 66, base - 124, 72, 12, 5); ctx.fill();          /* roof */
+        ctx.save();
+        ctx.translate(0, -chug);
         /* chimney */
-        var chim = ctx.createLinearGradient(x + 20, 0, x + 42, 0);
-        chim.addColorStop(0, '#495057'); chim.addColorStop(0.5, '#868e96'); chim.addColorStop(1, '#343a40');
-        ctx.fillStyle = chim;
-        ctx.fillRect(x + 20, base - 118, 22, 48);
-        ctx.fillRect(x + 14, base - 126, 34, 12);
-        /* lamp with a little glow, and a cow-catcher */
-        var lg = ctx.createRadialGradient(x + 4, base - 40, 2, x + 4, base - 40, 30);
+        ctx.beginPath(); ctx.moveTo(x + 22, base - 70); ctx.lineTo(x + 20, base - 114); ctx.lineTo(x + 42, base - 114); ctx.lineTo(x + 40, base - 70); ctx.closePath();
+        art.fillLit(ctx, '#5c6470', base - 114, base - 70, { lineWidth: 3 });
+        U.roundRect(ctx, x + 12, base - 128, 38, 16, 6);
+        art.fillLit(ctx, '#3d434d', base - 128, base - 112, { lineWidth: 3 });
+        /* boiler: a red cylinder with gold bands */
+        U.roundRect(ctx, x + 10, base - 72, ENGINE.w - 60, 66, 12);
+        art.fillLit(ctx, '#e03131', base - 72, base - 6, { light: 0.35, dark: -0.3, lineWidth: 3.5 });
+        [50, 78].forEach(function (bx) {
+          ctx.beginPath(); ctx.rect(x + bx, base - 72, 7, 66);
+          art.fillLit(ctx, '#fab005', base - 72, base - 6, { lineWidth: 2 });
+        });
+        /* a steam dome */
+        ctx.beginPath(); ctx.moveTo(x + 58, base - 72); ctx.bezierCurveTo(x + 58, base - 94, x + 82, base - 94, x + 82, base - 72); ctx.closePath();
+        art.fillLit(ctx, '#fab005', base - 92, base - 72, { lineWidth: 3 });
+        /* cab */
+        U.roundRect(ctx, x + ENGINE.w - 60, base - 118, 60, 112, 10);
+        art.fillLit(ctx, '#1971c2', base - 118, base - 6, { lineWidth: 3.5 });
+        U.roundRect(ctx, x + ENGINE.w - 50, base - 104, 40, 30, 6);
+        art.fillLit(ctx, '#fff3bf', base - 104, base - 74, { lineWidth: 2.5 });
+        U.roundRect(ctx, x + ENGINE.w - 66, base - 126, 72, 12, 5);
+        art.fillLit(ctx, '#0b3d73', base - 126, base - 114, { lineWidth: 3 });
+        /* the smiling smokebox face on the front */
+        var fx = x + 8, fy = base - 40;
+        art.ball(ctx, fx, fy, 32, '#dfe3ea', { lineWidth: 3.5 });
+        ctx.beginPath(); ctx.arc(fx, fy, 25, 0, Math.PI * 2);
+        art.fillLit(ctx, '#f6d7b8', fy - 25, fy + 25, { light: 0.15, dark: -0.1, lineWidth: 2.5 });
+        var happy = state === 'whistle' || state === 'chug' || state === 'picture';
+        art.eyes(ctx, fx, fy - 7, 18, 4.2, { dot: true, blink: art.blink(27), look: [-0.5, 0], happy: happy });
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(fx - 14, fy - 17); ctx.lineTo(fx - 5, fy - 18); ctx.moveTo(fx + 5, fy - 18); ctx.lineTo(fx + 14, fy - 17); ctx.stroke();
+        art.cheeks(ctx, fx, fy + 3, 30, 4.5, 'rgba(255,100,120,.5)');
+        art.mouth(ctx, fx, fy + 8, 14, happy ? 'grin' : 'smile');
+        /* lamp with a little glow on top of the face */
+        var lg = ctx.createRadialGradient(fx, fy - 40, 2, fx, fy - 40, 30);
         lg.addColorStop(0, 'rgba(255,236,150,.9)'); lg.addColorStop(1, 'rgba(255,236,150,0)');
-        ctx.fillStyle = lg; ctx.fillRect(x - 26, base - 70, 60, 60);
-        ctx.fillStyle = '#ffd43b';
-        ctx.beginPath(); ctx.arc(x + 4, base - 40, 10, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#495057';
-        ctx.beginPath(); ctx.moveTo(x + 2, base - 8); ctx.lineTo(x - 18, base + 10); ctx.lineTo(x + 14, base + 10); ctx.closePath(); ctx.fill();
-        /* the replay button on the boiler */
+        ctx.fillStyle = lg; ctx.fillRect(fx - 30, fy - 70, 60, 60);
+        art.ball(ctx, fx, fy - 38, 8, '#ffd43b', { lineWidth: 2.5 });
+        /* cow-catcher */
+        ctx.beginPath(); ctx.moveTo(x + 6, base - 8); ctx.lineTo(x - 22, base + 10); ctx.lineTo(x + 18, base + 10); ctx.closePath();
+        art.fillLit(ctx, '#6c757d', base - 8, base + 10, { lineWidth: 3 });
+        /* the replay button on the cab */
         var b = engineButton();
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+        art.ball(ctx, b.x, b.y + chug, b.r, '#ffffff', { lineWidth: 3 });
         ctx.font = '26px ' + EMOJI;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('🔊', b.x, b.y + 1);
+        ctx.fillText('🔊', b.x, b.y + 1 + chug);
+        ctx.restore();
         /* spoked wheels that turn as the train moves, joined by a rod */
         var spin = trainX / 14;
-        [x + 22, x + 64, x + 116].forEach(function (wx, n) {
+        [x + 30, x + 70, x + 116].forEach(function (wx, n) {
           var r = n === 2 ? 16 : 13;
-          ctx.fillStyle = '#343a40';
-          ctx.beginPath(); ctx.arc(wx, base + 2, r, 0, Math.PI * 2); ctx.fill();
+          art.ball(ctx, wx, base + 2, r, '#3d434d', { lineWidth: 3, shine: false });
           ctx.strokeStyle = '#ced4da'; ctx.lineWidth = 2;
           for (var sp = 0; sp < 4; sp++) {
             var a = spin + sp * Math.PI / 4;
             ctx.beginPath(); ctx.moveTo(wx - Math.cos(a) * (r - 3), base + 2 - Math.sin(a) * (r - 3));
             ctx.lineTo(wx + Math.cos(a) * (r - 3), base + 2 + Math.sin(a) * (r - 3)); ctx.stroke();
           }
-          ctx.fillStyle = '#fab005';
-          ctx.beginPath(); ctx.arc(wx, base + 2, 3.5, 0, Math.PI * 2); ctx.fill();
+          art.ball(ctx, wx, base + 2, 4, '#fab005', { lineWidth: 1.5, shine: false });
         });
-        ctx.strokeStyle = '#adb5bd'; ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 7;
         ctx.beginPath();
-        ctx.moveTo(x + 22 + Math.cos(spin) * 7, base + 2 + Math.sin(spin) * 7);
-        ctx.lineTo(x + 64 + Math.cos(spin) * 7, base + 2 + Math.sin(spin) * 7);
+        ctx.moveTo(x + 30 + Math.cos(spin) * 7, base + 2 + Math.sin(spin) * 7);
+        ctx.lineTo(x + 70 + Math.cos(spin) * 7, base + 2 + Math.sin(spin) * 7);
         ctx.stroke();
+        ctx.strokeStyle = '#ced4da'; ctx.lineWidth = 4; ctx.stroke();
       }
+
 
       function drawSign(ctx) {
         /* a hint board by the station: pictures for the littlest, the word to spell, or the scene */
@@ -394,10 +414,28 @@
         ctx.fillStyle = '#8ce99a';
         ctx.beginPath(); ctx.ellipse(250, 300, 330, 80, 0, Math.PI, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.ellipse(800, 300, 290, 64, 0, Math.PI, Math.PI * 2); ctx.fill();
-        [[90, 238], [150, 228], [380, 236], [700, 250], [760, 242], [900, 252]].forEach(function (t) {
-          ctx.fillStyle = '#7a4a2b'; ctx.fillRect(t[0] - 3, t[1], 6, 18);
-          ctx.fillStyle = '#40c057'; ctx.beginPath(); ctx.arc(t[0], t[1] - 6, 16, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(t[0] - 5, t[1] - 11, 6, 0, Math.PI * 2); ctx.fill();
+        var art = PH.art;
+        ctx.strokeStyle = 'rgba(40,120,60,.5)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(250, 300, 330, 80, 0, Math.PI, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(800, 300, 290, 64, 0, Math.PI, Math.PI * 2); ctx.stroke();
+        [[90, 238], [150, 228], [380, 236], [700, 250], [760, 242], [900, 252]].forEach(function (t, n) {
+          U.roundRect(ctx, t[0] - 4, t[1] - 4, 8, 24, 3);
+          art.fillLit(ctx, '#8a5a34', t[1], t[1] + 20, { lineWidth: 2 });
+          /* a fluffy crown of three puffs, some with apples */
+          ctx.fillStyle = art.INK;
+          [[-9, -6, 13], [9, -6, 13], [0, -18, 15]].forEach(function (p) {
+            ctx.beginPath(); ctx.arc(t[0] + p[0], t[1] + p[1], p[2] + 2.5, 0, Math.PI * 2); ctx.fill();
+          });
+          [[-9, -6, 13], [9, -6, 13], [0, -18, 15]].forEach(function (p) {
+            var g = ctx.createRadialGradient(t[0] + p[0] - 4, t[1] + p[1] - 5, 2, t[0] + p[0], t[1] + p[1], p[2]);
+            g.addColorStop(0, '#8ce99a'); g.addColorStop(1, '#2f9e44');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(t[0] + p[0], t[1] + p[1], p[2], 0, Math.PI * 2); ctx.fill();
+          });
+          if (n % 2 === 0) {
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath(); ctx.arc(t[0] - 8, t[1] - 10, 3, 0, Math.PI * 2); ctx.arc(t[0] + 7, t[1] - 18, 3, 0, Math.PI * 2); ctx.fill();
+          }
         });
         var grass = ctx.createLinearGradient(0, 290, 0, api.H);
         grass.addColorStop(0, '#8ce99a'); grass.addColorStop(1, '#40c057');

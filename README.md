@@ -93,6 +93,7 @@ css/style.css
 js/words.js         the word bank, graded into five levels
 js/audio.js         speech synthesis wrapper and generated sound effects
 js/engine.js        canvas fitting, input, game loop, particles, scoring
+js/art.js           the character kit: glossy eyes, blinks, faces, shading, a posable kid
 js/rules.js         shared "find every word that ..." rules
 js/strokes.js       how each letter is written, stroke by stroke
 js/main.js          menu and wiring

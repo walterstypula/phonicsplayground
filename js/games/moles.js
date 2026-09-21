@@ -183,9 +183,12 @@
 
       /* ---------------- drawing ---------------- */
       function drawMole(ctx, h) {
+        var art = PH.art;
         var m = h.mole;
         var rise = m.up * 120;
         var dizzy = m.hit > 0;
+        var seed = Math.round(h.x / 10 + h.y / 7);
+        var t = performance.now() / 1000;
         ctx.save();
         /* only the part above the hole is visible */
         ctx.beginPath(); ctx.rect(h.x - 120, h.y - 330, 240, 330); ctx.clip();
@@ -195,65 +198,136 @@
         var fs = signFont(m);
         ctx.font = U.font(fs);
         var tw = Math.max(70, ctx.measureText(text).width + 30);
-        ctx.fillStyle = '#7a4a2b';
-        ctx.fillRect(44, -150, 7, 110);
+        U.roundRect(ctx, 44, -150, 8, 112, 4);
+        art.fillLit(ctx, '#9a6a3c', -150, -38, { lineWidth: 2.5 });
         U.plate(ctx, 48 - tw / 2, -190, tw, fs + 22, { fill: '#fff4d6', r: 10, edge: '#b07a3a' });
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(text, 48, -190 + (fs + 22) / 2 + 1);
-        /* body: velvety fur with a soft highlight */
-        var fur = ctx.createRadialGradient(-14, -58, 6, 0, -30, 70);
-        fur.addColorStop(0, '#b07a52'); fur.addColorStop(1, '#6f4327');
-        ctx.fillStyle = fur;
-        ctx.beginPath(); ctx.ellipse(0, -30, 46, 60, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#4a2a14'; ctx.lineWidth = 2.5; ctx.stroke();
-        ctx.fillStyle = '#c69c7a';
-        ctx.beginPath(); ctx.ellipse(0, -10, 28, 34, 0, 0, Math.PI * 2); ctx.fill();
+        /* the hand holding the sign */
+        art.ball(ctx, 48, -64, 11, '#8d5a3b', { lineWidth: 2.5, shine: false });
+
+        /* round little ears */
+        art.ball(ctx, -36, -76, 11, '#7d4d2e', { shine: false });
+        art.ball(ctx, 36, -76, 11, '#7d4d2e', { shine: false });
+        ctx.fillStyle = '#e8a0a8';
+        ctx.beginPath(); ctx.arc(-36, -76, 5, 0, Math.PI * 2); ctx.arc(36, -76, 5, 0, Math.PI * 2); ctx.fill();
+        /* body: a velvety pear */
+        ctx.beginPath();
+        ctx.moveTo(0, -96);
+        ctx.bezierCurveTo(34, -96, 50, -60, 50, -20);
+        ctx.bezierCurveTo(50, 30, 30, 50, 0, 50);
+        ctx.bezierCurveTo(-30, 50, -50, 30, -50, -20);
+        ctx.bezierCurveTo(-50, -60, -34, -96, 0, -96);
+        ctx.closePath();
+        art.fillLit(ctx, '#8f5c38', -96, 40, { light: 0.25, dark: -0.3 });
+        /* a soft tummy */
+        ctx.beginPath(); ctx.ellipse(0, 4, 30, 36, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#d7ae88'; ctx.fill();
+        /* fur tuft on top */
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-4, -95); ctx.quadraticCurveTo(-8, -108, 0, -110); ctx.moveTo(4, -95); ctx.quadraticCurveTo(8, -106, 14, -104); ctx.stroke();
+
+        /* each mole wears something different */
+        var outfit = seed % 3;
+        if (outfit === 0) {                  /* a miner's hard hat with a lamp */
+          ctx.beginPath(); ctx.moveTo(-34, -80); ctx.bezierCurveTo(-34, -116, 34, -116, 34, -80); ctx.closePath();
+          art.fillLit(ctx, '#ffd23f', -112, -80, { lineWidth: 3 });
+          ctx.beginPath(); ctx.ellipse(0, -80, 42, 7, 0, 0, Math.PI * 2);
+          art.fillLit(ctx, '#f0b52a', -87, -73, { lineWidth: 3 });
+          art.ball(ctx, 0, -100, 8, '#fff6c2', { lineWidth: 2.5 });
+        } else if (outfit === 1) {           /* a big spotty bow */
+          ctx.save(); ctx.translate(22, -88); ctx.rotate(0.3);
+          [-1, 1].forEach(function (s) {
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(s * 20, -18, s * 22, 0); ctx.quadraticCurveTo(s * 20, 16, 0, 0); ctx.closePath();
+            art.fillLit(ctx, '#ff5d8f', -16, 16, { lineWidth: 2.5 });
+          });
+          art.ball(ctx, 0, 0, 6, '#ff5d8f', { lineWidth: 2.5 });
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.arc(-12, -3, 2.5, 0, Math.PI * 2); ctx.arc(13, 4, 2.5, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        } else {                             /* a little knitted beanie */
+          ctx.beginPath(); ctx.moveTo(-32, -82); ctx.bezierCurveTo(-32, -118, 32, -118, 32, -82); ctx.closePath();
+          art.fillLit(ctx, '#2ec4b6', -114, -82, { lineWidth: 3 });
+          U.roundRect(ctx, -34, -88, 68, 12, 6);
+          art.fillLit(ctx, '#1f9e92', -88, -76, { lineWidth: 2.5 });
+          art.ball(ctx, 0, -114, 8, '#ffffff', { lineWidth: 2.5 });
+        }
+
         /* face */
         if (dizzy) {
-          ctx.strokeStyle = '#1f2340'; ctx.lineWidth = 3;
-          [-15, 15].forEach(function (ex) {
-            ctx.beginPath(); ctx.moveTo(ex - 6, -60); ctx.lineTo(ex + 6, -48); ctx.moveTo(ex + 6, -60); ctx.lineTo(ex - 6, -48); ctx.stroke();
+          ctx.strokeStyle = art.INK; ctx.lineWidth = 3.5;
+          [-16, 16].forEach(function (ex) {
+            ctx.beginPath();
+            for (var a = 0; a < 12; a += 0.3) {
+              var rr = a * 0.7;
+              ctx.lineTo(ex + Math.cos(a + t * 10) * rr, -56 + Math.sin(a + t * 10) * rr);
+            }
+            ctx.stroke();
           });
-          ctx.fillStyle = '#ffd23f';
           for (var s = 0; s < 3; s++) {
-            var a = performance.now() / 200 + s * 2.1;
-            U.star(ctx, Math.cos(a) * 36, -96 + Math.sin(a) * 10, 9, 4); ctx.fill();
+            var a2 = t * 5 + s * 2.1;
+            U.star(ctx, Math.cos(a2) * 40, -120 + Math.sin(a2) * 10, 9, 4);
+            ctx.fillStyle = '#ffd23f'; ctx.fill(); ctx.strokeStyle = art.INK; ctx.lineWidth = 2; ctx.stroke();
           }
         } else {
-          ctx.fillStyle = '#1f2340';
-          ctx.beginPath(); ctx.arc(-15, -54, 6, 0, Math.PI * 2); ctx.arc(15, -54, 6, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#fff';
-          ctx.beginPath(); ctx.arc(-13, -56, 2, 0, Math.PI * 2); ctx.arc(17, -56, 2, 0, Math.PI * 2); ctx.fill();
+          var look = hammer ? [U.clamp((hammer.x - h.x) / 200, -1, 1), U.clamp((hammer.y - h.y) / 200, -1, 1)] : null;
+          art.eyes(ctx, 0, -56, 30, 6.5, { dot: true, blink: art.blink(seed), look: look });
         }
-        ctx.fillStyle = '#ff8fa8';
-        ctx.beginPath(); ctx.ellipse(0, -38, 11, 8, 0, 0, Math.PI * 2); ctx.fill();
+        art.cheeks(ctx, 0, -38, 52, 7, 'rgba(255,120,140,.4)');
+        /* the snout: a muzzle, whiskers and a big pink nose */
+        ctx.beginPath(); ctx.ellipse(0, -34, 20, 14, 0, 0, Math.PI * 2);
+        art.fillLit(ctx, '#e0bc98', -48, -20, { lineWidth: 2.5 });
+        ctx.strokeStyle = 'rgba(43,35,70,.55)'; ctx.lineWidth = 1.8;
+        [-1, 1].forEach(function (s) {
+          ctx.beginPath();
+          ctx.moveTo(s * 14, -34); ctx.lineTo(s * 36, -40);
+          ctx.moveTo(s * 14, -30); ctx.lineTo(s * 37, -30);
+          ctx.stroke();
+        });
+        art.ball(ctx, 0, -42, 8.5, '#ff7f9c', { lineWidth: 2.5 });
         if (m.raz > 0) {
           /* blowing a raspberry */
-          ctx.fillStyle = '#ff5d8f';
-          ctx.beginPath(); ctx.ellipse(0, -18, 10, 14 + Math.sin(m.raz * 40) * 3, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(0, -16, 9, 12 + Math.sin(m.raz * 40) * 3, 0, 0, Math.PI * 2);
+          art.fillLit(ctx, '#ff5d8f', -30, -4, { lineWidth: 2.5 });
         } else {
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(-7, -28, 6, 9); ctx.fillRect(1, -28, 6, 9);
+          ctx.strokeStyle = art.INK; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(-8, -26); ctx.quadraticCurveTo(0, -22, 8, -26); ctx.stroke();
+          [-1, 1].forEach(function (s) {           /* two buck teeth */
+            U.roundRect(ctx, s > 0 ? 0.5 : -7.5, -25, 7, 10, 2.5);
+            ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
+          });
         }
-        /* paws on the rim */
-        ctx.fillStyle = '#8d5a3b';
-        ctx.beginPath(); ctx.ellipse(-32, 22, 14, 9, 0, 0, Math.PI * 2); ctx.ellipse(32, 22, 14, 9, 0, 0, Math.PI * 2); ctx.fill();
+        /* paws with little claws on the rim */
+        [-1, 1].forEach(function (s) {
+          ctx.beginPath(); ctx.ellipse(s * 34, 22, 15, 10, 0, 0, Math.PI * 2);
+          art.fillLit(ctx, '#7d4d2e', 12, 32, { lineWidth: 2.5 });
+          ctx.fillStyle = '#f3e6d6';
+          for (var c = -1; c <= 1; c++) {
+            ctx.beginPath(); ctx.ellipse(s * 34 + c * 6, 30, 2.4, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+          }
+        });
         ctx.restore();
       }
 
       function drawHammer(ctx) {
+        var art = PH.art;
         var ang = hammer.swing > 0 ? -0.2 + (1 - hammer.swing / 0.18) * 1.1 : -0.5;
         ctx.save();
         ctx.translate(hammer.x + 30, hammer.y + 50);
         ctx.rotate(ang);
-        ctx.fillStyle = '#c69c6d';
-        U.roundRect(ctx, -6, -90, 12, 100, 6); ctx.fill();
-        ctx.fillStyle = '#ff5d5d';
-        U.roundRect(ctx, -42, -122, 84, 44, 16); ctx.fill();
-        ctx.fillStyle = '#ffd23f';
-        U.roundRect(ctx, -46, -118, 12, 36, 6); ctx.fill();
-        U.roundRect(ctx, 34, -118, 12, 36, 6); ctx.fill();
+        U.roundRect(ctx, -6, -90, 12, 100, 6);
+        art.fillLit(ctx, '#d9a86c', -90, 10, { lineWidth: 2.5 });
+        ctx.strokeStyle = '#ff5d5d'; ctx.lineWidth = 3;
+        for (var g = 0; g < 4; g++) { ctx.beginPath(); ctx.moveTo(-6, -10 + g * 6); ctx.lineTo(6, -14 + g * 6); ctx.stroke(); }
+        U.roundRect(ctx, -42, -122, 84, 44, 16);
+        art.fillLit(ctx, '#ff5d5d', -122, -78, { lineWidth: 3 });
+        U.roundRect(ctx, -48, -120, 14, 40, 6);
+        art.fillLit(ctx, '#ffd23f', -120, -80, { lineWidth: 2.5 });
+        U.roundRect(ctx, 34, -120, 14, 40, 6);
+        art.fillLit(ctx, '#ffd23f', -120, -80, { lineWidth: 2.5 });
+        ctx.fillStyle = 'rgba(255,255,255,.45)';
+        U.roundRect(ctx, -30, -116, 60, 9, 4); ctx.fill();
         ctx.restore();
       }
 

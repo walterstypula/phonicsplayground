@@ -204,31 +204,75 @@
       }
 
       function drawPlane(ctx) {
+        var art = PH.art;
+        var now = performance.now() / 1000;
         ctx.save();
         ctx.translate(PLANE_X, plane.y);
         ctx.rotate(U.clamp(plane.vy / 900, -0.35, 0.35));
-        ctx.fillStyle = '#c93a3a';
-        ctx.beginPath(); ctx.moveTo(-58, -4); ctx.lineTo(-76, -30); ctx.lineTo(-60, -30); ctx.lineTo(-40, -6); ctx.closePath(); ctx.fill();
-        var g = ctx.createLinearGradient(0, -20, 0, 20);
-        g.addColorStop(0, '#ff7a7a');
-        g.addColorStop(1, '#c93a3a');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.ellipse(0, 0, 62, 18, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#ffd23f';
-        U.roundRect(ctx, -22, -2, 50, 12, 6); ctx.fill();
-        ctx.fillStyle = '#ffd9b3';
-        ctx.beginPath(); ctx.arc(4, -20, 12, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#7a4a2b';
-        ctx.beginPath(); ctx.arc(4, -23, 12, Math.PI, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#4d8dff';
-        ctx.fillRect(-4, -24, 18, 6);
-        ctx.fillStyle = '#555';
-        ctx.fillRect(58, -4, 8, 8);
-        var spin = Math.abs(Math.sin(performance.now() / 30));
-        ctx.fillStyle = 'rgba(40,40,40,.7)';
-        ctx.beginPath(); ctx.ellipse(68, 0, 4, 26 * spin + 3, 0, 0, Math.PI * 2); ctx.fill();
+        /* the pilot's scarf streaming out behind */
+        ctx.beginPath();
+        ctx.moveTo(-4, -14);
+        for (var s = 0; s <= 6; s++) {
+          ctx.lineTo(-10 - s * 11, -18 + Math.sin(now * 12 - s * 0.9) * (2 + s * 1.2));
+        }
+        for (s = 6; s >= 0; s--) {
+          ctx.lineTo(-10 - s * 11, -8 + Math.sin(now * 12 - s * 0.9) * (2 + s * 1.2));
+        }
+        ctx.closePath();
+        art.fillLit(ctx, '#ffd23f', -24, -4, { lineWidth: 2.5 });
+        /* tail fin and back wing */
+        ctx.beginPath(); ctx.moveTo(-54, -6); ctx.lineTo(-74, -36); ctx.quadraticCurveTo(-64, -40, -56, -34); ctx.lineTo(-36, -8); ctx.closePath();
+        art.fillLit(ctx, '#e04848', -40, -6, { lineWidth: 3 });
+        ctx.beginPath(); ctx.ellipse(-58, 4, 16, 5, 0.1, 0, Math.PI * 2);
+        art.fillLit(ctx, '#c93a3a', 0, 9, { lineWidth: 2.5 });
+        /* the body */
+        ctx.beginPath();
+        ctx.moveTo(-64, 0);
+        ctx.quadraticCurveTo(-40, -22, 30, -20);
+        ctx.quadraticCurveTo(62, -18, 64, 0);
+        ctx.quadraticCurveTo(62, 18, 30, 20);
+        ctx.quadraticCurveTo(-40, 20, -64, 0);
+        ctx.closePath();
+        art.fillLit(ctx, '#ff5a5a', -22, 22, { light: 0.35, dark: -0.3, lineWidth: 3.5 });
+        /* a white stripe and a star badge */
+        ctx.save(); ctx.clip();
+        ctx.fillStyle = 'rgba(255,255,255,.9)';
+        ctx.fillRect(-70, 2, 140, 6);
+        ctx.restore();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(-30, -2, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 2; ctx.stroke();
+        U.star(ctx, -30, -2, 6.5, 3); ctx.fillStyle = '#4d8dff'; ctx.fill();
+        /* the pilot: leather cap, goggles up, a big grin */
+        ctx.save(); ctx.translate(8, -31);
+        [-1, 1].forEach(function (s) { U.roundRect(ctx, s * 13 - 4, -2, 8, 13, 4); art.fillLit(ctx, '#8a5a34', -2, 11, { lineWidth: 2.5 }); });
+        ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2);
+        art.fillLit(ctx, '#f6c9a0', -13, 13, { lineWidth: 2.5 });
+        ctx.beginPath(); ctx.arc(0, -1, 14, Math.PI, Math.PI * 2); ctx.closePath();
+        art.fillLit(ctx, '#8a5a34', -15, -1, { lineWidth: 2.5 });
+        [-5, 6].forEach(function (gx) { art.ball(ctx, gx, -7, 4.2, '#7fd3ff', { lineWidth: 2 }); });
+        art.eyes(ctx, 3, 3, 9, 2.4, { dot: true, blink: art.blink(19), look: [1, 0] });
+        art.cheeks(ctx, 3, 6, 14, 2.5);
+        art.mouth(ctx, 5, 8, 6, 'smile', { lineWidth: 1.8 });
+        ctx.restore();
+        /* the cockpit rim and windscreen */
+        ctx.beginPath(); ctx.moveTo(20, -18); ctx.quadraticCurveTo(28, -34, 34, -18); ctx.closePath();
+        ctx.fillStyle = 'rgba(190,235,255,.75)'; ctx.fill(); ctx.strokeStyle = art.INK; ctx.lineWidth = 2.5; ctx.stroke();
+        U.roundRect(ctx, -14, -22, 44, 7, 3.5);
+        art.fillLit(ctx, '#8a5a34', -22, -15, { lineWidth: 2.5 });
+        /* the front wing */
+        ctx.beginPath(); ctx.ellipse(6, 8, 34, 8, 0.08, 0, Math.PI * 2);
+        art.fillLit(ctx, '#ffd23f', 0, 16, { lineWidth: 3 });
+        /* nose, hub and a blurry spinning propeller */
+        art.ball(ctx, 64, 0, 7, '#c9ced9', { lineWidth: 2.5 });
+        var spin = Math.abs(Math.sin(now * 33));
+        ctx.fillStyle = 'rgba(60,60,80,.55)';
+        ctx.beginPath(); ctx.ellipse(70, 0, 4, 28 * spin + 3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.beginPath(); ctx.ellipse(70, 0, 2, 30, 0, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
+
 
       function drawGappedWord(ctx) {
         if (!target || api.pre) { return; }

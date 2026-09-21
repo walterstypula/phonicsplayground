@@ -286,32 +286,53 @@
       }
 
       function drawFrog(ctx) {
+        var art = PH.art;
         var x = frog.x, y = frog.y;
+        var t = performance.now() / 1000;
+        var GREEN = '#2fd39b';
+        var puff = Math.sin(t * 2.2) * 1.5;
         ctx.save();
         ctx.translate(x, y);
-        ctx.fillStyle = '#38d9a9';
-        ctx.beginPath(); ctx.ellipse(-26, 10, 16, 10, 0.4, 0, Math.PI * 2); ctx.ellipse(26, 10, 16, 10, -0.4, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#20c997';
-        ctx.beginPath(); ctx.ellipse(0, -8, 38, 30, 0, 0, Math.PI * 2); ctx.fill();
-        [-18, 18].forEach(function (ex) {
-          ctx.fillStyle = '#20c997';
-          ctx.beginPath(); ctx.arc(ex, -34, 13, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#fff';
-          ctx.beginPath(); ctx.arc(ex, -35, 9, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#1f2340';
-          ctx.beginPath(); ctx.arc(ex + 1, -34, 4.5, 0, Math.PI * 2); ctx.fill();
+        /* back legs folded at the sides, with webbed toes */
+        [-1, 1].forEach(function (s) {
+          ctx.beginPath(); ctx.ellipse(s * 28, 8, 17, 11, s * 0.4, 0, Math.PI * 2);
+          art.fillLit(ctx, U.shade(GREEN, -0.1), -3, 19, { lineWidth: 2.5 });
+          for (var k = -1; k <= 1; k++) { art.ball(ctx, s * (38 + k * 1) + k * 6, 20, 4, GREEN, { lineWidth: 2, shine: false }); }
         });
-        ctx.strokeStyle = '#0b7a5c'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(0, -8, 18, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
-        ctx.fillStyle = '#ff8fa8';
-        ctx.beginPath(); ctx.arc(-24, -4, 5, 0, Math.PI * 2); ctx.arc(24, -4, 5, 0, Math.PI * 2); ctx.fill();
+        /* body and pale belly */
+        ctx.beginPath(); ctx.ellipse(0, -8, 38 + puff, 30 + puff, 0, 0, Math.PI * 2);
+        art.fillLit(ctx, GREEN, -38, 22, { light: 0.3, dark: -0.25 });
+        ctx.beginPath(); ctx.ellipse(0, 4, 22, 14, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#d9f7c4'; ctx.fill();
+        ctx.fillStyle = 'rgba(10,110,80,.3)';
+        [[-26, -18, 4], [28, -14, 3.5], [-20, -2, 2.5]].forEach(function (s) { ctx.beginPath(); ctx.arc(s[0], s[1], s[2], 0, Math.PI * 2); ctx.fill(); });
+        /* front hands */
+        [-1, 1].forEach(function (s) { art.ball(ctx, s * 14, 16, 6, GREEN, { lineWidth: 2.5, shine: false }); });
+        /* eye bumps with big glossy eyes */
+        [-18, 18].forEach(function (ex) {
+          ctx.beginPath(); ctx.arc(ex, -34, 14, 0, Math.PI * 2);
+          art.fillLit(ctx, GREEN, -48, -20);
+          art.eye(ctx, ex, -35, 9.5, { iris: '#ffb627', look: [0, -0.6], blink: art.blink(13), lid: GREEN });
+        });
+        /* a tiny gold crown, a little tilted */
+        ctx.save(); ctx.translate(2, -43); ctx.rotate(0.15);
+        ctx.beginPath();
+        ctx.moveTo(-12, 0); ctx.lineTo(-14, -14); ctx.lineTo(-6, -7); ctx.lineTo(0, -17); ctx.lineTo(6, -7); ctx.lineTo(14, -14); ctx.lineTo(12, 0);
+        ctx.closePath();
+        art.fillLit(ctx, '#ffd23f', -17, 0, { lineWidth: 2.5 });
+        ctx.fillStyle = '#ff5d8f'; ctx.beginPath(); ctx.arc(0, -5, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        art.cheeks(ctx, 0, -4, 50, 6, 'rgba(255,95,150,.75)');
+        art.mouth(ctx, 0, -8, 30, 'smile', { lineWidth: 3 });
         ctx.restore();
         if (frog.tongue > 0) {
-          ctx.strokeStyle = '#ff5d8f'; ctx.lineWidth = 7; ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(x, y + 2);
-          ctx.lineTo(U.lerp(x, fly.x, frog.tongue), U.lerp(y + 2, fly.y, frog.tongue));
-          ctx.stroke();
+          var ex2 = U.lerp(x, fly.x, frog.tongue), ey2 = U.lerp(y + 2, fly.y, frog.tongue);
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = art.INK; ctx.lineWidth = 10;
+          ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(ex2, ey2); ctx.stroke();
+          ctx.strokeStyle = '#ff6f91'; ctx.lineWidth = 6;
+          ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(ex2, ey2); ctx.stroke();
+          art.ball(ctx, ex2, ey2, 6, '#ff6f91', { lineWidth: 2.5 });
         }
       }
 

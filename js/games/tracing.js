@@ -273,7 +273,12 @@
           var p0 = pts[k];
           var pulse = 1 + Math.sin(now * 6) * 0.15;
           ctx.fillStyle = fizz > 0 ? '#ff8fa8' : '#ffd23f';
-          U.star(ctx, p0.x, p0.y, 22 * pulse, 10 * pulse); ctx.fill();
+          U.star(ctx, p0.x, p0.y, 24 * pulse, 13 * pulse); ctx.fill();
+          ctx.strokeStyle = PH.art.INK; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+          /* the star is a little friend: it blinks, and winces if the comet goes off track */
+          PH.art.eyes(ctx, p0.x, p0.y - 2, 10, 2.6, { dot: true, blink: fizz > 0 ? 1 : PH.art.blink(21) });
+          PH.art.cheeks(ctx, p0.x, p0.y + 3, 16, 2.6, 'rgba(255,110,140,.6)');
+          PH.art.mouth(ctx, p0.x, p0.y + 4, 7, fizz > 0 ? 'o' : 'smile', { lineWidth: 1.8 });
           if (!dragging && pts.length > 4) {
             var a = pts[Math.min(k + 4, pts.length - 1)];
             var ang = Math.atan2(a.y - p0.y, a.x - p0.x);

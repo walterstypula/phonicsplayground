@@ -168,25 +168,49 @@
       }
 
       function drawPipes(ctx) {
+        var art = PH.art;
         ctx.lineCap = 'round';
-        /* feed pipe on the left joining the three runs */
-        ctx.strokeStyle = '#7d8ea3'; ctx.lineWidth = 34;
-        ctx.beginPath(); ctx.moveTo(60, 60); ctx.lineTo(60, PIPES[2]); ctx.stroke();
+        /* each pipe is an outlined tube with a highlight, drawn in three passes */
+        function tube(x1, y1, x2, y2) {
+          [[40, art.INK], [34, '#8398b0'], [14, 'rgba(255,255,255,.18)']].forEach(function (p, i) {
+            ctx.strokeStyle = p[1]; ctx.lineWidth = p[0];
+            var off = i === 2 ? -8 : 0;
+            ctx.beginPath();
+            ctx.moveTo(x1 + (x1 === x2 ? off : 0), y1 + (y1 === y2 ? off : 0));
+            ctx.lineTo(x2 + (x1 === x2 ? off : 0), y2 + (y1 === y2 ? off : 0));
+            ctx.stroke();
+          });
+          ctx.strokeStyle = 'rgba(30,40,70,.25)'; ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(x1 + (x1 === x2 ? 10 : 0), y1 + (y1 === y2 ? 10 : 0));
+          ctx.lineTo(x2 + (x1 === x2 ? 10 : 0), y2 + (y1 === y2 ? 10 : 0));
+          ctx.stroke();
+        }
+        tube(60, 60, 60, PIPES[2]);
         PIPES.forEach(function (py) {
-          ctx.strokeStyle = '#7d8ea3'; ctx.lineWidth = 34;
-          ctx.beginPath(); ctx.moveTo(60, py); ctx.lineTo(api.W - 40, py); ctx.stroke();
-          ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 6;
-          ctx.beginPath(); ctx.moveTo(66, py - 9); ctx.lineTo(api.W - 46, py - 9); ctx.stroke();
+          tube(60, py, api.W - 40, py);
+          /* chunky joint collars with bolts */
           for (var x = 150; x < api.W - 40; x += 220) {
-            ctx.fillStyle = '#5f6f83';
-            ctx.fillRect(x - 6, py - 22, 12, 44);
+            U.roundRect(ctx, x - 9, py - 25, 18, 50, 5);
+            art.fillLit(ctx, '#5f6f83', py - 25, py + 25, { lineWidth: 2.5 });
+            ctx.fillStyle = '#c9d3e0';
+            ctx.beginPath(); ctx.arc(x, py - 16, 2.5, 0, Math.PI * 2); ctx.arc(x, py + 16, 2.5, 0, Math.PI * 2); ctx.fill();
           }
+          /* end cap */
+          art.ball(ctx, api.W - 40, py, 20, '#6d8199', { lineWidth: 3 });
         });
-        /* valve wheel */
-        ctx.strokeStyle = '#ff5d5d'; ctx.lineWidth = 6;
-        ctx.beginPath(); ctx.arc(60, 90, 22, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(38, 90); ctx.lineTo(82, 90); ctx.moveTo(60, 68); ctx.lineTo(60, 112); ctx.stroke();
+        /* valve wheel, gently turning */
+        var turn = performance.now() / 3000;
+        ctx.save(); ctx.translate(60, 90); ctx.rotate(turn);
+        [[10, art.INK], [6, '#ff5d5d']].forEach(function (p) {
+          ctx.strokeStyle = p[1]; ctx.lineWidth = p[0];
+          ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(-22, 0); ctx.lineTo(22, 0); ctx.moveTo(0, -22); ctx.lineTo(0, 22); ctx.stroke();
+        });
+        ctx.restore();
+        art.ball(ctx, 60, 90, 7, '#ffd23f', { lineWidth: 2.5 });
       }
+
 
       function drawSpot(ctx, s) {
         if (s.patched) {
@@ -254,13 +278,29 @@
         ctx.save();
         ctx.translate(duckX, duckY);
         ctx.rotate(Math.sin(now * 2) * 0.1);
-        ctx.fillStyle = '#ffd23f';
-        ctx.beginPath(); ctx.ellipse(0, 0, 30, 18, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(18, -20, 14, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#ff9f40';
-        ctx.beginPath(); ctx.moveTo(30, -22); ctx.lineTo(44, -18); ctx.lineTo(30, -14); ctx.fill();
-        ctx.fillStyle = '#1f2340';
-        ctx.beginPath(); ctx.arc(22, -24, 3, 0, Math.PI * 2); ctx.fill();
+        var art = PH.art;
+        /* face the way it is floating */
+        if (Math.cos(now * 0.5) < 0) { ctx.scale(-1, 1); }
+        /* body with a perky tail */
+        ctx.beginPath();
+        ctx.moveTo(-34, -14); ctx.quadraticCurveTo(-30, 2, -24, 8);
+        ctx.quadraticCurveTo(0, 22, 26, 10); ctx.quadraticCurveTo(36, -2, 26, -10);
+        ctx.quadraticCurveTo(0, -4, -20, -6); ctx.closePath();
+        art.fillLit(ctx, '#ffd23f', -16, 20, { lineWidth: 3 });
+        /* a flappy wing */
+        ctx.beginPath(); ctx.moveTo(-14, -2); ctx.quadraticCurveTo(0, -10 + Math.sin(now * 6) * 3, 10, 0); ctx.quadraticCurveTo(0, 10, -14, -2); ctx.closePath();
+        art.fillLit(ctx, '#f5b800', -10, 10, { lineWidth: 2.5 });
+        /* head, a sailor hat and a smiley beak */
+        ctx.beginPath(); ctx.arc(18, -22, 15, 0, Math.PI * 2);
+        art.fillLit(ctx, '#ffd23f', -37, -7, { lineWidth: 3 });
+        ctx.beginPath(); ctx.moveTo(4, -34); ctx.quadraticCurveTo(18, -46, 32, -34); ctx.closePath();
+        art.fillLit(ctx, '#ffffff', -44, -34, { light: 0, dark: -0.12, lineWidth: 2.5 });
+        U.roundRect(ctx, 2, -36, 32, 5, 2.5);
+        art.fillLit(ctx, '#4d8dff', -36, -31, { lineWidth: 2 });
+        ctx.beginPath(); ctx.moveTo(29, -22); ctx.quadraticCurveTo(44, -24, 46, -16); ctx.quadraticCurveTo(38, -10, 29, -14); ctx.closePath();
+        art.fillLit(ctx, '#ff9f40', -24, -10, { lineWidth: 2.5 });
+        art.eye(ctx, 22, -24, 3.2, { dot: true, blink: art.blink(23) });
+        art.cheeks(ctx, 20, -16, 0, 3.5, 'rgba(255,110,140,.6)');
         ctx.restore();
 
         /* flood gauge */

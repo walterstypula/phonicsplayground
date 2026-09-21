@@ -214,70 +214,116 @@
       }
 
       function drawMonster(ctx) {
+        var art = PH.art;
         var cx = api.W / 2, cy = 400;
-        var open = state === 'eat' ? mouth : 0.18 + Math.sin(performance.now() / 700) * 0.05;
+        var now = performance.now() / 1000;
+        var eating = state === 'eat';
+        var open = eating ? mouth : 0.18 + Math.sin(now * 1.4) * 0.05;
+        var PURPLE = '#8a4cf0';
         ctx.save();
         ctx.translate(cx, cy);
-        if (chew === 1 && state === 'eat') {
+        if (chew === 1 && eating) {
           ctx.scale(1 + Math.sin(timer * 22) * 0.04, 1 - Math.sin(timer * 22) * 0.04);
+        } else {
+          var br = Math.sin(now * 2) * 0.012;
+          ctx.scale(1 + br, 1 - br);
         }
         U.shadow(ctx, 0, 108, 130, 20, 0.3);
-        /* feet */
-        ctx.fillStyle = '#5a2fa5';
-        ctx.beginPath(); ctx.ellipse(-52, 96, 30, 16, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(52, 96, 30, 16, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#fff';
-        [-66, -52, -38, 38, 52, 66].forEach(function (tx) { ctx.beginPath(); ctx.arc(tx, 104, 4, 0, Math.PI * 2); ctx.fill(); });
-        /* horns, behind the head */
-        [-60, 60].forEach(function (hx) {
-          var hg = ctx.createLinearGradient(hx, -124, hx, -78);
-          hg.addColorStop(0, '#fff3bf'); hg.addColorStop(1, '#f59f00');
-          ctx.fillStyle = hg;
-          ctx.beginPath();
-          ctx.moveTo(hx - 14, -76); ctx.quadraticCurveTo(hx - 4, -110, hx + (hx < 0 ? -8 : 8), -130);
-          ctx.quadraticCurveTo(hx + 10, -100, hx + 14, -74);
-          ctx.closePath(); ctx.fill();
+        /* feet with little claws */
+        [-52, 52].forEach(function (fx) {
+          ctx.beginPath(); ctx.ellipse(fx, 96, 30, 16, 0, 0, Math.PI * 2);
+          art.fillLit(ctx, '#5a2fa5', 80, 112);
         });
-        /* body with a soft rim light and an outline */
+        [-66, -52, -38, 38, 52, 66].forEach(function (tx) {
+          ctx.beginPath(); ctx.ellipse(tx, 106, 4.5, 5.5, 0, 0, Math.PI * 2);
+          ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = art.INK; ctx.lineWidth = 2; ctx.stroke();
+        });
+        /* curly horns, behind the head */
+        [-1, 1].forEach(function (s) {
+          ctx.save(); ctx.translate(s * 60, 0); ctx.scale(s, 1);
+          ctx.beginPath();
+          ctx.moveTo(-16, -74); ctx.quadraticCurveTo(-4, -112, 14, -132);
+          ctx.quadraticCurveTo(26, -124, 18, -114);
+          ctx.quadraticCurveTo(12, -96, 16, -72);
+          ctx.closePath();
+          art.fillLit(ctx, '#ffd166', -132, -72, { lineWidth: 3.5 });
+          ctx.strokeStyle = 'rgba(180,110,0,.45)'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(-9, -90); ctx.lineTo(9, -94); ctx.moveTo(-6, -104); ctx.lineTo(10, -108); ctx.stroke();
+          ctx.restore();
+        });
+        /* stubby arms that wave while it eats */
+        var wave = eating ? Math.sin(now * 14) * 0.5 : Math.sin(now * 1.5) * 0.12;
+        [-1, 1].forEach(function (s) {
+          ctx.save(); ctx.translate(s * 96, 10); ctx.rotate(-s * (2.2 + wave));
+          U.roundRect(ctx, -14, -8, 28, 60, 14);
+          art.fillLit(ctx, PURPLE, -8, 52);
+          [-8, 0, 8].forEach(function (c) { art.ball(ctx, c, 52, 5, '#ffffff', { lineWidth: 2, shine: false }); });
+          ctx.restore();
+        });
+        /* furry body: a ring of tufts round the edge */
+        ctx.beginPath();
+        for (var k = 0; k <= 36; k++) {
+          var a = k / 36 * Math.PI * 2;
+          var rr = k % 2 ? 1 : 1.06;
+          ctx.lineTo(Math.cos(a) * 104 * rr, Math.sin(a) * 96 * rr);
+        }
+        ctx.closePath();
         var g = ctx.createRadialGradient(-34, -44, 16, 0, 0, 126);
         g.addColorStop(0, '#caa6ff');
-        g.addColorStop(0.7, '#8a4cf0');
+        g.addColorStop(0.7, PURPLE);
         g.addColorStop(1, '#6a32c8');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.ellipse(0, 0, 104, 96, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#4b2196'; ctx.lineWidth = 4; ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,.18)';
-        ctx.beginPath(); ctx.ellipse(0, 46, 60, 40, 0, 0, Math.PI * 2); ctx.fill();   /* belly */
-        ctx.fillStyle = 'rgba(255,255,255,.35)';
-        ctx.beginPath(); ctx.ellipse(-50, -52, 22, 12, -0.6, 0, Math.PI * 2); ctx.fill();   /* shine */
-        ctx.fillStyle = 'rgba(255,130,170,.45)';
-        ctx.beginPath(); ctx.ellipse(-68, 6, 14, 9, 0, 0, Math.PI * 2); ctx.ellipse(68, 6, 14, 9, 0, 0, Math.PI * 2); ctx.fill();
-        /* eyes that follow the chunks you tap */
-        var look = state === 'eat' ? 0 : Math.sin(performance.now() / 1300) * 4;
-        [-38, 38].forEach(function (ex) {
-          ctx.fillStyle = '#fff';
-          ctx.beginPath(); ctx.arc(ex, -36, 24, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = '#4b2196'; ctx.lineWidth = 2.5; ctx.stroke();
-          ctx.fillStyle = '#1f2340';
-          ctx.beginPath(); ctx.arc(ex + 3 + look, -31, 12, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#fff';
-          ctx.beginPath(); ctx.arc(ex + look - 1, -36, 4, 0, Math.PI * 2); ctx.fill();
-        });
-        /* mouth */
-        ctx.fillStyle = '#3a1160';
+        ctx.fillStyle = g; ctx.fill();
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.stroke();
+        /* a hair tuft on top */
         ctx.beginPath();
-        ctx.ellipse(0, 34, 58, 14 + open * 46, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
+        ctx.moveTo(-16, -94); ctx.quadraticCurveTo(-20, -124, -2, -126); ctx.quadraticCurveTo(-8, -110, 4, -104);
+        ctx.quadraticCurveTo(10, -128, 26, -120); ctx.quadraticCurveTo(14, -110, 16, -94); ctx.closePath();
+        art.fillLit(ctx, PURPLE, -126, -94, { lineWidth: 3.5 });
+        ctx.fillStyle = 'rgba(255,255,255,.2)';
+        ctx.beginPath(); ctx.ellipse(0, 50, 62, 40, 0, 0, Math.PI * 2); ctx.fill();   /* belly */
+        ctx.fillStyle = 'rgba(80,30,160,.3)';
+        [[70, -40, 7], [80, -14, 5], [-80, -30, 6], [-74, 40, 5], [66, 50, 4]].forEach(function (sp) {
+          ctx.beginPath(); ctx.arc(sp[0], sp[1], sp[2], 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.beginPath(); ctx.ellipse(-50, -56, 22, 11, -0.6, 0, Math.PI * 2); ctx.fill();   /* shine */
+        art.cheeks(ctx, 0, 8, 140, 14, 'rgba(255,120,170,.55)');
+        /* big eyes that follow the chunks you tap, under bouncy brows */
+        var look = eating ? [0, 0.4] : [Math.sin(now * 0.77) * 0.9, 0.3];
+        var bl = eating ? 0 : art.blink(17);
+        art.eye(ctx, -38, -36, 24, { iris: '#35c28a', irisSize: 0.62, look: look, blink: bl, lid: PURPLE });
+        art.eye(ctx, 38, -36, 24, { iris: '#35c28a', irisSize: 0.62, look: look, blink: bl, lid: PURPLE });
+        var up = eating ? -8 : Math.sin(now * 1.1) * 2;
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-56, -72 + up); ctx.quadraticCurveTo(-38, -82 + up, -20, -72 + up);
+        ctx.moveTo(56, -72 + up); ctx.quadraticCurveTo(38, -82 + up, 20, -72 + up);
+        ctx.stroke();
+        /* mouth with teeth and a wiggly tongue */
+        var mh = 14 + open * 46;
+        ctx.save();
+        ctx.beginPath(); ctx.ellipse(0, 34, 58, mh, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#3a1160'; ctx.fill();
+        ctx.clip();
+        ctx.fillStyle = '#ff7aa2';
+        ctx.beginPath(); ctx.ellipse(Math.sin(now * 5) * 6, 34 + mh * 0.75, 30, 16, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
         for (var i = -2; i <= 2; i++) {
           ctx.beginPath();
-          ctx.moveTo(i * 20 - 8, 34 - (14 + open * 46));
-          ctx.lineTo(i * 20, 34 - (14 + open * 46) + 16);
-          ctx.lineTo(i * 20 + 8, 34 - (14 + open * 46));
+          ctx.moveTo(i * 20 - 8, 34 - mh - 2);
+          ctx.lineTo(i * 20, 34 - mh + 16);
+          ctx.lineTo(i * 20 + 8, 34 - mh - 2);
           ctx.closePath(); ctx.fill();
         }
+        [-1, 1].forEach(function (s) {
+          ctx.beginPath(); ctx.moveTo(s * 30 - 7, 34 + mh + 2); ctx.lineTo(s * 30, 34 + mh - 13); ctx.lineTo(s * 30 + 7, 34 + mh + 2); ctx.fill();
+        });
+        ctx.restore();
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.ellipse(0, 34, 58, mh, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.restore();
       }
+
 
       /* a cosy playroom: striped wallpaper, a window, a toy shelf, a wooden floor and a rug */
       function drawRoom(ctx) {

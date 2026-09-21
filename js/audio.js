@@ -85,22 +85,26 @@
   };
 
   /* Text-to-speech says letter NAMES ("see" for c), so nudge it toward letter SOUNDS.
-     These spellings are approximations - the keyword prompts carry the real weight. */
+     Every spelling must read as ONE pronounceable syllable: runs like "lll" or "sss" and
+     unknown pairs like "ay", "sh", "er" get spelled out letter by letter ("el el el").
+     Each one was checked against the phonemes the Windows voices actually produce. */
   var HINTS = {
-    a: 'ah', b: 'buh', c: 'kuh', d: 'duh', e: 'eh', f: 'fff', g: 'guh', h: 'huh',
-    i: 'ih', j: 'juh', k: 'kuh', l: 'lll', m: 'mmm', n: 'nnn', o: 'aw', p: 'puh',
-    q: 'kwuh', r: 'rrr', s: 'sss', t: 'tuh', u: 'uh', v: 'vvv', w: 'wuh',
-    x: 'kss', y: 'yuh', z: 'zzz',
-    sh: 'shhh', ch: 'chuh', th: 'thhh', ck: 'kuh', ll: 'lll', ng: 'ng',
-    ai: 'ay', ay: 'ay', ee: 'ee', ea: 'ee', oa: 'oh', oo: 'oo', ow: 'ow',
-    ou: 'ow', oi: 'oy', oy: 'oy', aw: 'aw', igh: 'eye', ar: 'ar', or: 'or',
-    ir: 'er', ur: 'er', er: 'er'
+    a: 'ah', b: 'bah', c: 'kuh', d: 'duh', e: 'eh', f: 'fuh', g: 'gguh', h: 'huh',
+    i: 'ihh', j: 'juh', k: 'kuh', l: 'lluh', m: 'muh', n: 'nuh', o: 'aw', p: 'puh',
+    q: 'kwuh', r: 'ruh', s: 'ssuh', t: 'tuh', u: 'uh', v: 'vuh', w: 'wuh',
+    x: 'ukss', y: 'yyuh', z: 'zah',
+    sh: 'shuh', ch: 'chuh', th: 'thuh', ck: 'kuh', ll: 'lluh', ng: 'ing',
+    ai: 'eigh', ay: 'eigh', ee: 'eeh', ea: 'eeh', oa: 'oh', oo: 'ooh', ow: 'ow',
+    ou: 'ow', oi: 'oy', oy: 'oy', aw: 'aw', igh: 'eye', ar: 'are', or: 'or',
+    ir: 'irr', ur: 'irr', er: 'irr',
+    /* word-ending chunks from the spelling level */
+    et: 'eht', an: 'ann', le: 'ul'
   };
   PH.soundHint = function (g) { return HINTS[g] || g; };
 
   /* The spoken sounds of a whole word, in order. A magic e (c-a-k-e) is silent and
      turns the vowel before it long, so "cake" is "kuh - ay - kuh", never "kuh - ah - kuh". */
-  var LONG = { a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'yoo' };
+  var LONG = { a: 'eigh', e: 'eeh', i: 'eye', o: 'oh', u: 'yoo' };
   PH.soundHintsFor = function (word) {
     var sounds = PH.soundGraphemes(word);
     var magic = sounds.length < word.g.length;   /* soundGraphemes dropped a final e */
