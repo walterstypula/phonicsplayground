@@ -177,7 +177,7 @@
         } else if (state === 'between') {
           timer += dt;
           holes.forEach(function (h) { if (h.mole && h.mole.phase !== 'stay') { h.mole.phase = 'down'; } });
-          if (timer > 1.6) { newRound(); }
+          if (PH.speech.settled(timer, 1.6)) { newRound(); }
         }
       }
 

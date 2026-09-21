@@ -188,10 +188,12 @@
           }
         } else if (state === 'reveal') {
           timer += dt;
-          if (timer > 2.4) { newRound(); }
+          if (PH.speech.settled(timer, 2.4)) { newRound(); }
         } else if (state === 'oops') {
           timer += dt;
-          if (timer > 1.8) {
+          /* "Oops! That spell makes ... read it again" is three things to say, and the
+             middle one is the word the child got wrong - the one worth hearing */
+          if (PH.speech.settled(timer, 1.8)) {
             chosen.gone = 0; chosen.shake = 0.5; chosen = null;
             state = 'read';
           }

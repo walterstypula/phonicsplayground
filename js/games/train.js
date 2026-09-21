@@ -252,7 +252,7 @@
           }
         } else if (state === 'picture') {
           timer += dt;
-          if (timer > 3) { newRound(); }
+          if (PH.speech.settled(timer, 3)) { newRound(); }
         }
       }
 

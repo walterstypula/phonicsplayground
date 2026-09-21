@@ -197,7 +197,7 @@
           ghostT += dt;
         } else if (state === 'done') {
           timer += dt;
-          if (timer > 2.2) { newRound(); }
+          if (PH.speech.settled(timer, 2.2)) { newRound(); }
         }
       }
 

@@ -175,7 +175,7 @@
 
         if (state === 'between') {
           timer += dt;
-          if (timer > 1.1) { newRound(); }
+          if (PH.speech.settled(timer, 1.1)) { newRound(); }
         }
       }
 

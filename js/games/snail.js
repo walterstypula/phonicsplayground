@@ -225,7 +225,7 @@
           }
         } else if (state === 'done') {
           timer += dt;
-          if (timer > 2.4) { newRound(); }
+          if (PH.speech.settled(timer, 2.4)) { newRound(); }
         }
       }
 

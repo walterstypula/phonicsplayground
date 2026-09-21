@@ -159,7 +159,8 @@
           if (!target && active().length) { chooseTarget(); }
         } else if (state === 'pause') {
           timer += dt;
-          if (timer > 1.1) {
+          /* "Fixed! ... ship" finishes before the next leak is called out */
+          if (PH.speech.settled(timer, 1.1)) {
             state = 'play'; target = null;
             fillLeaks();
             chooseTarget();

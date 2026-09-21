@@ -150,7 +150,8 @@
           }
         } else if (state === 'result') {
           timer += dt;
-          if (timer > 3.2) {
+          /* the keeper's save is counted out loud, which takes as long as it takes */
+          if (PH.speech.settled(timer, 3.2)) {
             if (shot.right) { newRound(); } else { resetBall(); state = 'aim'; }
           }
         }

@@ -160,7 +160,8 @@
           }
         } else if (state === 'wait') {
           timer += dt;
-          if (timer > 0.5) { hop(COLS + 1, 1); }
+          /* the last stone's word finishes before the leap onto the island */
+          if (PH.speech.settled(timer, 0.5)) { hop(COLS + 1, 1); }
         }
       }
 

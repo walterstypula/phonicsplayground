@@ -8,7 +8,7 @@
     id: 'ladder',
     name: 'Frog Hop',
     icon: '🐸',
-    blurb: 'Change one sound to make a new word - cat, hat, hot, dot - and hop the frog up the lily pads to catch the fly.',
+    blurb: 'Change one sound to make a new word - cat, hat, hot, dot - and hop the frog up the lily pads to catch the flies.',
 
     create: function (api) {
       var ROUNDS = 4;
@@ -19,7 +19,38 @@
       var hits = 0, misses = 0, state = 'think', timer = 0, chosen = null;
       var frog = { x: BASE.x, y: BASE.y, fx: 0, fy: 0, tx: 0, ty: 0, t: 0, tongue: 0, swim: 0 };
       var baseShift = 0;       /* slides the landed pad down into the home spot */
-      var fly = { x: 500, y: 200, t: 0, caught: false };
+      /* The reward at the top of the ladder. There are several, and each has to be
+         aimed at and tapped: one fly caught by tapping anywhere was a button press
+         dressed up as a reward, and a child who has just climbed four words has earned
+         something to actually do. */
+      var FLIES = 3;
+      var flies = [], tongueTo = null, helpedFly = false;
+
+      function makeFlies() {
+        flies = [];
+        for (var n = 0; n < FLIES; n++) {
+          flies.push({
+            cx: 500 + (n - (FLIES - 1) / 2) * 200,
+            ax: U.rand(45, 80), ay: U.rand(22, 38),
+            sx: U.rand(1.7, 2.6), sy: U.rand(2.6, 3.6),
+            ph: U.rand(0, 6.3), t: 0, x: 500, y: 90, caught: false
+          });
+        }
+      }
+
+      /* While the frog is still climbing they hover out of reach at the top, as the thing
+         being climbed towards; once it arrives they come down into tapping range. */
+      function moveFlies(dt, low) {
+        flies.forEach(function (f) {
+          f.t += dt;
+          f.x = f.cx + Math.sin(f.t * f.sx + f.ph) * f.ax;
+          f.y = (low ? 220 : 90) + Math.cos(f.t * f.sy + f.ph) * (low ? f.ay : 12);
+        });
+      }
+
+      function fliesLeft() {
+        return flies.filter(function (f) { return !f.caught; });
+      }
       var ripples = [], reeds = [], i;
       for (i = 0; i < 9; i++) { reeds.push({ x: i < 5 ? U.rand(0, 120) : U.rand(880, 1000), h: U.rand(90, 180), s: U.rand(0, 6) }); }
 
@@ -150,7 +181,7 @@
         }
         chain = buildChain();
         step = 0;
-        fly.caught = false; fly.t = 0;
+        makeFlies(); tongueTo = null; helpedFly = false;
         frog.x = BASE.x; frog.y = BASE.y; frog.tongue = 0;
         api.setProgress(round, ROUNDS);
         setupHop();
@@ -158,7 +189,13 @@
 
       /* ---------------- input ---------------- */
       function down(p) {
-        if (state === 'fly') { catchFly(); return; }   /* any tap will do: the frog knows where the fly is */
+        if (state === 'fly') {
+          /* aim for one. A tap that lands on nothing costs nothing - missing a fly is
+             part of catching flies, and there is no wrong answer to punish here. */
+          var near = fliesLeft().filter(function (f) { return U.dist(p.x, p.y, f.x, f.y) < 52; });
+          if (near.length) { catchFly(near[0]); }
+          return;
+        }
         if (state !== 'think') { return; }
         for (var n = 0; n < pads.length; n++) {
           var pd = pads[n];
@@ -172,14 +209,28 @@
         }
       }
 
-      function catchFly() {
+      function catchFly(f) {
+        if (!f) { return; }
+        tongueTo = f;
         state = 'tongue'; timer = 0;
         api.sfx.chomp();
       }
 
+      /* the one the frog would reach for on its own, if nobody taps */
+      function closestFly() {
+        var left = fliesLeft(), best = null, bd = 1e9;
+        left.forEach(function (f) {
+          var d = U.dist(frog.x, frog.y, f.x, f.y);
+          if (d < bd) { bd = d; best = f; }
+        });
+        return best;
+      }
+
       /* ---------------- update ---------------- */
       function update(dt) {
-        fly.t += dt;
+        /* the flies drift in update, not in draw, so that a tap is tested against where
+           they actually are rather than where they were last painted */
+        moveFlies(dt, state === 'fly' || state === 'tongue');
         reeds.forEach(function (r) { r.s += dt; });
         for (var n = ripples.length - 1; n >= 0; n--) {
           ripples[n].t += dt;
@@ -223,14 +274,17 @@
           frog.x = U.lerp(chosen.x, BASE.x, e);
           frog.y = U.lerp(chosen.y - 10, BASE.y, e);
           pads.forEach(function (pd) { if (pd.fade > 0) { pd.fade = Math.min(1, pd.fade + dt * 3); } });
-          if (s >= 1) {
+          /* the slide takes 0.6s and the word the frog just made takes longer to say, so
+             the frog waits on the pad until it has been said: setting up the next hop
+             announces it, and announcing cancels whatever is still in the air */
+          if (s >= 1 && PH.speech.settled(timer, 0.6)) {
             baseShift = 0;
             step++;
             if (step >= chain.length - 1) {
               pads = [];
               state = 'fly'; timer = 0;
-              api.setPrompt('Catch the fly! Tap it', {});
-              api.say('You made it! Catch the fly!');
+              api.setPrompt('Catch the flies! Tap them', {});
+              api.say('You made it! Catch the flies!');
             } else {
               setupHop();
             }
@@ -241,7 +295,9 @@
           frog.x = U.lerp(frog.fx, frog.tx, w);
           frog.y = U.lerp(frog.fy, frog.ty, w) + Math.sin(w * Math.PI) * 30;
           if (chosen) { chosen.sink = Math.min(1, chosen.sink + dt * 1.5); }
-          if (w >= 1) {
+          /* likewise after a splash: "that makes bat" is the whole lesson of a wrong hop,
+             and re-announcing the target over the top of it teaches nothing */
+          if (w >= 1 && PH.speech.settled(timer, 1.1)) {
             if (chosen) { chosen.sink = 0; }
             chosen = null;
             state = 'think';
@@ -249,17 +305,26 @@
           }
         } else if (state === 'fly') {
           timer += dt;
-          if (timer > 4) { catchFly(); }                   /* help the littlest ones out */
+          /* help the littlest ones out: a good while to let them aim and try, and then
+             briskly, because a child who is not tapping is watching and waiting */
+          if (timer > (helpedFly ? 2.5 : 6)) { helpedFly = true; catchFly(closestFly()); }
         } else if (state === 'tongue') {
           timer += dt;
           frog.tongue = timer < 0.25 ? timer / 0.25 : Math.max(0, 1 - (timer - 0.25) / 0.25);
-          if (timer > 0.25 && !fly.caught) {
-            fly.caught = true;
+          if (timer > 0.25 && tongueTo && !tongueTo.caught) {
+            tongueTo.caught = true;
             api.sfx.great();
-            api.burst(fly.x, fly.y, null, 26, { lift: 120 });
-            api.say('Gulp! Yum!');
+            api.burst(tongueTo.x, tongueTo.y, null, 26, { lift: 120 });
+            /* said once, at the end: three "gulp, yum"s in a row is not three rewards */
+            if (!fliesLeft().length) { api.say('Gulp! Yum!'); }
           }
-          if (timer > 1.6) { newRound(); }
+          if (timer > 0.55) {
+            if (fliesLeft().length) {
+              state = 'fly'; timer = 0; tongueTo = null; frog.tongue = 0;
+            } else if (PH.speech.settled(timer, 1.6)) {
+              newRound();
+            }
+          }
         }
       }
 
@@ -326,7 +391,8 @@
         art.mouth(ctx, 0, -8, 30, 'smile', { lineWidth: 3 });
         ctx.restore();
         if (frog.tongue > 0) {
-          var ex2 = U.lerp(x, fly.x, frog.tongue), ey2 = U.lerp(y + 2, fly.y, frog.tongue);
+          var aim = tongueTo || flies[0] || { x: x, y: y };
+          var ex2 = U.lerp(x, aim.x, frog.tongue), ey2 = U.lerp(y + 2, aim.y, frog.tongue);
           ctx.lineCap = 'round';
           ctx.strokeStyle = art.INK; ctx.lineWidth = 10;
           ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(ex2, ey2); ctx.stroke();
@@ -416,30 +482,31 @@
           ctx.restore();
         });
 
-        /* the fly waiting at the top of the ladder */
+        /* the flies waiting at the top of the ladder */
         if (state === 'fly' || state === 'tongue' || (state !== 'over' && chain.length && step === chain.length - 2)) {
-          if (!fly.caught) {
-            fly.x = 500 + Math.sin(fly.t * 2.3) * 60;
-            fly.y = (state === 'fly' || state === 'tongue') ? 220 + Math.cos(fly.t * 3.1) * 30 : 90 + Math.cos(fly.t * 3.1) * 12;
+          fliesLeft().forEach(function (f) {
             ctx.fillStyle = 'rgba(255,255,255,.7)';
-            ctx.beginPath(); ctx.ellipse(fly.x - 10, fly.y - 10, 12, 7, -0.5 + Math.sin(fly.t * 40) * 0.4, 0, Math.PI * 2);
-            ctx.ellipse(fly.x + 10, fly.y - 10, 12, 7, 0.5 - Math.sin(fly.t * 40) * 0.4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(f.x - 10, f.y - 10, 12, 7, -0.5 + Math.sin(f.t * 40) * 0.4, 0, Math.PI * 2);
+            ctx.ellipse(f.x + 10, f.y - 10, 12, 7, 0.5 - Math.sin(f.t * 40) * 0.4, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#343a40';
-            ctx.beginPath(); ctx.ellipse(fly.x, fly.y, 12, 9, 0, 0, Math.PI * 2); ctx.fill();
-          }
+            ctx.beginPath(); ctx.ellipse(f.x, f.y, 12, 9, 0, 0, Math.PI * 2); ctx.fill();
+          });
         }
 
         drawFrog(ctx);
         if (state === 'think' || state === 'hop' || state === 'swim') { drawWord(ctx, BASE.x, BASE.y + 88); }
 
         var left = Math.max(0, chain.length - 1 - step);
-        U.badge(ctx, 16, 14, state === 'fly' ? 'Tap the fly!' : 'Hops to the fly: ' + left, { icon: '🐸' });
+        var nf = fliesLeft().length;
+        U.badge(ctx, 16, 14,
+          (state === 'fly' || state === 'tongue') ? 'Tap the flies! ' + nf + ' left' : 'Hops to the flies: ' + left,
+          { icon: '🐸' });
       }
 
       newRound();
       return { update: update, draw: draw, down: down,
         /* read-only peek at the state, used by automated play-through checks */
-        debug: function () { return { chain: chain, step: step, pads: pads, state: state, round: round }; } };
+        debug: function () { return { chain: chain, step: step, pads: pads, state: state, round: round, flies: flies }; } };
     }
   };
 })(window.PH = window.PH || {});

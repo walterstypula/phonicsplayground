@@ -68,6 +68,7 @@ ger = g er
 gon = g o n
 hel = h e l
 hos = h o s
+id = i d           # the "-ed" of landed and wanted, which says /id/
 ig = i g
 ike = igh k
 in = i n

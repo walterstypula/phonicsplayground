@@ -126,6 +126,25 @@
   /* longest spelling first, so that "igh" is matched before "i" and "sh" before "s" */
   var GRAPHEMES = Object.keys(SOUND_OF).sort(function (a, b) { return b.length - a.length; });
 
+  /* The "-ed" on the end of a word is one chunk, and it says three different things:
+     /id/ after t or d (landed, wanted), /t/ after a voiceless sound (packed, jumped),
+     and /d/ after anything else (played, called). Sounded letter by letter it comes out
+     as an extra vowel and a doubled d - "land-e-d" - which is not a word.
+
+     It only counts as a suffix when there is a word in front of it. "seed" and "bed" end
+     in the same two letters and are nothing of the kind, so a stem must be long enough
+     to stand on its own and must not end in the e of a vowel team.                     */
+  var ED_VOICELESS = { p: 1, k: 1, f: 1, s: 1, x: 1, h: 1 };   /* h covers -shed, -ched */
+
+  function edSuffix(s) {
+    if (s.length < 5 || s.slice(-2) !== 'ed') { return null; }
+    var before = s.charAt(s.length - 3);
+    if ('aeiou'.indexOf(before) >= 0) { return null; }
+    if (before === 't' || before === 'd') { return { text: 'ed', id: 'id', ids: ['i', 'd'] }; }
+    if (ED_VOICELESS[before]) { return { text: 'ed', id: 't' }; }
+    return { text: 'ed', id: 'd' };
+  }
+
   /* The letters of a word, grouped into the chunks that each make one sound, and the
      sound each chunk makes: "cake" comes back as c, a (saying /ay/), k, and a silent e.
      A chunk with no sound is either that silent e or a letter the rules cannot place. */
@@ -138,6 +157,16 @@
          /ul/ is a syllable, not a 44th sound, so it has no clip of its own to list */
       tail = { text: 'le', id: 'ul', ids: ['u', 'l'] };
       s = s.slice(0, -2);
+    } else if (edSuffix(s)) {
+      tail = edSuffix(s);
+      s = s.slice(0, -2);
+    } else if (s.length > 1 && s.slice(-1) === 'y' && 'aeiou'.indexOf(s.charAt(s.length - 2)) < 0) {
+      /* A y on the end is a vowel, not the y of "yes". With no other vowel in the word it
+         is doing the vowel's whole job and says its name - by, my, fly, try - and with one
+         already there it settles for /ee/: happy, sunny, body. (A y after a vowel is part
+         of a team, "day" and "boy", and is matched as one before ever reaching here.) */
+      tail = { text: 'y', id: /[aeiou]/.test(s.slice(0, -1)) ? 'ee' : 'igh' };
+      s = s.slice(0, -1);
     }
     var found = [], i = 0, j, hit;
     while (i < s.length) {
@@ -240,6 +269,8 @@
     hospital: 'h o s p i t a=u l', elephant: 'e l e=u ph a n t',
     /* the ar of "carrot" is not the ar of "car": the r belongs to the second half */
     carrot: 'c a rr o t',
+    /* an e on the end that lengthens nothing, and an o that is long without one */
+    gone: 'g o n e=-', gold: 'g o=oh l d', along: 'a=u l o ng',
     /* a lone i saying its name, and the y of butterfly doing the same */
     tiger: 't i=igh g er', spider: 's p i=igh d er', kindness: 'k i=igh n d n e ss',
     butterfly: 'b u tt er f l y=igh',
@@ -417,6 +448,20 @@
         speech.say(h, { rate: 0.55, queue: true });
       });
       speech.say(word.w, { rate: 0.7, queue: true });
+    },
+
+    /* Whether anything is still being said or waiting to be. A game that moves on while
+       a word is still in the air cuts it off, and the word at the end of a round - the
+       one the whole round was about - is the one that gets cut. */
+    busy: function () { return busy || queue.length > 0; },
+
+    /* Whether a round that has run for `elapsed` seconds may now give way to the next.
+       The wait is at least `min`, and then as much longer as the voice needs to finish
+       what it was saying - up to a few seconds, so that a browser which never reports a
+       sound as finished cannot leave a child sitting in front of a stopped game. */
+    settled: function (elapsed, min) {
+      if (elapsed < min) { return false; }
+      return !speech.busy() || elapsed > min + 4;
     },
 
     setEnabled: function (on) { enabled = on; if (!on) { speech.cancel(); } }

@@ -116,7 +116,9 @@
           }
         } else if (state === 'result') {
           timer += dt;
-          if (timer > 1.5) {
+          /* "Treasure! ... fox" - or, on a wrong chest, what that one actually says -
+             has to finish before the next round talks over it */
+          if (PH.speech.settled(timer, 1.5)) {
             if (active.right) { newRound(); return; }
             state = 'close'; timer = 0;
           }

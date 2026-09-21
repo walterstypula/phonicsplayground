@@ -150,16 +150,18 @@
         if (chef.stomp > 0) { chef.stomp -= dt; }
         parts.forEach(function (pt) { if (pt.wobble > 0) { pt.wobble -= dt; } });
 
-        /* chef follows the plan */
+        /* chef follows the plan. He is brisk on purpose: the thinking in this game is
+           choosing the next chunk, and the walk between one choice and the next is dead
+           time that a child spends waiting rather than reading. */
         if (chef.plan.length && state === 'play') {
           var step = chef.plan[0];
           if (step.type === 'walk') {
-            var dx = step.x - chef.x, sp = 280 * dt;
+            var dx = step.x - chef.x, sp = 430 * dt;
             if (Math.abs(dx) <= sp) { chef.x = step.x; chef.plan.shift(); }
             else { chef.x += Math.sign(dx) * sp; chef.face = Math.sign(dx); }
             chef.walkT += dt;
           } else {
-            var ty = FLOORS[step.floor], dy = ty - chef.y, cs = 220 * dt;
+            var ty = FLOORS[step.floor], dy = ty - chef.y, cs = 340 * dt;
             if (Math.abs(dy) <= cs) { chef.y = ty; chef.floor = step.floor; chef.plan.shift(); }
             else { chef.y += Math.sign(dy) * cs; }
             chef.walkT += dt;
@@ -212,7 +214,7 @@
 
         if (state === 'done') {
           timer += dt;
-          if (timer > 2.2) { newRound(); }
+          if (PH.speech.settled(timer, 2.2)) { newRound(); }
         }
       }
 

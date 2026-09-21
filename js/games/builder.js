@@ -201,7 +201,7 @@
             api.sfx.chomp();
             api.burst(api.W / 2, 420, ['#ffd23f', '#ff9f40', '#3ddc84'], 26, { lift: 140 });
           }
-          if (timer > 1.9) { newRound(); }
+          if (PH.speech.settled(timer, 1.9)) { newRound(); }
         } else if (state === 'wrong') {
           timer += dt;
           if (timer > 0.75) {

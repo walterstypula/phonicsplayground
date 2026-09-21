@@ -76,6 +76,14 @@
         api.sayWord(keyword, { queue: true });
       }
 
+      /* At the letters level a bubble holds a single letter, where the full "b... buh...
+         like bear" routine would still be talking when the next bubble is popped, so
+         there it is just the sound. */
+      function sayBubble(word) {
+        if (api.mode === 'letters') { api.say(PH.soundHint(word.w), { rate: 0.6 }); }
+        else { api.sayWord(word.w); }
+      }
+
       function spawn(startY) {
         var wantMatch = Math.random() < 0.45;
         var pool = wantMatch ? matchPool() : otherPool();
@@ -108,10 +116,14 @@
               api.addStar(1);
               api.sfx.pop();
               api.burst(b.x, b.y, ['#8ef0ff', '#ffffff', '#4d8dff'], 14, { gravity: 200 });
+              /* say what was popped. The bubble is chosen for a sound hidden inside it,
+                 and hearing the whole word back is what ties the sound to a real word
+                 rather than to a shape that happened to be worth a star. */
+              sayBubble(b.word);
               if (got >= NEED) {
                 state = 'between'; timer = 0;
                 api.sfx.great();
-                api.say('Awesome!');
+                api.say('Awesome!', { queue: true });
               }
             } else {
               misses++; b.grey = 1.2; b.dead = true; b.vy = -30;
@@ -142,7 +154,7 @@
         });
         if (state === 'between') {
           timer += dt;
-          if (timer > 1.2) { newRound(); }
+          if (PH.speech.settled(timer, 1.2)) { newRound(); }
         }
       }
 
