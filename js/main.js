@@ -3,7 +3,7 @@
   'use strict';
 
   var ORDER = ['wordhunt', 'claw', 'bubbles', 'builder', 'rhyme', 'fishing',
-    'octopus', 'lava', 'pilot', 'munchers', 'soccer', 'giant', 'burger', 'pipes', 'space',
+    'octopus', 'lava', 'pilot', 'munchers', 'soccer', 'giant', 'sandwich', 'pipes', 'space',
     'wizard', 'tracing', 'snail', 'story', 'ladder', 'moles', 'train'];
   var $ = function (id) { return document.getElementById(id); };
 

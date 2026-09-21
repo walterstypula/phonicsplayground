@@ -1,13 +1,13 @@
-/* Burger Time - the chef climbs to each ingredient and stomps it down to build the ordered word */
+/* Stack the Snack - the chef climbs to each filling and stomps it down to build the ordered word */
 (function (PH) {
   'use strict';
   var U = PH.util;
 
-  PH.games.burger = {
-    id: 'burger',
-    name: 'Burger Time',
-    icon: '🍔',
-    blurb: 'A customer orders a word. Send the chef up the ladders to stomp the sound chunks onto the burger in order.',
+  PH.games.sandwich = {
+    id: 'sandwich',
+    name: 'Stack the Snack',
+    icon: '🥪',
+    blurb: 'A customer orders a word. Send the chef up the ladders to stomp the sound chunks onto the sandwich in order.',
 
     create: function (api) {
       var ROUNDS = 5;
@@ -16,7 +16,7 @@
       var SLOT_X = [285, 715];
       var COUNTER_Y = 612, PLATE_X = 500;
       var FILLINGS = [
-        { fill: '#8b4a2b', edge: '#5e2f18', text: '#ffffff' },   /* patty */
+        { fill: '#8b4a2b', edge: '#5e2f18', text: '#ffffff' },   /* ham */
         { fill: '#ffd23f', edge: '#e0a800', text: '#3b2412' },   /* cheese */
         { fill: '#6ccf5a', edge: '#3f9c33', text: '#123a12' },   /* lettuce */
         { fill: '#ff5d5d', edge: '#c83232', text: '#ffffff' },   /* tomato */
@@ -33,9 +33,9 @@
         api.words.forEach(function (w) { w.g.forEach(function (g) { set[g] = 1; }); });
         return Object.keys(set);
       }
-      /* age 3 builds a picture burger, age 4 spells a word with letters */
+      /* age 3 builds a picture sandwich, age 4 spells a word with letters */
       var FOOD = { cheese: '🧀', lettuce: '🥬', tomato: '🍅', bacon: '🥓',
-        pickle: '🥒', onion: '🧅', egg: '🥚', mushroom: '🍄' };
+        pickle: '🥒', onion: '🧅', egg: '🥚', ham: '🍖' };
       var pics = api.mode === 'pictures';
       var CHUNKS = pics ? Object.keys(FOOD) : allChunks();
       function shown(g) { return pics ? FOOD[g] + ' ' + g : g; }
@@ -57,7 +57,7 @@
         });
         target = U.pick(pool.length > 5 ? pool : api.words);
         if (pics) {
-          target = { w: 'burger', g: U.shuffle(CHUNKS).slice(0, round <= 2 ? 2 : 3) };
+          target = { w: 'sandwich', g: U.shuffle(CHUNKS).slice(0, round <= 2 ? 2 : 3) };
         } else if (api.mode === 'letters') {
           target = U.pick(spellable());
         }
@@ -81,18 +81,18 @@
         busy = null;
         state = 'play';
         api.setProgress(round, ROUNDS);
-        if (pics) { api.setPrompt('Make my burger!', { repeat: sayPrompt }); }
+        if (pics) { api.setPrompt('Make my sandwich!', { repeat: sayPrompt }); }
         else { api.setPrompt('Order up:', { word: target.w, repeat: sayPrompt }); }
         sayPrompt();
       }
 
       function sayPrompt() {
         if (pics) {
-          api.say('A burger with');
+          api.say('A sandwich with');
           target.g.forEach(function (g, i) { api.say((i ? 'then ' : '') + g, { queue: true, rate: 0.8 }); });
           return;
         }
-        api.say('One burger. Please make');
+        api.say('One sandwich. Please make');
         api.sayWord(target.w, { queue: true });
         if (api.mode === 'letters') {
           api.say('with the letters', { queue: true });
@@ -219,19 +219,38 @@
       }
 
       /* ---- drawing ---- */
-      function bun(ctx, x, y, top) {
-        ctx.fillStyle = '#e8a33c';
-        ctx.beginPath();
+      /* Two slices of bread: the bottom one lying flat on the plate, the top one with the
+         domed crust a slice actually has. Each is a tan crust with a paler crumb inside,
+         which is what tells it apart from the fillings at a glance. */
+      function bread(ctx, x, y, top) {
+        ctx.save();
+        ctx.strokeStyle = '#b3762f'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+        ctx.fillStyle = '#edcb92';
         if (top) {
-          ctx.ellipse(x, y, 84, 36, 0, Math.PI, Math.PI * 2);
+          ctx.beginPath();
+          ctx.moveTo(x - 84, y);
+          ctx.lineTo(x - 84, y - 12);
+          ctx.quadraticCurveTo(x - 84, y - 42, x - 42, y - 45);
+          ctx.quadraticCurveTo(x, y - 58, x + 42, y - 45);
+          ctx.quadraticCurveTo(x + 84, y - 42, x + 84, y - 12);
+          ctx.lineTo(x + 84, y);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#fbedcd';
+          ctx.beginPath();
+          ctx.moveTo(x - 73, y - 2);
+          ctx.lineTo(x - 73, y - 12);
+          ctx.quadraticCurveTo(x - 73, y - 34, x - 40, y - 37);
+          ctx.quadraticCurveTo(x, y - 48, x + 40, y - 37);
+          ctx.quadraticCurveTo(x + 73, y - 34, x + 73, y - 12);
+          ctx.lineTo(x + 73, y - 2);
           ctx.closePath(); ctx.fill();
-          ctx.fillStyle = '#fff3c4';
-          for (var i = -3; i <= 3; i++) {
-            ctx.beginPath(); ctx.ellipse(x + i * 18, y - 18 - Math.abs(i) * -2 - (3 - Math.abs(i)) * 4, 4, 2.5, 0.4, 0, Math.PI * 2); ctx.fill();
-          }
         } else {
-          U.roundRect(ctx, x - 82, y - 8, 164, 26, 12); ctx.fill();
+          U.roundRect(ctx, x - 84, y - 8, 168, 26, 7); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#fbedcd';
+          U.roundRect(ctx, x - 73, y - 3, 146, 16, 5); ctx.fill();
         }
+        ctx.restore();
       }
 
       function ingredient(ctx, pt) {
@@ -334,8 +353,9 @@
         }
       }
 
-      /* a retro diner: teal panelled wall, neon sign, chrome ladders, red girders, checked counter */
-      function drawDiner(ctx) {
+      /* a retro lunch counter: teal panelled wall, neon sign, chrome ladders, red girders,
+         checked floor */
+      function drawShop(ctx) {
         var now = performance.now() / 1000;
         var wall = ctx.createLinearGradient(0, 0, 0, api.H);
         wall.addColorStop(0, '#0c4a57');
@@ -347,18 +367,21 @@
         /* neon sign, flickering gently */
         var flick = Math.sin(now * 13) > -0.95 ? 1 : 0.4;
         ctx.save();
-        ctx.font = U.font(34);
+        ctx.font = U.font(26);
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.shadowColor = '#ff6b9e'; ctx.shadowBlur = 22 * flick;
         ctx.fillStyle = flick > 0.5 ? '#ffd6e6' : '#b9738c';
-        ctx.fillText('BURGERS', 860, 54);
+        ctx.fillText('SANDWICHES', 848, 54);
         ctx.shadowColor = '#74f0ff';
         ctx.strokeStyle = flick > 0.5 ? '#9ff5ff' : '#5a8d94'; ctx.lineWidth = 4;
-        U.roundRect(ctx, 760, 26, 200, 56, 18); ctx.stroke();
+        U.roundRect(ctx, 735, 26, 226, 56, 18); ctx.stroke();
         ctx.restore();
+        /* the window display. An opaque fill first: the wall stripes above leave the fill
+           at four per cent alpha, which these were inheriting and all but vanishing into. */
+        ctx.fillStyle = '#ffffff';
         ctx.font = '38px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('🍔', 120, 56);
+        ctx.fillText('🥪', 120, 56);
         ctx.fillText('🥤', 170, 60);
 
         /* pendant lamps with soft cones of light */
@@ -412,15 +435,15 @@
       }
 
       function draw(ctx) {
-        drawDiner(ctx);
-        /* plate + bottom bun */
+        drawShop(ctx);
+        /* plate + the bottom slice */
         U.shadow(ctx, PLATE_X, COUNTER_Y + 8, 130, 12, 0.35);
         var pg = ctx.createRadialGradient(PLATE_X, COUNTER_Y, 10, PLATE_X, COUNTER_Y + 4, 110);
         pg.addColorStop(0, '#ffffff'); pg.addColorStop(1, '#dee2e6');
         ctx.fillStyle = pg;
         ctx.beginPath(); ctx.ellipse(PLATE_X, COUNTER_Y + 4, 110, 14, 0, 0, Math.PI * 2); ctx.fill();
-        bun(ctx, PLATE_X, COUNTER_Y - 18, false);
-        if (state === 'done') { bun(ctx, PLATE_X, COUNTER_Y - 36 - built.length * 26, true); }
+        bread(ctx, PLATE_X, COUNTER_Y - 18, false);
+        if (state === 'done') { bread(ctx, PLATE_X, COUNTER_Y - 36 - built.length * 26, true); }
 
         parts.forEach(function (pt) { if (pt.state !== 'stacked') { ingredient(ctx, pt); } });
         built.forEach(function (pt) { ingredient(ctx, pt); });

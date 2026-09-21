@@ -27,7 +27,7 @@ level can be nudged up or down with the **change level** button.
 | Word Munchers | Walks a grid munching every word that fits a rule, dodging the Troggle | Sorting by sound, first sound or rhyme |
 | Penalty Kick | Counts the sounds in a word, kicks at that number | Segmenting sounds; claps (syllables) at level 5 |
 | Don't Wake the Giant | Slides a pillow to catch falling words that fit a rule before they crash | Sorting by sound, first sound or rhyme, under time pressure |
-| Burger Time | Sends a chef up ladders to stomp sound chunks onto the burger in order | Building a word sound by sound |
+| Stack the Snack | Sends a chef up ladders to stomp sound chunks onto the sandwich in order | Building a word sound by sound |
 | Leaky Pipes | Hears a word only as separate sounds, then fixes the leak showing it | Blending sounds into a word |
 | Space Jumper | Runs and jumps through a space platformer, head-bumping the block with the spoken word to open each star gate | Word recognition, in a Mario-style level |
 | Wizard's Spellbook | Reads a spell card with no voice help, then taps the picture it means; older children read short phrases | Independent reading for meaning |
@@ -65,7 +65,7 @@ Level 1, and so on up to 9. **change level** steps through all seven.
   keyword ("b... buh... like bear"). First sounds, letter matching and first spelling.
 
 Each game keeps its look but changes its task at these two levels. For example, Feed
-the Monster asks for one picture or letter instead of a spelled word, and Burger Time
+the Monster asks for one picture or letter instead of a spelled word, and Stack the Snack
 takes a picture order at age 3. Penalty Kick counts claps instead of sounds.
 Choices are fewer and everything moves more slowly.
 
