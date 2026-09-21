@@ -1,4 +1,13 @@
-/* Stack the Snack - the chef climbs to each filling and stomps it down to build the ordered word */
+/* Stack the Snack - fillings ride past on a belt; take them in the order the word needs.
+
+   The word is cut into its chunks and those chunks go by on a conveyor. Order is the
+   whole point: "bas" then "ket" makes basket, and "ket" then "bas" makes nothing. So the
+   ticket shows what has been built so far and a blank for what comes next, and a chunk
+   taken out of turn is handed back rather than quietly accepted.
+
+   The belt keeps moving and loops for ever, which means nothing is ever missed - a chunk
+   that goes off the left comes round again - and no choice is ever made under time
+   pressure. A child who wants to watch a whole lap before deciding is welcome to.      */
 (function (PH) {
   'use strict';
   var U = PH.util;
@@ -7,14 +16,17 @@
     id: 'sandwich',
     name: 'Stack the Snack',
     icon: '🥪',
-    blurb: 'A customer orders a word. Send the chef up the ladders to stomp the sound chunks onto the sandwich in order.',
+    blurb: 'A customer orders a word. Take the sound chunks off the belt in the right order and build the sandwich.',
 
     create: function (api) {
       var ROUNDS = 5;
-      var FLOORS = [196, 336, 476];            /* y of each walkway (top of the girder) */
-      var LADDERS = [70, 500, 930];
-      var SLOT_X = [285, 715];
-      var COUNTER_Y = 612, PLATE_X = 500;
+      var BELT_TOP = 292, BELT_H = 62;         /* the belt surface the fillings ride on */
+      var ITEM_Y = BELT_TOP + 8;               /* fillings sit just on top of it */
+      var COUNTER_Y = 578, PLATE_X = 500;
+      var SPACING = 190, SLOTS = 6;
+      var LOOP = SPACING * SLOTS;
+      var SPEED = api.pre ? 34 : 62;           /* px per second, gentle either way */
+
       var FILLINGS = [
         { fill: '#8b4a2b', edge: '#5e2f18', text: '#ffffff' },   /* ham */
         { fill: '#ffd23f', edge: '#e0a800', text: '#3b2412' },   /* cheese */
@@ -24,9 +36,9 @@
       ];
 
       var round = 0, target = null, parts = [], built = [], recent = [];
-      var hits = 0, misses = 0, state = 'play', timer = 0;
-      var chef = { floor: 2, x: 500, y: FLOORS[2], plan: [], walkT: 0, face: 1, stomp: 0 };
-      var busy = null;   /* the ingredient currently falling */
+      var hits = 0, misses = 0, state = 'play', timer = 0, scroll = 0, idle = 0;
+      var chef = { reach: 0, cheer: 0 };
+      var busy = null;   /* the filling currently on its way to the plate */
 
       function allChunks() {
         var set = {};
@@ -70,15 +82,14 @@
         var slots = U.shuffle([0, 1, 2, 3, 4, 5]);
         var colors = U.shuffle(FILLINGS.concat(FILLINGS));
         parts = bag.map(function (g, i) {
-          var s = slots[i];
-          var floor = s % 3, x = SLOT_X[Math.floor(s / 3)];
           return {
-            g: g, floor: floor, x: x, y: FLOORS[floor], homeY: FLOORS[floor],
-            look: colors[i % colors.length], state: 'rest', vy: 0, wobble: 0, tx: 0, ty: 0, t: 0
+            g: g, slot: slots[i], x: 0, y: ITEM_Y,
+            look: colors[i % colors.length], state: 'belt', wobble: 0, t: 0, fx: 0, fy: 0
           };
         });
         built = [];
         busy = null;
+        idle = 0;
         state = 'play';
         api.setProgress(round, ROUNDS);
         if (pics) { api.setPrompt('Make my sandwich!', { repeat: sayPrompt }); }
@@ -100,44 +111,38 @@
         }
       }
 
-      /* ---- chef movement: walk to a ladder, climb, walk to the ingredient ---- */
-      function planTo(floor, x) {
-        var plan = [];
-        if (floor !== chef.floor) {
-          var best = LADDERS[0];
-          LADDERS.forEach(function (l) {
-            if (Math.abs(chef.x - l) + Math.abs(x - l) < Math.abs(chef.x - best) + Math.abs(x - best)) { best = l; }
-          });
-          plan.push({ type: 'walk', x: best });
-          plan.push({ type: 'climb', floor: floor });
-        }
-        plan.push({ type: 'walk', x: x });
-        return plan;
+      /* where a filling sits along the belt right now. The belt is a loop, so a chunk
+         that leaves on the left is back again on the right a few seconds later. */
+      function beltX(pt) {
+        var x = (pt.slot * SPACING - scroll) % LOOP;
+        if (x < 0) { x += LOOP; }
+        return x - 90;
       }
 
       function down(p) {
-        if (state !== 'play') { return; }
+        if (state !== 'play' || busy) { return; }
+        idle = 0;
         for (var i = 0; i < parts.length; i++) {
           var pt = parts[i];
-          if (pt.state !== 'rest') { continue; }
-          if (Math.abs(p.x - pt.x) <= 90 && p.y >= pt.y - 60 && p.y <= pt.y + 20) {
-            chef.plan = planTo(pt.floor, pt.x);
-            chef.goal = pt;
-            api.sfx.click();
+          if (pt.state !== 'belt') { continue; }
+          if (Math.abs(p.x - pt.x) <= 78 && p.y >= pt.y - 46 && p.y <= pt.y + 34) {
+            pick(pt);
             return;
           }
         }
       }
 
-      function stomp(pt) {
-        chef.stomp = 0.3;
+      function pick(pt) {
+        chef.reach = 0.35;
         var need = target.g[built.length];
         if (pt.g === need) {
           hits++;
           api.sfx.hop();
-          pt.state = 'drop'; pt.vy = 0; busy = pt;
+          pt.state = 'fly'; pt.t = 0; pt.fx = pt.x; pt.fy = pt.y;
+          busy = pt;
           api.say(PH.soundHint(pt.g), { rate: 0.6 });
         } else {
+          /* handed back, with the word again: the mistake is the order, not the chunk */
           misses++;
           pt.wobble = 0.5;
           api.sfx.bad();
@@ -147,67 +152,40 @@
       }
 
       function update(dt) {
-        if (chef.stomp > 0) { chef.stomp -= dt; }
+        if (chef.reach > 0) { chef.reach -= dt; }
+        if (chef.cheer > 0) { chef.cheer -= dt; }
         parts.forEach(function (pt) { if (pt.wobble > 0) { pt.wobble -= dt; } });
 
-        /* chef follows the plan. He is brisk on purpose: the thinking in this game is
-           choosing the next chunk, and the walk between one choice and the next is dead
-           time that a child spends waiting rather than reading. */
-        if (chef.plan.length && state === 'play') {
-          var step = chef.plan[0];
-          if (step.type === 'walk') {
-            var dx = step.x - chef.x, sp = 430 * dt;
-            if (Math.abs(dx) <= sp) { chef.x = step.x; chef.plan.shift(); }
-            else { chef.x += Math.sign(dx) * sp; chef.face = Math.sign(dx); }
-            chef.walkT += dt;
-          } else {
-            var ty = FLOORS[step.floor], dy = ty - chef.y, cs = 340 * dt;
-            if (Math.abs(dy) <= cs) { chef.y = ty; chef.floor = step.floor; chef.plan.shift(); }
-            else { chef.y += Math.sign(dy) * cs; }
-            chef.walkT += dt;
-          }
+        /* the belt runs while the round is live, and holds still once it is built */
+        if (state === 'play') {
+          scroll += SPEED * dt;
+          idle += dt;
         }
-        /* arrived: stomp, but wait politely if the last ingredient is still falling */
-        if (!chef.plan.length && chef.goal && !busy && state === 'play') {
-          var g = chef.goal; chef.goal = null;
-          if (g.state === 'rest') { stomp(g); }
-        }
+        parts.forEach(function (pt) {
+          if (pt.state === 'belt') { pt.x = beltX(pt); pt.y = ITEM_Y; }
+        });
 
-        /* the falling ingredient: floor by floor, then onto the plate */
-        if (busy) {
+        /* the chosen filling arcs from the belt down onto the sandwich */
+        if (busy && busy.state === 'fly') {
           var pt = busy;
-          if (pt.state === 'drop') {
-            pt.vy += 1400 * dt;
-            pt.y += pt.vy * dt;
-            var nextFloor = pt.floor + 1;
-            var landY = nextFloor < FLOORS.length ? FLOORS[nextFloor] : COUNTER_Y - 6;
-            if (pt.y >= landY) {
-              pt.y = landY; pt.floor = nextFloor;
-              api.sfx.clank();
-              if (nextFloor >= FLOORS.length) {
-                pt.state = 'slide'; pt.t = 0; pt.fx = pt.x; pt.fy = pt.y;
-              } else {
-                pt.vy = -160;   /* a little bounce on each walkway, like the arcade */
-              }
-            }
-          } else if (pt.state === 'slide') {
-            pt.t += dt / 0.45;
-            var k = U.clamp(pt.t, 0, 1);
-            var stackY = COUNTER_Y - 30 - built.length * 26;
-            pt.x = U.lerp(pt.fx, PLATE_X, k);
-            pt.y = U.lerp(pt.fy, stackY, k) - Math.sin(k * Math.PI) * 60;
-            if (k >= 1) {
-              pt.state = 'stacked'; pt.y = stackY;
-              built.push(pt);
-              busy = null;
-              api.burst(PLATE_X, stackY, ['#ffd23f', '#ffffff'], 10, { gravity: 300 });
-              if (built.length === target.g.length) {
-                state = 'done'; timer = 0;
-                api.addStar(1);
-                api.sfx.great();
-                api.say('Order up!');
-                api.sayWord(target.w, { queue: true });
-              }
+          pt.t += dt / 0.5;
+          var k = U.clamp(pt.t, 0, 1);
+          var stackY = COUNTER_Y - 30 - built.length * 26;
+          pt.x = U.lerp(pt.fx, PLATE_X, k);
+          pt.y = U.lerp(pt.fy, stackY, k) - Math.sin(k * Math.PI) * 70;
+          if (k >= 1) {
+            pt.state = 'stacked'; pt.y = stackY; pt.x = PLATE_X;
+            built.push(pt);
+            busy = null;
+            api.sfx.clank();
+            api.burst(PLATE_X, stackY, ['#ffd23f', '#ffffff'], 10, { gravity: 300 });
+            if (built.length === target.g.length) {
+              state = 'done'; timer = 0;
+              chef.cheer = 1.4;
+              api.addStar(1);
+              api.sfx.great();
+              api.say('Order up!');
+              api.sayWord(target.w, { queue: true });
             }
           }
         }
@@ -219,6 +197,7 @@
       }
 
       /* ---- drawing ---- */
+
       /* Two slices of bread: the bottom one lying flat on the plate, the top one with the
          domed crust a slice actually has. Each is a tan crust with a paler crumb inside,
          which is what tells it apart from the fillings at a glance. */
@@ -257,6 +236,7 @@
         var dx = pt.wobble > 0 ? Math.sin(pt.wobble * 50) * 6 : 0;
         var x = pt.x + dx, y = pt.y;
         var w = 150, h = 30;
+        if (x < -110 || x > api.W + 110) { return; }
         ctx.save();
         ctx.fillStyle = pt.look.fill;
         ctx.strokeStyle = pt.look.edge; ctx.lineWidth = 3;
@@ -275,30 +255,29 @@
         ctx.font = U.font(api.mode === 'letters' ? 28 : (label.length > 5 ? 19 : 24));
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(label, x, y - h / 2 + 1);
-        ctx.fillStyle = "rgba(255,255,255,.35)";
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
         U.roundRect(ctx, x - w / 2 + 8, y - h + 3, w - 16, 7, 4); ctx.fill();   /* a little shine */
         ctx.restore();
       }
 
+      /* The chef stays behind the counter and reaches up as each filling is taken: the
+         thinking in this game is choosing the next chunk, and a character walking about
+         between choices is only time spent watching rather than reading. */
       function drawChef(ctx) {
-        var x = chef.x, y = chef.y;
-        var climbing = chef.plan.length && chef.plan[0].type === 'climb';
-        var bob = chef.plan.length ? Math.abs(Math.sin(chef.walkT * 12)) * 4 : 0;
-        var squash = chef.stomp > 0 ? 0.15 : 0;
-        if (!climbing) { U.shadow(ctx, x, y + 2, 26, 5, 0.4); }
+        var x = 150, y = COUNTER_Y - 4;
+        var reaching = chef.reach > 0, cheering = chef.cheer > 0;
+        var bounce = cheering ? Math.abs(Math.sin(chef.cheer * 9)) * 8 : 0;
+        U.shadow(ctx, x, y + 2, 26, 5, 0.3);
         ctx.save();
-        ctx.translate(x, y - bob);
-        ctx.scale((climbing ? 1 : chef.face) * (1 + squash) * 0.86, (1 - squash) * 0.86);
+        ctx.translate(x, y - bounce);
+        ctx.scale(0.92, 0.92);
         var art = PH.art;
-        var walking = chef.plan.length && !climbing;
         art.kid(ctx, {
           skin: '#f2c29b', hairStyle: 'none', shirt: '#ffffff', pants: '#3a3f5c', shoes: '#2b2346',
-          walk: walking ? chef.walkT * 12 : null,
-          arms: climbing ? [2.7 + Math.sin(chef.walkT * 12) * 0.3, 2.7 - Math.sin(chef.walkT * 12) * 0.3]
-            : (chef.stomp > 0 ? [2.2, 2.2] : null),
-          look: climbing ? [0, -1] : [0.7, 0], blinkSeed: 2,
-          mouth: chef.stomp > 0 ? 'grin' : 'smile',
-          body: function (c) {             /* apron, neckerchief and buttons */
+          arms: (reaching || cheering) ? [2.5, 2.5] : null,
+          look: reaching ? [0.3, -1] : [0.5, -0.3], blinkSeed: 2,
+          mouth: (reaching || cheering) ? 'grin' : 'smile',
+          body: function (c) {             /* apron and neckerchief */
             c.beginPath(); c.moveTo(-12, -48); c.lineTo(12, -48); c.lineTo(14, -24); c.quadraticCurveTo(0, -20, -14, -24); c.closePath();
             art.fillLit(c, '#ff5d8f', -48, -22, { lineWidth: 2.5 });
             c.beginPath(); c.moveTo(-9, -63); c.lineTo(9, -63); c.lineTo(0, -54); c.closePath();
@@ -346,15 +325,14 @@
           ctx.fillStyle = '#1f2340';
           ctx.font = pics ? '32px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif' : U.font(target.g[i].length > 3 ? 20 : 28);
           ctx.textAlign = 'center';
-          /* little ones see the whole order; readers get a question mark for the next chunk */
+          /* little ones see the whole order; readers get a blank for the next chunk */
           var cellText = have ? have.g : (api.pre ? target.g[i] : (i === built.length ? '?' : ''));
           ctx.fillText(pics ? FOOD[cellText] || '' : cellText, sx + cw / 2, 53);
           sx += cw + gap;
         }
       }
 
-      /* a retro lunch counter: teal panelled wall, neon sign, chrome ladders, red girders,
-         checked floor */
+      /* a sandwich bar: tiled wall, a neon sign, the belt, and the prep counter */
       function drawShop(ctx) {
         var now = performance.now() / 1000;
         var wall = ctx.createLinearGradient(0, 0, 0, api.H);
@@ -362,8 +340,15 @@
         wall.addColorStop(1, '#0a2f3d');
         ctx.fillStyle = wall;
         ctx.fillRect(0, 0, api.W, api.H);
-        ctx.fillStyle = 'rgba(255,255,255,.04)';
-        for (var px = 0; px < api.W; px += 80) { ctx.fillRect(px, 0, 40, COUNTER_Y); }
+        /* white metro tiles, the way a sandwich bar is always tiled */
+        ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 2;
+        for (var ty = 100; ty < COUNTER_Y; ty += 44) {
+          var off = ((ty - 100) / 44) % 2 ? 46 : 0;
+          for (var tx = -92; tx < api.W; tx += 92) {
+            ctx.strokeRect(tx + off, ty, 92, 44);
+          }
+        }
+
         /* neon sign, flickering gently */
         var flick = Math.sin(now * 13) > -0.95 ? 1 : 0.4;
         ctx.save();
@@ -376,8 +361,9 @@
         ctx.strokeStyle = flick > 0.5 ? '#9ff5ff' : '#5a8d94'; ctx.lineWidth = 4;
         U.roundRect(ctx, 735, 26, 226, 56, 18); ctx.stroke();
         ctx.restore();
-        /* the window display. An opaque fill first: the wall stripes above leave the fill
-           at four per cent alpha, which these were inheriting and all but vanishing into. */
+
+        /* the window display. An opaque fill first: the tile lines above leave the fill at
+           six per cent alpha, which these would otherwise vanish into. */
         ctx.fillStyle = '#ffffff';
         ctx.font = '38px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -386,46 +372,58 @@
 
         /* pendant lamps with soft cones of light */
         var art = PH.art;
-        [240, 735].forEach(function (lx, n) {
+        [340, 735].forEach(function (lx, n) {
           var sw = Math.sin(now * 0.9 + n) * 3;
-          var cone = ctx.createLinearGradient(0, 70, 0, 330);
+          var cone = ctx.createLinearGradient(0, 70, 0, 360);
           cone.addColorStop(0, 'rgba(255,230,160,.18)'); cone.addColorStop(1, 'rgba(255,230,160,0)');
           ctx.fillStyle = cone;
-          ctx.beginPath(); ctx.moveTo(lx + sw - 20, 66); ctx.lineTo(lx + sw + 20, 66); ctx.lineTo(lx + sw + 130, 330); ctx.lineTo(lx + sw - 130, 330); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(lx + sw - 20, 66); ctx.lineTo(lx + sw + 20, 66); ctx.lineTo(lx + sw + 130, 360); ctx.lineTo(lx + sw - 130, 360); ctx.closePath(); ctx.fill();
           ctx.strokeStyle = art.INK; ctx.lineWidth = 2.5;
           ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx + sw, 44); ctx.stroke();
           ctx.beginPath(); ctx.moveTo(lx + sw - 28, 68); ctx.quadraticCurveTo(lx + sw, 30, lx + sw + 28, 68); ctx.closePath();
           art.fillLit(ctx, '#ff5d8f', 40, 68, { lineWidth: 3 });
           art.ball(ctx, lx + sw, 70, 7, '#fff3a8', { lineWidth: 2 });
         });
-        /* chrome ladders */
-        LADDERS.forEach(function (lx) {
-          ctx.fillStyle = '#d7dde3';
-          for (var y = FLOORS[0] + 10; y < FLOORS[2]; y += 22) {
-            U.roundRect(ctx, lx - 17, y - 3, 34, 6, 3); ctx.fill();
-            ctx.strokeStyle = art.INK; ctx.lineWidth = 2; ctx.stroke();
-          }
-          [-18, 18].forEach(function (off) {
-            var g = ctx.createLinearGradient(lx + off - 5, 0, lx + off + 5, 0);
-            g.addColorStop(0, '#6c757d'); g.addColorStop(0.5, '#f8f9fa'); g.addColorStop(1, '#6c757d');
-            ctx.fillStyle = g;
-            U.roundRect(ctx, lx + off - 5, FLOORS[0] - 6, 10, FLOORS[2] - FLOORS[0] + 10, 5); ctx.fill();
-            ctx.strokeStyle = art.INK; ctx.lineWidth = 2.5; ctx.stroke();
-          });
+
+        /* legs down to the counter, so the belt is mounted on something rather than
+           hanging in the middle of the room */
+        [70, 930].forEach(function (px) {
+          var leg = ctx.createLinearGradient(px - 11, 0, px + 11, 0);
+          leg.addColorStop(0, '#6c757d'); leg.addColorStop(0.5, '#e9eef2'); leg.addColorStop(1, '#6c757d');
+          ctx.fillStyle = leg;
+          U.roundRect(ctx, px - 11, BELT_TOP + BELT_H - 10, 22, COUNTER_Y - BELT_TOP - BELT_H + 16, 6);
+          ctx.fill();
+          ctx.strokeStyle = PH.art.INK; ctx.lineWidth = 2.5; ctx.stroke();
         });
-        /* red riveted girders */
-        FLOORS.forEach(function (fy) {
-          U.roundRect(ctx, 20, fy, api.W - 40, 15, 4);
-          art.fillLit(ctx, '#e8484a', fy, fy + 15, { lineWidth: 3 });
-          ctx.fillStyle = '#ffe3e3';
-          for (var x = 34; x < api.W - 20; x += 40) { ctx.beginPath(); ctx.arc(x, fy + 7.5, 2.4, 0, Math.PI * 2); ctx.fill(); }
+
+        /* the belt: a dark rubber band on chrome rollers, its tread scrolling with it */
+        ctx.fillStyle = '#c9d1d8';
+        U.roundRect(ctx, -10, BELT_TOP + BELT_H - 6, api.W + 20, 16, 8); ctx.fill();
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = '#3d4654';
+        U.roundRect(ctx, -10, BELT_TOP, api.W + 20, BELT_H, 10); ctx.fill();
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 3; ctx.stroke();
+        /* tread lines, moving at exactly the speed the fillings do */
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, BELT_TOP, api.W, BELT_H); ctx.clip();
+        ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 5;
+        for (var bx = -((scroll % 34) + 34); bx < api.W + 40; bx += 34) {
+          ctx.beginPath(); ctx.moveTo(bx + 14, BELT_TOP + 4); ctx.lineTo(bx, BELT_TOP + BELT_H - 4); ctx.stroke();
+        }
+        ctx.restore();
+        /* rollers peeping out at each end */
+        [-4, api.W + 4].forEach(function (rx) {
+          art.ball(ctx, rx, BELT_TOP + BELT_H / 2, 26, '#e9eef2', { lineWidth: 3 });
         });
-        /* the counter: chrome edge and a black-and-white checked front */
-        for (var cx = 0; cx < api.W; cx += 20) {
-          for (var cy = COUNTER_Y + 10; cy < api.H; cy += 20) {
-            ctx.fillStyle = ((cx + cy) / 20) % 2 === 0 ? '#f1f3f5' : '#2b2346';
-            ctx.fillRect(cx, cy, 20, 20);
-          }
+
+        /* the prep counter: stainless steel with a bright edge */
+        var steel = ctx.createLinearGradient(0, COUNTER_Y, 0, api.H);
+        steel.addColorStop(0, '#dfe5ea'); steel.addColorStop(1, '#9aa5ae');
+        ctx.fillStyle = steel;
+        ctx.fillRect(0, COUNTER_Y + 6, api.W, api.H - COUNTER_Y);
+        ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
+        for (var gx = 0; gx < api.W; gx += 26) {
+          ctx.beginPath(); ctx.moveTo(gx, COUNTER_Y + 16); ctx.lineTo(gx, api.H); ctx.stroke();
         }
         U.roundRect(ctx, -4, COUNTER_Y - 5, api.W + 8, 16, 6);
         var chrome = ctx.createLinearGradient(0, COUNTER_Y - 5, 0, COUNTER_Y + 11);
@@ -436,6 +434,7 @@
 
       function draw(ctx) {
         drawShop(ctx);
+
         /* plate + the bottom slice */
         U.shadow(ctx, PLATE_X, COUNTER_Y + 8, 130, 12, 0.35);
         var pg = ctx.createRadialGradient(PLATE_X, COUNTER_Y, 10, PLATE_X, COUNTER_Y + 4, 110);
@@ -450,11 +449,20 @@
         drawChef(ctx);
         drawTicket(ctx);
 
-        U.badge(ctx, api.W - 20, 104, 'Tap an ingredient', { align: 'right', icon: '👆', size: 18 });
+        if (state === 'play' && idle > 3.5) {
+          U.badge(ctx, api.W / 2, 178,
+            built.length ? 'Which one comes next?' : 'Tap the one that starts it',
+            { align: 'center', icon: '👆', size: 18 });
+        }
       }
 
       newRound();
-      return { update: update, draw: draw, down: down };
+      return { update: update, draw: draw, down: down,
+        move: function () {}, up: function () {},
+        debug: function () {
+          return { target: target, parts: parts, built: built.map(function (b) { return b.g; }),
+            state: state, round: round, belt: { top: BELT_TOP, h: BELT_H, itemY: ITEM_Y } };
+        } };
     }
   };
 })(window.PH = window.PH || {});

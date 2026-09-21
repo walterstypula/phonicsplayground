@@ -27,7 +27,7 @@ level can be nudged up or down with the **change level** button.
 | Word Munchers | Walks a grid munching every word that fits a rule, dodging the Troggle | Sorting by sound, first sound or rhyme |
 | Penalty Kick | Counts the sounds in a word, kicks at that number | Segmenting sounds; claps (syllables) at level 5 |
 | Don't Wake the Giant | Slides a pillow to catch falling words that fit a rule before they crash | Sorting by sound, first sound or rhyme, under time pressure |
-| Stack the Snack | Sends a chef up ladders to stomp sound chunks onto the sandwich in order | Building a word sound by sound |
+| Stack the Snack | Takes sound chunks off a moving belt in the right order to build a sandwich | Building a word sound by sound |
 | Leaky Pipes | Hears a word only as separate sounds, then fixes the leak showing it | Blending sounds into a word |
 | Space Jumper | Runs and jumps through a space platformer, head-bumping the block with the spoken word to open each star gate | Word recognition, in a Mario-style level |
 | Wizard's Spellbook | Reads a spell card with no voice help, then taps the picture it means; older children read short phrases | Independent reading for meaning |
