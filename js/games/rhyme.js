@@ -92,15 +92,15 @@
               state = 'fly'; timer = 0;
               rocket.goal = pl;
               api.sfx.whoosh();
+              api.sayWord(pl.word.w);            /* the word the child chose, straight away */
             } else {
               misses++;
               pl.shake = 0.6;
               rocket.wobble = 0.5;
               api.sfx.bad();
-              api.sayWord(target.w);
-              api.say('and', { queue: true });
-              api.sayWord(pl.word.w, { queue: true });
-              api.say('do not rhyme', { queue: true });
+              api.sayWord(pl.word.w);
+              api.say('does not rhyme with', { queue: true });
+              api.sayWord(target.w, { queue: true });
             }
             return;
           }
@@ -127,13 +127,14 @@
             api.addStar(1);
             api.sfx.great();
             api.burst(g.x, g.y, null, 30, { lift: 100 });
-            api.sayWord(target.w);
+            api.say('Yes!', { queue: true });
             api.sayWord(g.word.w, { queue: true });
-            api.say('They rhyme!', { queue: true });
+            api.say('rhymes with', { queue: true });
+            api.sayWord(target.w, { queue: true });
           }
         } else if (state === 'won') {
           timer += dt;
-          if (timer > 1.6) { newRound(); }
+          if (timer > 2.6) { newRound(); }
         }
       }
 

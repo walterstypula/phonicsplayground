@@ -111,7 +111,7 @@
               if (got >= NEED) {
                 state = 'between'; timer = 0;
                 api.sfx.great();
-                api.say('Brilliant!');
+                api.say('Awesome!');
               }
             } else {
               misses++; b.grey = 1.2; b.dead = true; b.vy = -30;

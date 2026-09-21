@@ -1,8 +1,10 @@
-/* Phonics Playground - voice + sound effects (no audio files needed) */
+/* Phonics Playground - voice + sound effects.
+   Speech comes from recordings in audio/ when they exist (listed in audio/clips.js),
+   and from the device's own text-to-speech voice for everything else.             */
 (function (PH) {
   'use strict';
 
-  /* ---------------- Speech ---------------- */
+  /* ---------------- Voices ---------------- */
   var voice = null;
   var voiceIndex = 0;
   var enabled = true;
@@ -14,18 +16,36 @@
     });
   }
 
+  /* The games teach American English sounds, so an American voice is always preferred. */
+  var ACCENT = 'en-us';
+
+  /* How natural a voice is likely to sound. Every platform names its good voices differently:
+     Edge "... Online (Natural)", Chrome "Google ...", Apple "(Enhanced)" / "(Premium)" / Siri.
+     The old desktop voices (David, Zira, eSpeak ...) are the robotic ones.                   */
+  var GOOD = ['aria', 'jenny', 'ava', 'emma', 'michelle', 'ana', 'samantha', 'allison', 'susan',
+    'google us english', 'zira'];
+  function score(v) {
+    var n = v.name.toLowerCase(), s = 0;
+    if (/natural|neural|premium|enhanced|siri/.test(n)) { s += 100; }
+    else if (/online|google/.test(n) || v.localService === false) { s += 60; }
+    if (/espeak|david|mark|hazel|george|fred|albert|bad news|bahh|bells|boing|bubbles|cellos|jester|organ|trinoids|whisper|zarvox|wobble|superstar|junior|ralph/.test(n)) { s -= 80; }
+    for (var i = 0; i < GOOD.length; i++) { if (n.indexOf(GOOD[i]) >= 0) { s += 30 - i; break; } }
+    if ((v.lang || '').toLowerCase().replace('_', '-') === ACCENT) { s += 60; }
+    return s;
+  }
+
+  /* best first, so the Voice button also steps from better to worse */
+  function rankedVoices() {
+    return englishVoices().sort(function (a, b) { return score(b) - score(a); });
+  }
+
   function chooseVoice() {
-    var list = englishVoices();
+    var list = rankedVoices();
     if (!list.length) { return; }
-    /* Sonia by default, then other natural sounding female voices if the platform has them */
-    var preferred = ['sonia', 'zira', 'samantha', 'karen', 'moira', 'serena', 'google uk english female',
-      'google us english', 'hazel', 'fiona', 'libby', 'aria'];
-    for (var i = 0; i < preferred.length; i++) {
-      for (var j = 0; j < list.length; j++) {
-        if (list[j].name.toLowerCase().indexOf(preferred[i]) >= 0) {
-          voice = list[j]; voiceIndex = j; return;
-        }
-      }
+    var saved = null;
+    try { saved = localStorage.getItem('ph-voice'); } catch (e) { /* private mode */ }
+    for (var j = 0; j < list.length; j++) {
+      if (saved && list[j].name === saved) { voice = list[j]; voiceIndex = j; return; }
     }
     voice = list[0];
     voiceIndex = 0;
@@ -36,34 +56,152 @@
     window.speechSynthesis.onvoiceschanged = chooseVoice;
   }
 
+  /* ---------------- The 44 sounds of American English ----------------
+     A sound is passed around as "/id" (for example "/ee"), never as a made-up spelling,
+     so it can be played from a recording. `say` is only the fallback text for the device
+     voice, which cannot say a sound on its own and has to be nudged with a spelling.    */
+  var SOUNDS = {
+    b: { say: 'bah', as: 'bat' }, d: { say: 'duh', as: 'dog' }, f: { say: 'fuh', as: 'fan' },
+    g: { say: 'gguh', as: 'goat' }, h: { say: 'huh', as: 'hat' }, j: { say: 'juh', as: 'jam' },
+    k: { say: 'kuh', as: 'kite, cat, duck' }, l: { say: 'lluh', as: 'leg' }, m: { say: 'muh', as: 'map' },
+    n: { say: 'nuh', as: 'net' }, p: { say: 'puh', as: 'pig' }, r: { say: 'ruh', as: 'run' },
+    s: { say: 'ssuh', as: 'sun' }, t: { say: 'tuh', as: 'top' }, v: { say: 'vuh', as: 'van' },
+    w: { say: 'wuh', as: 'web' }, y: { say: 'yyuh', as: 'yes' }, z: { say: 'zah', as: 'zip' },
+    kw: { say: 'kwuh', as: 'queen' }, ks: { say: 'ukss', as: 'box (the end sound)' },
+    sh: { say: 'shuh', as: 'ship' }, ch: { say: 'chuh', as: 'chip' }, th: { say: 'thuh', as: 'thin' },
+    ng: { say: 'ing', as: 'ring (the end sound)' },
+    a: { say: 'ah', as: 'cat' }, e: { say: 'eh', as: 'bed' }, i: { say: 'ihh', as: 'sit' },
+    o: { say: 'aw', as: 'hot' }, u: { say: 'uh', as: 'cup' },
+    ay: { say: 'eigh', as: 'rain, cake' }, ee: { say: 'eeh', as: 'seed, me' }, igh: { say: 'eye', as: 'night, bike' },
+    oh: { say: 'oh', as: 'boat, home' }, yoo: { say: 'yoo', as: 'cube' }, oo: { say: 'ooh', as: 'moon' },
+    ow: { say: 'ow', as: 'cow, out' }, oi: { say: 'oy', as: 'coin, boy' }, aw: { say: 'aw', as: 'saw' },
+    ar: { say: 'are', as: 'car' }, or: { say: 'or', as: 'fork' }, er: { say: 'irr', as: 'her, bird, fur' }
+  };
+  PH.SOUNDS = SOUNDS;
+
+  /* which sound each spelling makes */
+  var SOUND_OF = {
+    a: 'a', b: 'b', c: 'k', d: 'd', e: 'e', f: 'f', g: 'g', h: 'h', i: 'i', j: 'j', k: 'k',
+    l: 'l', m: 'm', n: 'n', o: 'o', p: 'p', q: 'kw', r: 'r', s: 's', t: 't', u: 'u', v: 'v',
+    w: 'w', x: 'ks', y: 'y', z: 'z',
+    sh: 'sh', ch: 'ch', th: 'th', ck: 'k', ll: 'l', ss: 's', ff: 'f', zz: 'z', ng: 'ng',
+    wh: 'w', ph: 'f', qu: 'kw',
+    ai: 'ay', ay: 'ay', ee: 'ee', ea: 'ee', oa: 'oh', oo: 'oo', ow: 'ow', ou: 'ow',
+    oi: 'oi', oy: 'oi', aw: 'aw', igh: 'igh', ar: 'ar', or: 'or', ir: 'er', ur: 'er', er: 'er'
+  };
+  /* word-ending chunks from the spelling level have no single sound; the voice says them */
+  var CHUNKS = { et: 'eht', an: 'ann', le: 'ul' };
+
+  /* the sound a spelling makes, as "/id"; anything else (a syllable, a word) comes back as is */
+  PH.soundHint = function (g) {
+    if (SOUND_OF[g]) { return '/' + SOUND_OF[g]; }
+    return CHUNKS[g] || g;
+  };
+
+  /* The spoken sounds of a whole word, in order. A magic e (c-a-k-e) is silent and
+     turns the vowel before it long, so "cake" is /k/ /ay/ /k/, never /k/ /a/ /k/. */
+  var LONG = { a: 'ay', e: 'ee', i: 'igh', o: 'oh', u: 'yoo' };
+  PH.soundHintsFor = function (word) {
+    var sounds = PH.soundGraphemes(word);
+    var magic = sounds.length < word.g.length;   /* soundGraphemes dropped a final e */
+    return sounds.map(function (g, i) {
+      if (magic && i === sounds.length - 2 && LONG[g]) { return '/' + LONG[g]; }
+      return PH.soundHint(g);
+    });
+  };
+
+  /* ---------------- Recordings ---------------- */
+  function clips() { return PH.CLIPS || { sounds: [], words: [] }; }
+  function clipFor(text) {
+    var c = clips();
+    if (text.charAt(0) === '/') {
+      var id = text.slice(1);
+      return c.sounds.indexOf(id) >= 0 ? 'audio/sounds/' + id + '.mp3' : null;
+    }
+    var w = text.toLowerCase().replace(/[.?!,]/g, '').trim();
+    return c.words.indexOf(w) >= 0 ? 'audio/words/' + w + '.mp3' : null;
+  }
+
+  /* ---------------- One queue for recordings and the device voice ----------------
+     Everything is played strictly one after another. Each item has a safety timer so
+     a browser that forgets to report "finished" can never stall the queue.          */
+  var queue = [], busy = false, current = null, turn = 0, guard = 0;
+
+  function next() {
+    if (busy || !queue.length) { return; }
+    var item = queue.shift();
+    busy = true;
+    var mine = ++turn;
+    function done() {
+      if (mine !== turn) { return; }
+      clearTimeout(guard);
+      busy = false; current = null;
+      next();
+    }
+    if (item.clip) {
+      var a = new Audio(item.clip);
+      current = a;
+      a.onended = done;
+      a.onerror = function () { fallback(); };
+      guard = setTimeout(done, 6000);
+      var p = a.play();
+      if (p && p.catch) { p.catch(function () { fallback(); }); }
+    } else {
+      speakNow(item.text, item.opts, done);
+    }
+    /* a recording that will not play: say it with the device voice instead */
+    function fallback() {
+      if (mine !== turn || !busy) { return; }
+      clearTimeout(guard);
+      speakNow(item.text, item.opts, done);
+    }
+  }
+
+  function speakNow(text, opts, done) {
+    if (!speech.supported) { done(); return; }
+    if (text.charAt(0) === '/') { text = (SOUNDS[text.slice(1)] || { say: text.slice(1) }).say; }
+    var u = new SpeechSynthesisUtterance(String(text));
+    if (voice) { u.voice = voice; u.lang = voice.lang; }
+    u.rate = opts.rate === undefined ? 0.85 : opts.rate;
+    u.pitch = opts.pitch === undefined ? 1.05 : opts.pitch;
+    u.volume = 1;
+    u.onend = done; u.onerror = done;
+    current = u;
+    clearTimeout(guard);
+    guard = setTimeout(done, 1500 + String(text).length * 110 / u.rate);
+    try { window.speechSynthesis.speak(u); } catch (e) { done(); }
+  }
+
   var speech = {
     supported: ('speechSynthesis' in window),
 
     /* cycle through the installed English voices - some sound much clearer than others */
     nextVoice: function () {
-      var list = englishVoices();
+      var list = rankedVoices();
       if (!list.length) { return 'No voices installed'; }
       voiceIndex = (voiceIndex + 1) % list.length;
       voice = list[voiceIndex];
+      try { localStorage.setItem('ph-voice', voice.name); } catch (e) { /* private mode */ }
       speech.say('Hello, I am ' + voice.name.split(/[ (]/)[1]);
       return voice.name;
     },
 
     cancel: function () {
+      queue = []; busy = false; turn++;
+      clearTimeout(guard);
+      if (current && current.pause) { try { current.pause(); } catch (e) { /* ignore */ } }
+      current = null;
       if (speech.supported) { try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
     },
 
-    /* say(text) or say(text, {rate, pitch, queue}) */
+    /* say(text) or say(text, {rate, pitch, queue}). "/ee" says a single sound. */
     say: function (text, opts) {
-      if (!enabled || !speech.supported || !text) { return; }
+      if (!enabled || !text) { return; }
       opts = opts || {};
       if (!opts.queue) { speech.cancel(); }
-      var u = new SpeechSynthesisUtterance(String(text));
-      if (voice) { u.voice = voice; u.lang = voice.lang; }
-      u.rate = opts.rate === undefined ? 0.85 : opts.rate;
-      u.pitch = opts.pitch === undefined ? 1.05 : opts.pitch;
-      u.volume = 1;
-      try { window.speechSynthesis.speak(u); } catch (e) { /* ignore */ }
+      text = String(text);
+      queue.push({ text: text, opts: opts, clip: clipFor(text) });
+      next();
     },
 
     /* a single word, said slowly and clearly */
@@ -72,7 +210,7 @@
       speech.say(word, { rate: opts.rate || 0.72, pitch: 1.05, queue: opts.queue });
     },
 
-    /* "c ... a ... t ... cat" (magic e stays silent and makes the vowel long) */
+    /* "/k/ ... /a/ ... /t/ ... cat" (magic e stays silent and makes the vowel long) */
     soundOut: function (word) {
       speech.cancel();
       PH.soundHintsFor(word).forEach(function (h) {
@@ -82,36 +220,6 @@
     },
 
     setEnabled: function (on) { enabled = on; if (!on) { speech.cancel(); } }
-  };
-
-  /* Text-to-speech says letter NAMES ("see" for c), so nudge it toward letter SOUNDS.
-     Every spelling must read as ONE pronounceable syllable: runs like "lll" or "sss" and
-     unknown pairs like "ay", "sh", "er" get spelled out letter by letter ("el el el").
-     Each one was checked against the phonemes the Windows voices actually produce. */
-  var HINTS = {
-    a: 'ah', b: 'bah', c: 'kuh', d: 'duh', e: 'eh', f: 'fuh', g: 'gguh', h: 'huh',
-    i: 'ihh', j: 'juh', k: 'kuh', l: 'lluh', m: 'muh', n: 'nuh', o: 'aw', p: 'puh',
-    q: 'kwuh', r: 'ruh', s: 'ssuh', t: 'tuh', u: 'uh', v: 'vuh', w: 'wuh',
-    x: 'ukss', y: 'yyuh', z: 'zah',
-    sh: 'shuh', ch: 'chuh', th: 'thuh', ck: 'kuh', ll: 'lluh', ng: 'ing',
-    ai: 'eigh', ay: 'eigh', ee: 'eeh', ea: 'eeh', oa: 'oh', oo: 'ooh', ow: 'ow',
-    ou: 'ow', oi: 'oy', oy: 'oy', aw: 'aw', igh: 'eye', ar: 'are', or: 'or',
-    ir: 'irr', ur: 'irr', er: 'irr',
-    /* word-ending chunks from the spelling level */
-    et: 'eht', an: 'ann', le: 'ul'
-  };
-  PH.soundHint = function (g) { return HINTS[g] || g; };
-
-  /* The spoken sounds of a whole word, in order. A magic e (c-a-k-e) is silent and
-     turns the vowel before it long, so "cake" is "kuh - ay - kuh", never "kuh - ah - kuh". */
-  var LONG = { a: 'eigh', e: 'eeh', i: 'eye', o: 'oh', u: 'yoo' };
-  PH.soundHintsFor = function (word) {
-    var sounds = PH.soundGraphemes(word);
-    var magic = sounds.length < word.g.length;   /* soundGraphemes dropped a final e */
-    return sounds.map(function (g, i) {
-      if (magic && i === sounds.length - 2 && LONG[g]) { return LONG[g]; }
-      return PH.soundHint(g);
-    });
   };
 
   /* ---------------- Sound effects ---------------- */

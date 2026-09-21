@@ -34,12 +34,12 @@ level can be nudged up or down with the **change level** button.
 | Comet Trails | Drags a comet along a dotted letter in the right order and direction | Letter formation (handwriting) |
 | Frog Hop | Changes one sound to turn one word into the next (cat, hat, hot, dot) to hop up to a fly | Swapping sounds within a word |
 | Whack-a-Mole | Bonks the mole holding the tricky word it hears; moles speed up with a streak | Sight words that break the phonics rules |
-| Sentence Train | Hooks word carriages onto an engine in order to build a sentence, then watches it chug away | Word order, capital letters and full stops |
+| Sentence Train | Hooks word carriages onto an engine in order to build a sentence, then watches it chug away | Word order, capital letters and periods |
 
 Sentence Train keeps a count of carriages earned in the browser, and the menu card
 shows the child's train growing. At ages 8 and 9 the sentence is not read aloud:
 the words are lower case, the first one gets its capital as it couples on, and
-the child chooses between a full stop and a question mark caboose.
+the child chooses between a period and a question mark caboose.
 
 Space Jumper plays with the arrow keys and space, with the on-screen buttons, or
 by tapping a block, which sends the astronaut to run over and bump it. At the
@@ -77,9 +77,16 @@ Choices are fewer and everything moves more slowly.
 
 ## Sound
 
-Words are spoken with the browser's built-in speech synthesis, so no audio files
-are needed. The voice varies by device: use the **Voice** button on the front
-page to cycle through the installed English voices and keep the clearest one.
+The games teach American English. Speech plays from recordings in `audio/` where
+they exist, and from the browser's built-in speech synthesis for everything else, so
+the games work with no recordings at all. The game picks the most natural American
+voice the device has (Edge "Natural", Chrome "Google", Apple "Enhanced" voices first);
+the **Voice** button on the front page steps through the others and remembers the pick.
+
+A built-in voice cannot say a single sound on its own, so sounding out ("s... ee... d")
+is only really clear with the recorded sounds. See `audio/README.md` for the list of 44
+sounds and how to add them. Nothing is ever fetched from an online service.
+
 The **Sound** button mutes everything. If a browser has no voice installed, the
 games still work and the word is shown instead.
 
@@ -91,7 +98,8 @@ Sound effects are generated with the Web Audio API.
 index.html          menu, heads-up display, results overlay
 css/style.css
 js/words.js         the word bank, graded into five levels
-js/audio.js         speech synthesis wrapper and generated sound effects
+js/audio.js         speech (recordings first, then the device voice) and generated sound effects
+audio/              recorded sounds and words, listed in audio/clips.js
 js/engine.js        canvas fitting, input, game loop, particles, scoring
 js/art.js           the character kit: glossy eyes, blinks, faces, shading, a posable kid
 js/rules.js         shared "find every word that ..." rules

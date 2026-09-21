@@ -145,19 +145,23 @@
       ctx.strokeStyle = o.ink || INK; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.lineWidth = o.lineWidth || Math.max(2, w * 0.14);
       if (kind === 'grin') {
-        ctx.beginPath();
-        ctx.moveTo(x - w / 2, y - w * 0.12);
-        ctx.quadraticCurveTo(x, y - w * 0.02, x + w / 2, y - w * 0.12);
-        ctx.quadraticCurveTo(x + w * 0.35, y + w * 0.6, x, y + w * 0.6);
-        ctx.quadraticCurveTo(x - w * 0.35, y + w * 0.6, x - w / 2, y - w * 0.12);
-        ctx.closePath();
+        var grin = function () {
+          ctx.beginPath();
+          ctx.moveTo(x - w / 2, y - w * 0.12);
+          ctx.quadraticCurveTo(x, y - w * 0.02, x + w / 2, y - w * 0.12);
+          ctx.quadraticCurveTo(x + w * 0.4, y + w * 0.55, x, y + w * 0.55);
+          ctx.quadraticCurveTo(x - w * 0.4, y + w * 0.55, x - w / 2, y - w * 0.12);
+          ctx.closePath();
+        };
+        grin();
         ctx.fillStyle = '#7a2340'; ctx.fill();
         ctx.save(); ctx.clip();
         ctx.fillStyle = '#ff7b93';
-        ctx.beginPath(); ctx.ellipse(x, y + w * 0.58, w * 0.3, w * 0.22, 0, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x, y + w * 0.52, w * 0.28, w * 0.2, 0, 0, TAU); ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(x - w / 2, y - w * 0.2, w, w * 0.16);
         ctx.restore();
+        grin();                        /* outline the mouth itself, not the tongue */
         ctx.stroke();
       } else if (kind === 'o') {
         ctx.fillStyle = '#7a2340';

@@ -122,7 +122,7 @@
           if (got >= NEED) {
             state = 'between'; timer = 0;
             api.sfx.great();
-            api.say('Bonk bonk! Brilliant!');
+            api.say('Bonk bonk! Awesome!');
           }
         } else {
           m.raz = 1; m.phase = 'stay';

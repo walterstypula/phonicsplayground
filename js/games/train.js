@@ -160,7 +160,7 @@
       }
 
       function sayToken(t) {
-        if (t === '.') { api.say('full stop'); return; }
+        if (t === '.') { api.say('period'); return; }
         if (t === '?') { api.say('question mark'); return; }
         if (letters) { api.say(PH.soundHint(t), { rate: 0.6 }); return; }
         api.say(t.replace(/[.?]/g, ''), { rate: 0.85 });

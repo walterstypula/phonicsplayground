@@ -536,7 +536,7 @@
         : accuracy;
       var big = pct >= 0.9 ? 3 : (pct >= 0.6 ? 2 : 1);
       setTimeout(function () {
-        self.dom.resultsTitle.textContent = title || (big === 3 ? 'Superstar!' : big === 2 ? 'Well done!' : 'Good try!');
+        self.dom.resultsTitle.textContent = title || (big === 3 ? 'Superstar!' : big === 2 ? 'Great job!' : 'Good try!');
         /* three stars that pop in one after another; unearned ones stay faint */
         var html = '';
         for (var s = 0; s < 3; s++) {
@@ -547,7 +547,7 @@
         self.dom.resultsSub.textContent = 'You collected ' + self.stars + ' star' +
           (self.stars === 1 ? '' : 's') + '.';
         self.dom.results.classList.remove('hidden');
-        PH.speech.say(big === 3 ? 'Superstar! Well done!' : 'Nice work!');
+        PH.speech.say(big === 3 ? 'Superstar! Great job!' : 'Nice work!');
       }, 700);
     }
   };

@@ -124,7 +124,7 @@
               if (got >= NEED) {
                 state = 'between'; timer = 0;
                 api.sfx.great();
-                api.say('Shh... well done!', { rate: 0.8 });
+                api.say('Shh... great job!', { rate: 0.8 });
               }
             } else {
               misses++;

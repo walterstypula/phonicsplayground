@@ -254,7 +254,7 @@
   PH.SENTENCES = {
     1: ['The cat is big.|🐱', 'A dog can dig.|🐶⛏️', 'I see a bug.|🐛',
       'The sun is hot.|☀️🔥', 'The fox ran.|🦊🏃', 'I got a pet.|🐶',
-      'The bus is red.|🚌🟥', 'Mum has a hat.|🎩', 'A pig can run.|🐷🏃',
+      'The bus is red.|🚌🟥', 'Mom has a hat.|🎩', 'A pig can run.|🐷🏃',
       'The man is sad.|😢', 'I can hop.|🐇', 'The cup is hot.|☕🔥',
       'I had ten pins.|📌', 'The van is big.|🚐'],
     2: ['The ship is big.|🚢', 'A duck can swim.|🦆🏊', 'The fish can swim.|🐟',

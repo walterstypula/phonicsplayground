@@ -128,8 +128,9 @@
         }
       }
 
-      /* a tapered, outlined tentacle from the octopus to (tx, ty) */
-      function tentacle(ctx, sx, sy, tx, ty, bend, width, color, suckers) {
+      /* a tapered, outlined tentacle from the octopus to (tx, ty).
+         curl (turns, + or -) rolls the tip into a little spiral, like a real octopus arm */
+      function tentacle(ctx, sx, sy, tx, ty, bend, width, color, suckers, curl) {
         var cx = (sx + tx) / 2 + bend, cy = (sy + ty) / 2;
         var steps = 22, i, pts = [];
         for (i = 0; i <= steps; i++) {
@@ -137,93 +138,154 @@
           pts.push({
             x: (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * cx + t * t * tx,
             y: (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * cy + t * t * ty,
-            w: width * (1 - t * 0.75)
+            w: width * (1 - t * 0.72)
           });
         }
+        if (curl) {
+          var last = pts[pts.length - 1], prev = pts[pts.length - 2];
+          var ang = Math.atan2(last.y - prev.y, last.x - prev.x);
+          var seg = Math.hypot(last.x - prev.x, last.y - prev.y), w0 = last.w;
+          for (i = 1; i <= 12; i++) {
+            ang += curl * 0.42;
+            seg *= 0.9;
+            last = { x: last.x + Math.cos(ang) * seg, y: last.y + Math.sin(ang) * seg, w: w0 * (1 - i / 16) };
+            pts.push(last);
+          }
+        }
         ctx.lineCap = 'round';
-        [[PH.art.INK, 5], [color, 0], ['rgba(255,255,255,.25)', -1]].forEach(function (pass) {
+        /* outline, colour, a pale underside and a shine along the top */
+        [[PH.art.INK, 5, 0], [color, 0, 0], ['#ffc2dc', -0.45, 0.2], ['rgba(255,255,255,.3)', -0.75, -0.22]].forEach(function (pass) {
           ctx.strokeStyle = pass[0];
           for (i = 1; i < pts.length; i++) {
-            ctx.lineWidth = pass[1] < 0 ? pts[i].w * 0.25 : pts[i].w + pass[1];
-            var off = pass[1] < 0 ? -pts[i].w * 0.22 : 0;
+            ctx.lineWidth = pass[1] < 0 ? pts[i].w * -pass[1] * 0.6 : pts[i].w + pass[1];
+            var off = pts[i].w * pass[2];
             ctx.beginPath(); ctx.moveTo(pts[i - 1].x, pts[i - 1].y + off); ctx.lineTo(pts[i].x, pts[i].y + off); ctx.stroke();
           }
         });
         if (suckers) {
-          for (i = 3; i < pts.length; i += 3) {
-            ctx.fillStyle = '#ffd1e3';
-            ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y + pts[i].w * 0.22, pts[i].w * 0.2, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = 'rgba(160,40,90,.4)'; ctx.lineWidth = 1.5; ctx.stroke();
+          for (i = 4; i < Math.min(pts.length, steps + 1); i += 3) {
+            ctx.fillStyle = '#fff0f6';
+            ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y + pts[i].w * 0.24, pts[i].w * 0.17, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(170,40,100,.45)'; ctx.lineWidth = 1.5; ctx.stroke();
           }
         }
+        return pts[pts.length - 1];
       }
 
       function drawOctopus(ctx) {
         var art = PH.art;
         var t = performance.now() / 1000;
+        var PINK = '#ef6aa0';
         var ox = OCTO.x, oy = OCTO.y + Math.sin(t * 1.6) * 8;
-        /* idle legs */
+        var happy = active && active.right && active.lid > 0.5;
+        /* idle legs, tips curled outward; the far left one holds a spyglass */
+        var glassAt = null;
         for (var i = 0; i < 7; i++) {
           var a = -0.9 + i * 0.3;
           var lx = ox + Math.sin(a) * 150 + Math.sin(t * 2 + i) * 16;
           var ly = oy + 120 + Math.cos(a) * 20 + Math.cos(t * 2.3 + i) * 10;
-          tentacle(ctx, ox + (i - 3) * 16, oy + 40, lx, ly, Math.sin(t * 2 + i) * 40, 24, '#e2568f', true);
+          if (i === 0) { lx = ox - 150; ly = oy + 40 + Math.sin(t * 1.2) * 6; }
+          var tip = tentacle(ctx, ox + (i - 3) * 16, oy + 36, lx, ly, i === 0 ? 30 : Math.sin(t * 2 + i) * 40, 24, '#e2568f',
+            true, i === 0 ? 0 : (i < 3 ? -1 : 1) * (0.9 + Math.sin(t * 1.7 + i) * 0.25));
+          if (i === 0) { glassAt = tip; }
         }
+        /* a brass spyglass, raised to look out for treasure */
+        ctx.save();
+        ctx.translate(glassAt.x, glassAt.y);
+        ctx.rotate(-1.15 + Math.sin(t * 1.2) * 0.05);
+        [[0, 30, 11, '#c9912e'], [28, 26, 9, '#e0aa45'], [52, 22, 7.5, '#c9912e']].forEach(function (s) {
+          U.roundRect(ctx, s[0] - 6, -s[2], s[1], s[2] * 2, 4);
+          art.fillLit(ctx, s[3], -s[2], s[2], { lineWidth: 2.5 });
+        });
+        ctx.beginPath(); ctx.ellipse(76, 0, 4, 8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#bfe9ff'; ctx.fill(); ctx.strokeStyle = art.INK; ctx.lineWidth = 2; ctx.stroke();
+        ctx.restore();
+        art.ball(ctx, glassAt.x, glassAt.y, 9, '#e2568f', { lineWidth: 3, shine: false });   /* the arm wrapped round it */
+
         /* the reaching leg */
         if (active && reach > 0) {
           var tx = U.lerp(ox, active.x, reach);
           var ty = U.lerp(oy + 80, active.y - active.h / 2 - 6, reach);
-          tentacle(ctx, ox, oy + 40, tx, ty, (active.x < ox ? -1 : 1) * 60 * (1 - reach), 28, '#ef6aa0', true);
+          tentacle(ctx, ox, oy + 36, tx, ty, (active.x < ox ? -1 : 1) * 60 * (1 - reach), 28, PINK, true, 0);
         }
-        /* head */
-        ctx.beginPath(); ctx.ellipse(ox, oy - 10, 92, 84, 0, 0, Math.PI * 2);
-        var g = ctx.createRadialGradient(ox - 30, oy - 50, 10, ox, oy, 104);
-        g.addColorStop(0, '#ffb3d1'); g.addColorStop(0.6, '#ef6aa0'); g.addColorStop(1, '#c23f78');
+
+        /* the head: a soft bulb, fuller at the top */
+        function head() {
+          ctx.beginPath();
+          ctx.moveTo(ox - 74, oy + 36);
+          ctx.bezierCurveTo(ox - 106, oy - 30, ox - 76, oy - 116, ox, oy - 116);
+          ctx.bezierCurveTo(ox + 76, oy - 116, ox + 106, oy - 30, ox + 74, oy + 36);
+          ctx.quadraticCurveTo(ox, oy + 58, ox - 74, oy + 36);
+          ctx.closePath();
+        }
+        head();
+        var g = ctx.createRadialGradient(ox - 34, oy - 60, 10, ox, oy - 20, 124);
+        g.addColorStop(0, '#ffc2dc'); g.addColorStop(0.55, PINK); g.addColorStop(1, '#b8386f');
         ctx.fillStyle = g; ctx.fill();
         ctx.strokeStyle = art.INK; ctx.lineWidth = 4; ctx.stroke();
-        /* freckly spots */
-        ctx.fillStyle = 'rgba(190,50,110,.35)';
-        [[-60, -40, 7], [-70, -12, 5], [62, -34, 6], [72, -8, 4.5], [50, -58, 4]].forEach(function (s) {
+        ctx.save(); head(); ctx.clip();
+        ctx.fillStyle = 'rgba(190,50,110,.3)';                       /* freckly spots */
+        [[-66, -30, 7], [-76, -4, 5], [-58, 12, 4], [66, -26, 6], [76, 0, 4.5], [58, 16, 3.5]].forEach(function (s) {
           ctx.beginPath(); ctx.arc(ox + s[0], oy + s[1], s[2], 0, Math.PI * 2); ctx.fill();
         });
-        /* a pirate bandana with knot tails */
-        ctx.save();
-        ctx.beginPath(); ctx.ellipse(ox, oy - 10, 92, 84, 0, 0, Math.PI * 2); ctx.clip();
-        ctx.beginPath(); ctx.rect(ox - 100, oy - 110, 200, 58);
-        ctx.fillStyle = '#e63946'; ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        for (var d = 0; d < 9; d++) {
-          ctx.beginPath(); ctx.arc(ox - 80 + d * 20, oy - 70 - (d % 2) * 16, 4, 0, Math.PI * 2); ctx.fill();
-        }
-        ctx.fillStyle = 'rgba(0,0,0,.18)';
-        ctx.fillRect(ox - 100, oy - 58, 200, 6);
+        ctx.fillStyle = 'rgba(255,255,255,.4)';                      /* a big soft shine */
+        ctx.beginPath(); ctx.ellipse(ox - 42, oy - 78, 22, 10, -0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ox - 16, oy - 92, 4, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
-        ctx.strokeStyle = art.INK; ctx.lineWidth = 3.5;
-        ctx.beginPath(); ctx.ellipse(ox, oy - 10, 92, 84, 0, Math.PI * 1.13, Math.PI * 1.87); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(ox - 84, oy - 52); ctx.quadraticCurveTo(ox, oy - 62, ox + 84, oy - 52); ctx.stroke();
-        var flap = Math.sin(t * 3) * 6;
-        [[1, 0.2], [1.1, 0.7]].forEach(function (k) {
+
+        /* a captain's tricorn hat with an anchor, tipped at a jaunty angle */
+        ctx.save();
+        ctx.translate(ox + 6, oy - 100);
+        ctx.rotate(0.12 + Math.sin(t * 1.6) * 0.03);
+        ctx.beginPath();                                                /* crown of the hat */
+        ctx.moveTo(-52, 6); ctx.bezierCurveTo(-50, -44, 50, -44, 52, 6); ctx.closePath();
+        art.fillLit(ctx, '#2e3270', -38, 6, { lineWidth: 3.5 });
+        ctx.beginPath();                                                /* the upturned brim */
+        ctx.moveTo(-86, -6);
+        ctx.quadraticCurveTo(-60, 2, -40, -20);
+        ctx.quadraticCurveTo(0, -4, 40, -20);
+        ctx.quadraticCurveTo(60, 2, 86, -6);
+        ctx.quadraticCurveTo(70, 22, 0, 22);
+        ctx.quadraticCurveTo(-70, 22, -86, -6);
+        ctx.closePath();
+        art.fillLit(ctx, '#3a3f86', -20, 22, { lineWidth: 3.5 });
+        ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 3.5;              /* gold trim */
+        ctx.beginPath();
+        ctx.moveTo(-80, -4); ctx.quadraticCurveTo(-60, 3, -41, -16);
+        ctx.quadraticCurveTo(0, -1, 41, -16);
+        ctx.quadraticCurveTo(60, 3, 80, -4);
+        ctx.stroke();
+        /* a gold anchor badge */
+        ctx.save(); ctx.translate(0, -14);
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 7; ctx.lineCap = 'round';
+        function anchor() {
           ctx.beginPath();
-          ctx.moveTo(ox + 84, oy - 62);
-          ctx.quadraticCurveTo(ox + 110, oy - 70 + k[1] * 30, ox + 120 * k[0], oy - 40 + k[1] * 30 + flap);
-          ctx.quadraticCurveTo(ox + 100, oy - 50 + k[1] * 20, ox + 86, oy - 50);
-          ctx.closePath();
-          art.fillLit(ctx, '#e63946', oy - 70, oy, { lineWidth: 3 });
-        });
-        art.ball(ctx, ox + 86, oy - 58, 9, '#e63946', { lineWidth: 3 });
-        /* eyes that follow the chest being opened */
+          ctx.moveTo(0, -9); ctx.lineTo(0, 9);
+          ctx.moveTo(-6, -4); ctx.lineTo(6, -4);
+          ctx.moveTo(-9, 3); ctx.quadraticCurveTo(-8, 11, 0, 11); ctx.quadraticCurveTo(8, 11, 9, 3);
+          ctx.stroke();
+        }
+        anchor();
+        ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 3.5; anchor();
+        art.ball(ctx, 0, -12, 3.5, '#f2c14e', { lineWidth: 2, shine: false });
+        ctx.restore();
+        ctx.restore();
+
+        /* big eyes that follow the chest being opened, under bouncy brows */
         var look = active ? [U.clamp((active.x - ox) / 300, -1, 1), 0.6] : [Math.sin(t * 0.7) * 0.5, 0.2];
-        [-32, 32].forEach(function (ex) {
-          art.eye(ctx, ox + ex, oy - 16, 21, { iris: '#3a86ff', look: look, blink: art.blink(11), lid: '#f07aac' });
+        var bl = art.blink(11);
+        [-30, 30].forEach(function (ex) {
+          art.eye(ctx, ox + ex, oy - 22, 20, { iris: '#3a86ff', look: look, blink: bl, lid: '#f07aac', happy: happy });
         });
-        art.cheeks(ctx, ox, oy + 14, 110, 14, 'rgba(255,90,140,.45)');
-        art.mouth(ctx, ox, oy + 22, 30, active ? 'o' : 'grin');
-        /* a gold hoop earring */
-        ctx.strokeStyle = art.INK; ctx.lineWidth = 7;
-        ctx.beginPath(); ctx.arc(ox - 90, oy + 10, 11, 0, Math.PI * 2); ctx.stroke();
-        ctx.strokeStyle = '#ffc93c'; ctx.lineWidth = 4; ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,.45)';
-        ctx.beginPath(); ctx.ellipse(ox - 44, oy - 46, 16, 7, -0.5, 0, Math.PI * 2); ctx.fill();
+        var up = active ? -6 : Math.sin(t * 1.3) * 1.5;
+        ctx.strokeStyle = art.INK; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ox - 46, oy - 52 + up); ctx.quadraticCurveTo(ox - 32, oy - 60 + up, ox - 16, oy - 54 + up);
+        ctx.moveTo(ox + 46, oy - 52 + up); ctx.quadraticCurveTo(ox + 32, oy - 60 + up, ox + 16, oy - 54 + up);
+        ctx.stroke();
+        art.cheeks(ctx, ox, oy + 6, 100, 13, 'rgba(255,90,140,.45)');
+        if (active && !happy) { art.mouth(ctx, ox, oy + 12, 24, 'o'); }
+        else { art.mouth(ctx, ox, oy + 12, 30, 'grin'); }
       }
 
       function drawChest(ctx, c) {
