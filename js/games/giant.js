@@ -19,9 +19,9 @@
       var round = 0, rule = null, used = [], items = [], got = 0;
       var hits = 0, misses = 0, state = 'play', timer = 0, spawnT = 1;
       var noise = 0, giantT = 0, awake = 0;
-      var pillow = { x: (LEFT + RIGHT) / 2, want: (LEFT + RIGHT) / 2, w: 200, squish: 0 };
+      var pillow = { x: (LEFT + RIGHT) / 2, want: (LEFT + RIGHT) / 2, w: api.pre ? 250 : 200, squish: 0 };
       var dragging = false, zs = [];
-      var fall = 62 + api.level.id * 8;
+      var fall = api.pre ? 50 : 62 + api.level.id * 8;
 
       function newRound() {
         round++;
@@ -259,14 +259,15 @@
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(it.thing, 0, 0);
         ctx.rotate(-tilt);
-        var fs = it.word.w.length > 7 ? 20 : 26;
+        var shown = api.label(it.word.w);
+        var fs = api.mode === 'letters' ? 34 : (shown.length > 7 ? 20 : 26);
         ctx.font = U.font(fs);
-        var tw = ctx.measureText(it.word.w).width + 22;
+        var tw = ctx.measureText(shown).width + 22;
         ctx.fillStyle = '#fffaf0';
         U.roundRect(ctx, -tw / 2, 24, tw, 32, 10); ctx.fill();
         ctx.strokeStyle = 'rgba(31,35,64,.2)'; ctx.lineWidth = 2; ctx.stroke();
         ctx.fillStyle = '#1f2340';
-        ctx.fillText(it.word.w, 0, 41);
+        ctx.fillText(shown, 0, 41);
         ctx.restore();
       }
 

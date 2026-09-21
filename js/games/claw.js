@@ -42,7 +42,7 @@
         recent.push(target.w);
         if (recent.length > 5) { recent.shift(); }
 
-        var n = round <= 2 ? 4 : 5;
+        var n = api.pre ? (round <= 3 ? 3 : 4) : (round <= 2 ? 4 : 5);
         var others = U.shuffle(api.words.filter(function (w) { return w.w !== target.w; })).slice(0, n - 1);
         var list = U.shuffle([target].concat(others));
 
@@ -117,7 +117,7 @@
         } else {
           misses++;
           api.sfx.boing();
-          api.say('That says');
+          api.say(api.mode === 'pictures' ? 'That is a' : 'That says');
           api.sayWord(c.word.w, { queue: true });
           api.say('Try again', { queue: true });
           claw.verdict = 'bad';
@@ -200,10 +200,10 @@
         ctx.fill();
 
         ctx.fillStyle = '#1f2340';
-        ctx.font = U.font(fontFor(c.word.w));
+        ctx.font = U.font(fontFor(api.label(c.word.w)));
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(c.word.w, c.x, y + 1);
+        ctx.fillText(api.label(c.word.w), c.x, y + 1);
 
         ctx.fillStyle = 'rgba(255,255,255,.5)';
         ctx.beginPath(); ctx.ellipse(c.x - 22, y - 34, 16, 9, -0.5, 0, Math.PI * 2); ctx.fill();

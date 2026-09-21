@@ -58,10 +58,43 @@
     };
   }
 
+  /* age 3: sort pictures into groups */
+  var GROUPS = { animal: 'animals', food: 'food', go: 'things that go' };
+  function groupRule(api, verb) {
+    var g = pick(Object.keys(GROUPS));
+    var name = GROUPS[g];
+    return {
+      key: 'group:' + g, label: verb + ' the', show: name, source: api.words,
+      test: function (w) { return w.group === g; },
+      say: function () { api.say(verb + ' all the ' + name + '!'); }
+    };
+  }
+
+  /* age 4: one letter, many copies */
+  function letterRule(api, verb) {
+    var L = pick(api.words);
+    return {
+      key: 'letter:' + L.w, label: verb + ' every letter', show: L.w, source: [L], single: true,
+      test: function (w) { return w.w === L.w; },
+      say: function () {
+        api.say(verb + ' every letter');
+        api.sayWord(L.w, { queue: true });
+      }
+    };
+  }
+
   PH.rules = {
     /* a rule not in `used`, trying each kind in random order */
     pick: function (api, used, verb) {
       used = used || [];
+      var special = api.mode === 'pictures' ? groupRule : (api.mode === 'letters' ? letterRule : null);
+      if (special) {
+        for (var t = 0; t < 12; t++) {
+          var s = special(api, verb);
+          if (used.indexOf(s.key) < 0) { return s; }
+        }
+        return special(api, verb);
+      }
       var makers = PH.util.shuffle([soundRule, startRule, rhymeRule]);
       for (var i = 0; i < makers.length; i++) {
         for (var tries = 0; tries < 6; tries++) {

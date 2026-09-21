@@ -86,6 +86,10 @@ button{font-family:inherit;cursor:pointer;border:none}
 }
 #prompt-text{font-size:clamp(16px,2.6vw,24px);font-weight:bold;text-align:center}
 #prompt-text .target{color:var(--pink);text-transform:lowercase}
+#prompt-text .pic{
+  font-size:1.8em;line-height:1;vertical-align:-.18em;
+  font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+}
 .say,.peek{background:var(--yellow);border-radius:50%;width:42px;height:42px;font-size:20px;flex:0 0 auto}
 .peek{background:var(--teal)}
 .say:active,.peek:active{transform:scale(.94)}

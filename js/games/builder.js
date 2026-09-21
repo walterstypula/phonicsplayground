@@ -21,7 +21,10 @@
         api.words.forEach(function (w) { w.g.forEach(function (g) { set[g] = 1; }); });
         return Object.keys(set);
       }
-      var GRAPHEMES = allGraphemes();
+      var GRAPHEMES = api.pre ? api.words.map(function (w) { return w.w; }) : allGraphemes();
+
+      /* ages 3 and 4: the whole picture or letter is one chunk - "feed me the apple" */
+      function chunks(w) { return api.pre ? [w.w] : w.g; }
 
       function layout() {
         var ctx = PH.Engine.ctx;
@@ -29,16 +32,16 @@
         var widths, total;
         for (;;) {
           ctx.font = U.font(fs);
-          widths = target.g.map(function (g) {
-            return Math.max(fs * 1.7, ctx.measureText(g).width + 34);
+          widths = chunks(target).map(function (g) {
+            return Math.max(fs * 1.7, ctx.measureText(api.label(g)).width + 34);
           });
-          total = widths.reduce(function (a, b) { return a + b; }, 0) + (target.g.length - 1) * 12;
+          total = widths.reduce(function (a, b) { return a + b; }, 0) + (chunks(target).length - 1) * 12;
           if (total <= api.W - 120 || fs <= 22) { break; }
           fs -= 4;
         }
         var h = fs + 44;
         var x = (api.W - total) / 2;
-        slots = target.g.map(function (g, i) {
+        slots = chunks(target).map(function (g, i) {
           var s = { g: g, x: x, y: 150, w: widths[i], h: h, fs: fs, tile: null };
           x += widths[i] + 12;
           return s;
@@ -46,13 +49,13 @@
 
         /* tiles: the real chunks plus a couple of impostors */
         var extras = U.shuffle(GRAPHEMES.filter(function (g) {
-          return target.g.indexOf(g) < 0;
-        })).slice(0, target.g.length > 3 ? 2 : 3);
-        var bag = U.shuffle(target.g.map(function (g) { return { g: g, real: true }; })
+          return chunks(target).indexOf(g) < 0;
+        })).slice(0, api.mode === 'pictures' ? 2 : (chunks(target).length > 3 ? 2 : 3));
+        var bag = U.shuffle(chunks(target).map(function (g) { return { g: g, real: true }; })
           .concat(extras.map(function (g) { return { g: g, real: false }; })));
 
         ctx.font = U.font(fs);
-        var tw = bag.map(function (b) { return Math.max(fs * 1.7, ctx.measureText(b.g).width + 34); });
+        var tw = bag.map(function (b) { return Math.max(fs * 1.7, ctx.measureText(api.label(b.g)).width + 34); });
         var rowTotal = tw.reduce(function (a, b) { return a + b; }, 0) + (bag.length - 1) * 14;
         var tx = (api.W - rowTotal) / 2;
         tiles = bag.map(function (b, i) {
@@ -83,12 +86,12 @@
         layout();
         mouth = 0; chew = 0; state = 'play';
         api.setProgress(round, ROUNDS);
-        api.setPrompt('Build the word', { word: target.w, repeat: sayPrompt });
+        api.setPrompt(api.pre ? 'Feed me the' : 'Build the word', { word: target.w, repeat: sayPrompt });
         sayPrompt();
       }
 
       function sayPrompt() {
-        api.say('Build the word');
+        api.say(api.pre ? 'Feed me the' : 'Build the word');
         api.sayWord(target.w, { queue: true });
       }
 
@@ -107,7 +110,7 @@
         s.tile = tile;
         tile.slot = s;
         api.sfx.click();
-        api.say(PH.soundHint(tile.g), { rate: 0.6 });
+        if (api.pre) { api.sayWord(tile.g); } else { api.say(PH.soundHint(tile.g), { rate: 0.6 }); }
         fly(tile, s.x, s.y, check);
       }
 
@@ -269,7 +272,7 @@
         ctx.font = U.font(26);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Tap the chunks in order', api.W / 2, 96);
+        ctx.fillText(api.pre ? 'Tap the one the monster wants' : 'Tap the chunks in order', api.W / 2, 96);
 
         drawMonster(ctx);
 
@@ -293,7 +296,7 @@
           var extra = t.slot ? sx : 0;
           U.tile(ctx, {
             x: t.x + extra, y: t.y, w: t.w, h: t.h, r: 14,
-            text: t.g, fontSize: t.fs,
+            text: api.label(t.g), fontSize: t.fs,
             fill: t.slot ? '#ffd23f' : '#ffffff',
             textColor: '#1f2340',
             stroke: 'rgba(31,35,64,.16)', lineWidth: 3

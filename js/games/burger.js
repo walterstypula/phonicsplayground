@@ -33,7 +33,17 @@
         api.words.forEach(function (w) { w.g.forEach(function (g) { set[g] = 1; }); });
         return Object.keys(set);
       }
-      var CHUNKS = allChunks();
+      /* age 3 builds a picture burger, age 4 spells a word with letters */
+      var FOOD = { cheese: '🧀', lettuce: '🥬', tomato: '🍅', bacon: '🥓',
+        pickle: '🥒', onion: '🧅', egg: '🥚', mushroom: '🍄' };
+      var pics = api.mode === 'pictures';
+      var CHUNKS = pics ? Object.keys(FOOD) : allChunks();
+      function shown(g) { return pics ? FOOD[g] + ' ' + g : g; }
+      function spellable() {
+        var have = {};
+        api.words.forEach(function (w) { have[w.w] = 1; });
+        return PH.levelById(1).words.filter(function (w) { return w.g.every(function (c) { return have[c]; }); });
+      }
 
       function newRound() {
         round++;
@@ -46,6 +56,11 @@
           return recent.indexOf(w.w) < 0 && w.g.length <= 5;
         });
         target = U.pick(pool.length > 5 ? pool : api.words);
+        if (pics) {
+          target = { w: 'burger', g: U.shuffle(CHUNKS).slice(0, round <= 2 ? 2 : 3) };
+        } else if (api.mode === 'letters') {
+          target = U.pick(spellable());
+        }
         recent.push(target.w);
         if (recent.length > 5) { recent.shift(); }
 
@@ -66,13 +81,23 @@
         busy = null;
         state = 'play';
         api.setProgress(round, ROUNDS);
-        api.setPrompt('Order up:', { word: target.w, repeat: sayPrompt });
+        if (pics) { api.setPrompt('Make my burger!', { repeat: sayPrompt }); }
+        else { api.setPrompt('Order up:', { word: target.w, repeat: sayPrompt }); }
         sayPrompt();
       }
 
       function sayPrompt() {
+        if (pics) {
+          api.say('A burger with');
+          target.g.forEach(function (g, i) { api.say((i ? 'then ' : '') + g, { queue: true, rate: 0.8 }); });
+          return;
+        }
         api.say('One burger. Please make');
         api.sayWord(target.w, { queue: true });
+        if (api.mode === 'letters') {
+          api.say('with the letters', { queue: true });
+          target.g.forEach(function (g) { api.say(g, { queue: true, rate: 0.7 }); });
+        }
       }
 
       /* ---- chef movement: walk to a ladder, climb, walk to the ingredient ---- */
@@ -117,7 +142,7 @@
           pt.wobble = 0.5;
           api.sfx.bad();
           api.say('Not that one yet. Listen:');
-          api.sayWord(target.w, { queue: true, rate: 0.6 });
+          if (api.pre) { sayPrompt(); } else { api.sayWord(target.w, { queue: true, rate: 0.6 }); }
         }
       }
 
@@ -225,9 +250,10 @@
           U.roundRect(ctx, x - w / 2, y - h, w, h, 12); ctx.fill(); ctx.stroke();
         }
         ctx.fillStyle = pt.look.text;
-        ctx.font = U.font(pt.g.length > 3 ? 20 : 24);
+        var label = shown(pt.g);
+        ctx.font = U.font(api.mode === 'letters' ? 28 : (label.length > 5 ? 19 : 24));
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(pt.g, x, y - h / 2 + 1);
+        ctx.fillText(label, x, y - h / 2 + 1);
         ctx.restore();
       }
 
@@ -275,9 +301,11 @@
           ctx.fillStyle = have ? '#3ddc84' : '#f1ead8';
           U.roundRect(ctx, sx, 28, cw, 48, 10); ctx.fill();
           ctx.fillStyle = '#1f2340';
-          ctx.font = U.font(target.g[i].length > 3 ? 20 : 28);
+          ctx.font = pics ? '32px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif' : U.font(target.g[i].length > 3 ? 20 : 28);
           ctx.textAlign = 'center';
-          ctx.fillText(have ? have.g : (i === built.length ? '?' : ''), sx + cw / 2, 53);
+          /* little ones see the whole order; readers get a question mark for the next chunk */
+          var cellText = have ? have.g : (api.pre ? target.g[i] : (i === built.length ? '?' : ''));
+          ctx.fillText(pics ? FOOD[cellText] || '' : cellText, sx + cw / 2, 53);
           sx += cw + gap;
         }
       }

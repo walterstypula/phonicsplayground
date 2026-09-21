@@ -132,24 +132,87 @@
     }
   ];
 
-  PH.LEVELS = RAW.map(function (lv) {
-    return { id: lv.id, name: lv.name, focus: lv.focus, words: parse(lv.words, lv.id) };
+  /* ---------- pre-reader levels (ages 3 and 4) ----------
+     Pictures: "word|emoji|group|syllables|rime". Groups drive "munch all the animals" style
+     rules, syllables drive clapping, and rimes are given so that bear / pear / chair rhyme.  */
+  var PICTURES = [
+    'cat|🐱|animal|cat|at', 'bat|🦇|animal|bat|at', 'hat|🎩|thing|hat|at',
+    'dog|🐶|animal|dog|og', 'frog|🐸|animal|frog|og',
+    'bee|🐝|animal|bee|ee', 'tree|🌳|thing|tree|ee', 'key|🔑|thing|key|ee',
+    'cake|🍰|food|cake|ake', 'snake|🐍|animal|snake|ake',
+    'goat|🐐|animal|goat|oat', 'boat|⛵|go|boat|oat', 'coat|🧥|thing|coat|oat',
+    'mouse|🐭|animal|mouse|ouse', 'house|🏠|thing|house|ouse',
+    'bear|🐻|animal|bear|air', 'pear|🍐|food|pear|air', 'chair|🪑|thing|chair|air',
+    'car|🚗|go|car|ar', 'star|⭐|thing|star|ar',
+    'moon|🌙|thing|moon|oon', 'spoon|🥄|thing|spoon|oon',
+    'duck|🦆|animal|duck|uck', 'truck|🚚|go|truck|uck',
+    'fox|🦊|animal|fox|ox', 'box|📦|thing|box|ox',
+    'sock|🧦|thing|sock|ock', 'clock|⏰|thing|clock|ock',
+    'ring|💍|thing|ring|ing', 'king|🤴|thing|king|ing',
+    'fish|🐟|animal|fish|ish', 'pig|🐷|animal|pig|ig', 'sun|☀️|thing|sun|un',
+    'bus|🚌|go|bus|us', 'egg|🥚|food|egg|egg', 'cow|🐄|animal|cow|ow',
+    'train|🚂|go|train|ain', 'bike|🚲|go|bike|ike', 'plane|✈️|go|plane|ane',
+    'cheese|🧀|food|cheese|eese', 'corn|🌽|food|corn|orn', 'bread|🍞|food|bread|ead',
+    'apple|🍎|food|ap.ple|apple', 'banana|🍌|food|ba.na.na|anana',
+    'pizza|🍕|food|piz.za|izza', 'carrot|🥕|food|car.rot|arrot',
+    'tomato|🍅|food|to.ma.to|omato', 'cookie|🍪|food|cook.ie|ookie',
+    'rabbit|🐰|animal|rab.bit|abbit', 'monkey|🐒|animal|mon.key|onkey',
+    'tiger|🐯|animal|ti.ger|iger', 'spider|🕷️|animal|spi.der|ider',
+    'elephant|🐘|animal|el.e.phant|elephant', 'octopus|🐙|animal|oc.to.pus|octopus',
+    'butterfly|🦋|animal|but.ter.fly|utterfly', 'dinosaur|🦕|animal|di.no.saur|osaur',
+    'rocket|🚀|go|roc.ket|ocket', 'tractor|🚜|go|trac.tor|actor',
+    'helicopter|🚁|go|hel.i.cop.ter|elicopter',
+    'insect|🐛|animal|in.sect|insect', 'nose|👃|thing|nose|ose',
+    'umbrella|☂️|thing|um.brel.la|ella', 'lion|🦁|animal|li.on|ion',
+    'watermelon|🍉|food|wa.ter.mel.on|elon', 'van|🚐|go|van|an',
+    'zebra|🦓|animal|ze.bra|ebra'
+  ].map(function (line) {
+    var b = line.split('|');
+    return { w: b[0], pic: b[1], group: b[2], g: b[3].split('.'), rime: b[4], level: -1 };
   });
 
-  /* every word from level 1 up to and including `id` */
+  /* Letters: "letter|keyword". Every keyword starts with its letter's sound and is a
+     picture word, so the prompt can show it: "s says sss, like sun". */
+  var LETTERS = [
+    's|sun', 'a|apple', 't|tiger', 'p|pig', 'i|insect', 'n|nose', 'm|monkey', 'd|dog', 'g|goat',
+    'o|octopus', 'c|cat', 'k|key', 'e|egg', 'u|umbrella', 'r|rabbit', 'h|hat', 'b|bear', 'f|fox',
+    'l|lion', 'w|watermelon', 'v|van', 'z|zebra'
+  ].map(function (line) {
+    var b = line.split('|');
+    return { w: b[0], g: [b[0]], rime: b[0], level: 0, letter: true, key: b[1] };
+  });
+
+  PH.PICTURES = PICTURES;
+  PH.picFor = {};
+  PICTURES.forEach(function (p) { PH.picFor[p.w] = p.pic; });
+
+  PH.LEVELS = [
+    { id: -1, name: 'Tiny Tots · Pictures', focus: 'Listening, matching, rhymes and clapping', mode: 'pictures', words: PICTURES },
+    { id: 0, name: 'Little Letters', focus: 'Letter shapes and the sounds they make', mode: 'letters', words: LETTERS }
+  ].concat(RAW.map(function (lv) {
+    return { id: lv.id, name: lv.name, focus: lv.focus, words: parse(lv.words, lv.id) };
+  }));
+
+  /* every reading word from level 1 up to and including `id`; the pre-reader levels
+     stand alone so pictures and letters never leak into the reading games */
   PH.wordsUpTo = function (id) {
     var out = [];
-    PH.LEVELS.forEach(function (lv) { if (lv.id <= id) { out = out.concat(lv.words); } });
+    PH.LEVELS.forEach(function (lv) {
+      var take = id >= 1 ? (lv.id >= 1 && lv.id <= id) : lv.id === id;
+      if (take) { out = out.concat(lv.words); }
+    });
     return out;
   };
 
   PH.levelById = function (id) {
-    return PH.LEVELS.filter(function (l) { return l.id === id; })[0] || PH.LEVELS[0];
+    return PH.LEVELS.filter(function (l) { return l.id === id; })[0] ||
+      PH.LEVELS.filter(function (l) { return l.id === 1; })[0];
   };
 
   /* age -> starting level */
   PH.levelForAge = function (age) {
-    return ({ 4: 1, 5: 1, 6: 2, 7: 3, 8: 4, 9: 5 })[age] || 1;
+    var map = { 3: -1, 4: 0, 5: 1, 6: 2, 7: 3, 8: 4, 9: 5 };
+    return map.hasOwnProperty(age) ? map[age] : 1;   /* not `|| 1`: level 0 is a real level */
   };
 
   /* the graphemes of a word that actually make a sound - a final magic e does not */

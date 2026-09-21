@@ -16,7 +16,8 @@
 
     create: function (api) {
       var ROUNDS = 6;
-      var claps = api.level.id === 5;   /* level 5 counts syllables instead of sounds */
+      /* level 5 and the pre-reader levels count syllables (claps) instead of sounds */
+      var claps = api.level.id === 5 || api.pre;
       var GOAL = { x1: 220, x2: 780, top: 104, bottom: 330 };
       var SPOT = { x: 500, y: 560 };
       var round = 0, target = null, count = 0, targets = [], recent = [], goals = 0;
@@ -31,6 +32,7 @@
       function chunks(w) { return claps ? w.g : PH.soundGraphemes(w); }
 
       function buildPool() {
+        if (api.pre) { return PH.PICTURES.slice(); }   /* clap picture words: ba-na-na */
         var pool = api.words.filter(function (w) { return w.w.indexOf('x') < 0; });   /* x is two sounds */
         if (api.level.id <= 2) {
           pool = pool.concat(EXTRA.map(function (e) {
@@ -206,7 +208,7 @@
       function drawLesson(ctx) {
         if (lesson <= 0 || !target) { return; }
         var parts = chunks(target);
-        var text = parts.join('  •  ') + '   =   ' + count;
+        var text = (api.pre ? api.label(target.w) + '   ' : '') + parts.join('  •  ') + '   =   ' + count;
         ctx.font = U.font(34);
         var w = ctx.measureText(text).width + 50;
         ctx.globalAlpha = U.clamp(lesson / 0.4, 0, 1);

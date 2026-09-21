@@ -36,6 +36,8 @@
         var no = U.shuffle(PH.rules.nonMatches(api, rule));
         var nYes = Math.min(yes.length, U.randInt(5, 7));
         var list = yes.slice(0, nYes);
+        /* a letter rule has one matching item, so scatter several copies of it */
+        if (rule.single) { list = []; for (var c5 = U.randInt(5, 6); c5 > 0; c5--) { list.push(yes[0]); } }
         for (var i = 0; list.length < COLS * ROWS && i < no.length; i++) { list.push(no[i]); }
         list = U.shuffle(list);
         cells = [];
@@ -237,7 +239,7 @@
           var lw = ctx.measureText(rule.label + ': ').width;
           ctx.fillStyle = '#ffffff';
           ctx.font = U.font(34);
-          ctx.fillText(rule.show, 30 + lw, 40);
+          ctx.fillText(api.label(rule.show), 30 + lw, 40);
         }
         ctx.fillStyle = 'rgba(255,255,255,.7)';
         ctx.font = U.font(20);
@@ -255,9 +257,9 @@
             ctx.lineWidth = 2; ctx.stroke();
             if (cell && !cell.eaten && !here) {
               var dx = cell.wobble > 0 ? Math.sin(cell.wobble * 50) * 6 : 0;
-              var t = cell.word.w;
+              var t = api.label(cell.word.w);
               ctx.fillStyle = cell.wobble > 0 ? '#ff8fb0' : '#ffffff';
-              ctx.font = U.font(t.length > 7 ? 24 : 30);
+              ctx.font = U.font(api.mode === 'letters' ? 46 : (t.length > 7 ? 24 : 30));
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
               ctx.fillText(t, x + CW / 2 + dx, y + CH / 2);
             }
@@ -271,13 +273,14 @@
         if (mine && !mine.eaten) {
           var p = cellXY(me.c, me.r);
           var tx = p.x + me.dx, ty = p.y + me.dy - CH / 2 + 14;
-          ctx.font = U.font(mine.word.w.length > 7 ? 22 : 26);
-          var tw = ctx.measureText(mine.word.w).width + 24;
+          var mineText = api.label(mine.word.w);
+          ctx.font = U.font(mineText.length > 7 ? 22 : 26);
+          var tw = ctx.measureText(mineText).width + 24;
           ctx.fillStyle = mine.wobble > 0 ? '#ff5d8f' : '#ffd23f';
           U.roundRect(ctx, tx - tw / 2, ty - 16, tw, 34, 12); ctx.fill();
           ctx.fillStyle = '#1f2340';
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(mine.word.w, tx, ty + 1);
+          ctx.fillText(mineText, tx, ty + 1);
         }
       }
 

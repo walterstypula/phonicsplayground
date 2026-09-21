@@ -24,7 +24,9 @@
         });
         return Object.keys(set);
       }
-      var BANK = graphemeBank();
+      /* ages 3 and 4: fish carry whole pictures or single letters */
+      var BANK = api.pre ? api.words.map(function (w) { return w.w; }) : graphemeBank();
+      var pics = api.mode === 'pictures';
 
       function newRound() {
         round++;
@@ -41,8 +43,14 @@
 
         mode = (api.level.id >= 2 && Math.random() < 0.4) ? 'last' : 'first';
         answer = mode === 'first' ? PH.firstSound(target) : PH.lastSound(target);
+        if (pics) {
+          answer = target.w;                          /* "catch the cat" */
+        } else if (api.mode === 'letters') {
+          answer = target.w;                          /* "first sound in sun" -> s */
+          target = { w: target.key };
+        }
 
-        var others = U.shuffle(BANK.filter(function (g) { return g !== answer; })).slice(0, 4);
+        var others = U.shuffle(BANK.filter(function (g) { return g !== answer; })).slice(0, pics ? 3 : 4);
         var all = U.shuffle([answer].concat(others));
 
         var lanes = U.shuffle([212, 300, 388, 476, 556]);
@@ -54,7 +62,7 @@
             y: lanes[i] + U.rand(-10, 10),
             x: spots[i] + U.rand(-30, 30),
             dir: dir,
-            speed: U.rand(52, 84) + round * 4,
+            speed: api.pre ? U.rand(36, 56) : U.rand(52, 84) + round * 4,
             color: PH.COLORS[(i + round) % PH.COLORS.length],
             wig: U.rand(0, 6), shake: 0, caught: false
           };
@@ -63,12 +71,17 @@
         hook.x = api.W / 2; hook.y = hook.homeY; hook.target = null;
         state = 'play';
         api.setProgress(round, ROUNDS);
-        api.setPrompt(mode === 'first' ? 'First sound in' : 'Last sound in',
+        api.setPrompt(pics ? 'Catch the' : (mode === 'first' ? 'First sound in' : 'Last sound in'),
           { word: target.w, show: true, repeat: sayPrompt });
         sayPrompt();
       }
 
       function sayPrompt() {
+        if (pics) {
+          api.say('Catch the');
+          api.sayWord(target.w, { queue: true });
+          return;
+        }
         api.say('Catch the ' + (mode === 'first' ? 'first' : 'last') + ' sound in');
         api.sayWord(target.w, { queue: true });
       }
@@ -91,8 +104,13 @@
               f.shake = 0.5;
               f.speed += 40;
               api.sfx.bad();
-              api.say('That one says');
-              api.say(PH.soundHint(f.g), { rate: 0.55, queue: true });
+              if (pics) {
+                api.say('That is a');
+                api.sayWord(f.g, { queue: true });
+              } else {
+                api.say('That one says');
+                api.say(PH.soundHint(f.g), { rate: 0.55, queue: true });
+              }
             }
             return;
           }
@@ -134,10 +152,15 @@
             api.addStar(1);
             api.sfx.great();
             api.burst(api.W / 2, hook.homeY, null, 26, { lift: 120 });
-            api.say('Yes!');
-            api.say(PH.soundHint(answer), { rate: 0.55, queue: true });
-            api.say('in', { queue: true });
-            api.sayWord(target.w, { queue: true });
+            if (pics) {
+              api.say('You caught the');
+              api.sayWord(target.w, { queue: true });
+            } else {
+              api.say('Yes!');
+              api.say(PH.soundHint(answer), { rate: 0.55, queue: true });
+              api.say('in', { queue: true });
+              api.sayWord(target.w, { queue: true });
+            }
           }
         } else if (state === 'won') {
           timer += dt;
@@ -177,14 +200,15 @@
         /* the sound */
         ctx.scale(f.dir, 1);
         ctx.fillStyle = 'rgba(255,255,255,.92)';
-        ctx.font = U.font(f.g.length > 2 ? 26 : 32);
-        var tw = ctx.measureText(f.g).width;
+        var shown = api.label(f.g);
+        ctx.font = U.font(api.mode === 'letters' ? 36 : (shown.length > 2 ? 24 : 32));
+        var tw = ctx.measureText(shown).width;
         U.roundRect(ctx, -tw / 2 - 12, -18, tw + 24, 38, 12);
         ctx.fill();
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(f.g, 0, 2);
+        ctx.fillText(shown, 0, 2);
         ctx.restore();
       }
 

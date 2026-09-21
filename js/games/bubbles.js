@@ -27,9 +27,12 @@
       } else {
         sounds = PH.soundsFor(api.level, 4);
       }
+      /* ages 3 and 4: the target is a whole picture or letter - "pop every cat" */
+      if (api.pre) { sounds = api.words.map(function (w) { return w.w; }); }
       if (!sounds.length) { sounds = ['a']; }
 
       function matches(w) {
+        if (api.pre) { return w.w === sound; }
         return bySpelling ? w.w.indexOf(sound) >= 0 : PH.soundGraphemes(w).indexOf(sound) >= 0;
       }
 
@@ -57,11 +60,16 @@
         for (var i = 0; i < 6; i++) { spawn(U.rand(90, api.H - 60)); }
         state = 'play';
         api.setProgress(round, ROUNDS);
-        api.setPrompt('Pop the sound', { word: sound, show: true, repeat: sayPrompt });
+        api.setPrompt(api.pre ? 'Pop every' : 'Pop the sound', { word: sound, show: true, repeat: sayPrompt });
         sayPrompt();
       }
 
       function sayPrompt() {
+        if (api.pre) {
+          api.say('Pop every');
+          api.sayWord(sound, { queue: true });
+          return;
+        }
         api.say('Pop the words with the sound');
         api.say(PH.soundHint(sound), { rate: 0.55, queue: true });
         api.say('like in', { queue: true });
@@ -73,10 +81,11 @@
         var pool = wantMatch ? matchPool() : otherPool();
         if (!pool.length) { pool = api.words; }
         var word = U.pick(pool);
-        var fs = word.w.length > 7 ? 18 : (word.w.length > 5 ? 23 : 29);
+        var shown = api.label(word.w);
+        var fs = api.mode === 'letters' ? 46 : (shown.length > 7 ? 20 : (shown.length > 5 ? 24 : 29));
         var ctx = PH.Engine.ctx;
         ctx.font = U.font(fs);
-        var tw = ctx.measureText(word.w).width;
+        var tw = ctx.measureText(shown).width;
         var r = Math.max(44, tw / 2 + 18);
         bubbles.push({
           word: word, match: matches(word), r: r, fs: fs,
@@ -186,7 +195,7 @@
         ctx.font = U.font(120);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(sound, api.W / 2, api.H - 96);
+        ctx.fillText(api.label(sound), api.W / 2, api.H - 96);
         ctx.restore();
 
         bubbles.forEach(function (b) {
@@ -220,7 +229,7 @@
           ctx.font = U.font(b.fs);
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(b.word.w, 0, 2);
+          ctx.fillText(api.label(b.word.w), 0, 2);
           ctx.restore();
         });
 

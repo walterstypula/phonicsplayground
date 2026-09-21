@@ -23,7 +23,7 @@
   /* ---------- menu ---------- */
   function renderAges() {
     dom.ages.innerHTML = '';
-    [4, 5, 6, 7, 8, 9].forEach(function (age) {
+    [3, 4, 5, 6, 7, 8, 9].forEach(function (age) {
       var b = document.createElement('button');
       b.className = 'age';
       b.textContent = age;
@@ -46,7 +46,8 @@
     dom.levelNote.innerHTML = 'Playing <b>' + lv.name + '</b> &mdash; ' + lv.focus +
       ' &nbsp;<button class="mini" id="btn-level">change level</button>';
     $('btn-level').addEventListener('click', function () {
-      state.levelId = state.levelId % PH.LEVELS.length + 1;
+      var ids = PH.LEVELS.map(function (l) { return l.id; });
+      state.levelId = ids[(ids.indexOf(state.levelId) + 1) % ids.length];
       PH.sfx.click();
       renderLevelNote();
     });

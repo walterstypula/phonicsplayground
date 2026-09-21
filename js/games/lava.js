@@ -10,7 +10,7 @@
     blurb: 'Hop across the bubbling lava. Only the stone with the word you hear is safe!',
 
     create: function (api) {
-      var COLS = 8;                       /* stones to cross before the island */
+      var COLS = api.mode === 'pictures' ? 5 : 8;   /* stones to cross before the island */
       var GAP = 250, X0 = 170;            /* world spacing */
       var LANES = [210, 340, 470];
       var LAVA_Y = 560;
@@ -46,9 +46,10 @@
         c.stones.forEach(function (s, k) {
           s.text = words[k].w;
           s.right = words[k].w === target.w;
-          s.fs = s.text.length > 7 ? 24 : (s.text.length > 5 ? 28 : 34);
+          var shown = api.label(s.text);
+          s.fs = api.mode === 'letters' ? 44 : (shown.length > 7 ? 24 : (shown.length > 5 ? 28 : 34));
           ctx.font = U.font(s.fs);
-          s.w = Math.max(170, ctx.measureText(s.text).width + 50);
+          s.w = Math.max(170, ctx.measureText(shown).width + 50);
           s.sink = 0; s.hot = 0;
         });
         api.setProgress(i, COLS);
@@ -92,7 +93,7 @@
               s.hot = 1;
               api.sfx.sizzle();
               api.burst(colX(col + 1) - camX, LANES[s.lane], ['#ff5a1f', '#ffb000', '#ffe066'], 14, { lift: 200 });
-              api.say('Hot hot hot! That says');
+              api.say(api.mode === 'pictures' ? 'Hot hot hot! That is a' : 'Hot hot hot! That says');
               api.sayWord(s.text, { queue: true });
             }
             return;
@@ -198,7 +199,7 @@
           ctx.fillStyle = '#1f2340';
           ctx.font = U.font(s.fs);
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(s.text, r.x + r.w / 2, r.y - 8);
+          ctx.fillText(api.label(s.text), r.x + r.w / 2, r.y - 8);
         }
       }
 

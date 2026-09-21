@@ -13,7 +13,17 @@
       var FIXES = 8;
       var PIPES = [168, 308, 448];
       var SPOT_X = [210, 430, 650, 870];
-      var MAX_LEAKS = api.level.id <= 2 ? 3 : 4;
+      var MAX_LEAKS = api.mode === 'pictures' ? 2 : (api.level.id <= 2 ? 3 : 4);
+      /* ages 3 and 4 blend picture words by ear */
+      var WORDS = api.pre ? PH.PICTURES : api.words;
+      function partsOf(w) {
+        if (api.pre) {
+          if (api.mode === 'pictures' && w.g.length > 1) { return w.g; }          /* ba - na - na */
+          var first = PH.firstSound(w);
+          return [PH.soundHint(first), w.w.slice(first.length)];                   /* c - at */
+        }
+        return syllables ? w.g : PH.soundHintsFor(w);
+      }
       var syllables = api.level.id === 5;
       var spots = [], drops = [], recent = [];
       var fixed = 0, hits = 0, misses = 0, state = 'play', timer = 0;
@@ -30,8 +40,8 @@
         if (!free.length) { return; }
         var spot = U.pick(free);
         var inUse = active().map(function (s) { return s.leak.word.w; });
-        var pool = api.words.filter(function (w) { return inUse.indexOf(w.w) < 0 && recent.indexOf(w.w) < 0; });
-        if (!pool.length) { pool = api.words.filter(function (w) { return inUse.indexOf(w.w) < 0; }); }
+        var pool = WORDS.filter(function (w) { return inUse.indexOf(w.w) < 0 && recent.indexOf(w.w) < 0; });
+        if (!pool.length) { pool = WORDS.filter(function (w) { return inUse.indexOf(w.w) < 0; }); }
         /* often pick a look-alike of a leak already spraying, so blending really matters */
         var alike = pool.filter(function (w) {
           return active().some(function (s) {
@@ -58,8 +68,8 @@
       /* the whole point: say the parts, never the word */
       function sayPrompt() {
         if (!target) { return; }
-        var parts = syllables ? target.g : PH.soundHintsFor(target);
-        api.say(syllables ? 'Clap it together.' : 'Blend the sounds.');
+        var parts = partsOf(target);
+        api.say(syllables && !api.pre ? 'Clap it together.' : 'Blend the sounds.');
         parts.forEach(function (p) {
           api.say(p, { rate: 0.5, queue: true });
         });
@@ -95,7 +105,7 @@
               api.say('That one says');
               api.sayWord(s.leak.word.w, { queue: true });
               api.say('Listen again.', { queue: true });
-              var parts = syllables ? target.g : PH.soundHintsFor(target);
+              var parts = partsOf(target);
               parts.forEach(function (pp) {
                 api.say(pp, { rate: 0.5, queue: true });
               });
@@ -199,16 +209,17 @@
         ctx.fillStyle = '#1f2a38';
         ctx.beginPath(); ctx.ellipse(s.x, s.y + 6, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
         /* word tag hanging above the hole */
-        var fs = L.word.w.length > 7 ? 20 : 26;
+        var shown = api.label(L.word.w);
+        var fs = shown.length > 7 ? 20 : 26;
         ctx.font = U.font(fs);
-        var tw = ctx.measureText(L.word.w).width + 26;
+        var tw = ctx.measureText(shown).width + 26;
         var ty = s.y - 64;
         ctx.fillStyle = L.wobble > 0 ? '#ffd7de' : '#fffaf0';
         U.roundRect(ctx, s.x - tw / 2 + dx, ty - 20, tw, 40, 12); ctx.fill();
         ctx.strokeStyle = '#4d8dff'; ctx.lineWidth = 3; ctx.stroke();
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(L.word.w, s.x + dx, ty + 1);
+        ctx.fillText(shown, s.x + dx, ty + 1);
         ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(s.x + dx, ty + 20); ctx.lineTo(s.x, s.y - 16); ctx.stroke();
       }

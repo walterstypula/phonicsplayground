@@ -10,7 +10,7 @@
     blurb: 'Listen to the word, then tap every copy hiding in the meadow.',
 
     create: function (api) {
-      var ROUNDS = 6, SLOTS = 12;
+      var ROUNDS = 6, SLOTS = api.mode === 'pictures' ? 8 : 12;
       var words = api.words;
       var round = 0, target = null, tiles = [], state = 'play', timer = 0;
       var hits = 0, misses = 0, recent = [];
@@ -27,8 +27,10 @@
       }
 
       function measure(ctx, text) {
-        var fs = text.length > 7 ? 26 : (text.length > 5 ? 32 : 38);
-        var m = U.measureTile(ctx, text, fs, 20, 14);
+        var fs = api.mode === 'pictures' ? 34
+          : api.mode === 'letters' ? 54
+          : (text.length > 7 ? 26 : (text.length > 5 ? 32 : 38));
+        var m = U.measureTile(ctx, text, fs, 20, api.mode === 'pictures' ? 22 : 14);
         m.fs = fs;
         return m;
       }
@@ -46,7 +48,7 @@
         recent.push(target.w);
         if (recent.length > 5) { recent.shift(); }
 
-        var copies = round <= 2 ? 2 : (round <= 4 ? 3 : 4);
+        var copies = api.pre ? (round <= 3 ? 2 : 3) : (round <= 2 ? 2 : (round <= 4 ? 3 : 4));
         var sim = U.shuffle(similarTo(target));
         var others = U.shuffle(words.filter(function (o) {
           return o.w !== target.w && sim.indexOf(o) < 0;
@@ -64,14 +66,15 @@
         var cols = 4, rows = 3;
         var x0 = 70, x1 = api.W - 70, y0 = 120, y1 = api.H - 90;
         var cw = (x1 - x0) / cols, ch = (y1 - y0) / rows;
-        var slotOrder = U.shuffle(list.map(function (_, k) { return k; }));
+        /* spread the tiles over every grid slot, even when there are fewer tiles than slots */
+        var slotOrder = U.shuffle(Array.apply(null, Array(cols * rows)).map(function (_, k) { return k; }));
         var ctx = PH.Engine.ctx;
 
         tiles = list.map(function (item, k) {
           var slot = slotOrder[k];
           var cx = x0 + (slot % cols) * cw + cw / 2 + U.rand(-16, 16);
           var cy = y0 + Math.floor(slot / cols) * ch + ch / 2 + U.rand(-14, 14);
-          var m = measure(ctx, item.word.w);
+          var m = measure(ctx, api.label(item.word.w));
           var a = U.rand(0, Math.PI * 2);
           var sp = U.rand(8, 20);
           return {
@@ -217,7 +220,7 @@
           ctx.globalAlpha = alpha;
           U.tile(ctx, {
             x: t.x, y: t.y, w: t.w, h: t.h, r: 18,
-            text: t.word.w, fontSize: t.fs,
+            text: api.label(t.word.w), fontSize: t.fs,
             fill: t.wobble > 0 ? '#ffd7de' : '#ffffff',
             stroke: t.wobble > 0 ? '#ff5d8f' : 'rgba(31,35,64,.12)',
             lineWidth: t.wobble > 0 ? 5 : 3,

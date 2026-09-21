@@ -13,7 +13,7 @@
       var ROUNDS = 6;
       var PLANE_X = 190;
       var LANES = [190, 340, 490];
-      var SPEED = 120 + api.level.id * 10;
+      var SPEED = api.pre ? 95 : 120 + api.level.id * 10;
       var round = 0, target = null, gap = 0, answer = '', wave = null, recent = [];
       var hits = 0, misses = 0, state = 'fly', timer = 0, spawnT = 0.6;
       var plane = { y: LANES[1], want: LANES[1], vy: 0 };
@@ -52,21 +52,28 @@
         recent.push(target.w);
         if (recent.length > 5) { recent.shift(); }
         gap = chooseGap(target);
-        answer = target.g[gap];
+        answer = api.pre ? target.w : target.g[gap];
         api.setProgress(round, ROUNDS);
-        api.setPrompt('Fill the gap in', { word: target.w, repeat: sayPrompt });
+        api.setPrompt(api.pre ? 'Fly through the' : 'Fill the gap in', { word: target.w, repeat: sayPrompt });
         sayPrompt();
         spawnT = 1.4;
         wave = null;
       }
 
       function sayPrompt() {
+        if (api.pre) {
+          api.say('Fly through the');
+          api.sayWord(target.w, { queue: true });
+          return;
+        }
         api.say('Fly through the missing sound in');
         api.sayWord(target.w, { queue: true });
       }
 
       function spawnWave() {
-        var others = U.shuffle(Object.keys(byClass[PH.graphemeClass(answer)]).filter(function (g) {
+        /* ages 3 and 4: the rings hold whole pictures or letters */
+        var bank = api.pre ? api.words.map(function (w) { return w.w; }) : Object.keys(byClass[PH.graphemeClass(answer)]);
+        var others = U.shuffle(bank.filter(function (g) {
           return g !== answer;
         })).slice(0, 2);
         while (others.length < 2) { others.push(U.pick(['m', 's', 't', 'a', 'o'].filter(function (g) { return g !== answer && others.indexOf(g) < 0; }))); }
@@ -104,9 +111,14 @@
           misses++;
           api.sfx.bad();
           flash = 1; flashGood = false;
-          api.say('That makes');
-          var made = target.g.slice(); made[gap] = best.g;
-          if (PH.isClean(made.join(''))) { api.sayWord(made.join(''), { queue: true }); }
+          if (api.pre) {
+            api.say(api.mode === 'pictures' ? 'That was the' : 'That was');
+            api.sayWord(best.g, { queue: true });
+          } else {
+            api.say('That makes');
+            var made = target.g.slice(); made[gap] = best.g;
+            if (PH.isClean(made.join(''))) { api.sayWord(made.join(''), { queue: true }); }
+          }
           api.say('Listen again.', { queue: true });
           api.sayWord(target.w, { queue: true });
           state = 'retry'; timer = 0;
@@ -180,14 +192,15 @@
       }
 
       function ringLabel(ctx, r) {
-        var fs = r.g.length > 3 ? 22 : 30;
+        var shown = api.label(r.g);
+        var fs = api.mode === 'letters' ? 38 : (shown.length > 3 ? 22 : 30);
         ctx.font = U.font(fs);
-        var tw = Math.max(34, ctx.measureText(r.g).width + 18);
+        var tw = Math.max(34, ctx.measureText(shown).width + 18);
         ctx.fillStyle = 'rgba(255,255,255,.95)';
         U.roundRect(ctx, wave.x - tw / 2, r.y - 22, tw, 44, 12); ctx.fill();
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(r.g, wave.x, r.y + 1);
+        ctx.fillText(shown, wave.x, r.y + 1);
       }
 
       function drawPlane(ctx) {
@@ -218,7 +231,7 @@
       }
 
       function drawGappedWord(ctx) {
-        if (!target) { return; }
+        if (!target || api.pre) { return; }
         var fs = 44, pad = 8, ctxw = [], total = 0;
         ctx.font = U.font(fs);
         target.g.forEach(function (g, k) {

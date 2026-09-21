@@ -1,6 +1,6 @@
 # Phonics Playground
 
-Fourteen listening-and-reading games for children aged 4 to 9. Plain HTML, CSS and
+Fourteen listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
 JavaScript: no build step, no frameworks, no asset files, no network calls.
 
 ## Playing
@@ -39,6 +39,20 @@ made-up word is checked against a blocklist in `js/words.js` so a swap can never
 put a rude or hurtful word in front of a child.
 
 ## Levels
+
+The age buttons pick a starting level: 3 is Tiny Tots, 4 is Little Letters, 5 is
+Level 1, and so on up to 9. **change level** steps through all seven.
+
+- **Tiny Tots (age 3)** - pictures with the word printed underneath. No reading needed:
+  listening and matching, rhymes heard aloud, sorting into animals, food and things that
+  go, clapping syllables, and blending by ear ("ba... na... na").
+- **Little Letters (age 4)** - single lowercase letters, always spoken as name, sound and
+  keyword ("b... buh... like bear"). First sounds, letter matching and first spelling.
+
+Each game keeps its look but changes its task at these two levels. For example, Feed
+the Monster asks for one picture or letter instead of a spelled word, and Burger Time
+takes a picture order at age 3. Penalty Kick counts claps instead of sounds.
+Choices are fewer and everything moves more slowly.
 
 1. **Sounding Out** - three letter words, `c-a-t`
 2. **Two Letters, One Sound** - `sh`, `ch`, `th`, `ck` and blends

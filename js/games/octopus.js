@@ -33,8 +33,12 @@
         recent.push(target.w);
         if (recent.length > 5) { recent.shift(); }
 
-        var n = round <= 2 ? 3 : 4;
-        var misses3 = PH.nearMisses(target, api.words, n - 1);
+        var n = api.pre ? 3 : (round <= 2 ? 3 : 4);
+        /* ages 3 and 4: other real pictures or letters, never made-up words */
+        var misses3 = api.pre
+          ? U.shuffle(api.words.filter(function (w) { return w.w !== target.w; })).slice(0, n - 1)
+            .map(function (w) { return { w: w.w, real: true }; })
+          : PH.nearMisses(target, api.words, n - 1);
         /* top up with ordinary words if the generator came up short */
         var extra = U.shuffle(api.words.filter(function (w) { return w.w !== target.w; }));
         while (misses3.length < n - 1 && extra.length) {
@@ -53,12 +57,12 @@
         });
         active = null; reach = 0; state = 'play';
         api.setProgress(round, ROUNDS);
-        api.setPrompt('Find the treasure word', { word: target.w, repeat: sayPrompt });
+        api.setPrompt(api.mode === 'pictures' ? 'Find the treasure' : 'Find the treasure word', { word: target.w, repeat: sayPrompt });
         sayPrompt();
       }
 
       function sayPrompt() {
-        api.say('Which chest says');
+        api.say(api.mode === 'pictures' ? 'Which chest has the' : 'Which chest says');
         api.sayWord(target.w, { queue: true });
       }
 
@@ -103,7 +107,7 @@
               active.shake = 0.5;
               api.sfx.boing();
               if (active.real) {
-                api.say('That one says');
+                api.say(api.mode === 'pictures' ? 'That is a' : 'That one says');
                 api.sayWord(active.text, { queue: true });
               } else {
                 api.say('Not that one. Look again.');
@@ -205,13 +209,14 @@
         ctx.fillRect(x + 14, y, 12, c.h);
         ctx.fillRect(x + c.w - 26, y, 12, c.h);
         /* word plaque */
-        var fs = c.text.length > 7 ? 20 : (c.text.length > 5 ? 25 : 30);
+        var shown = api.label(c.text);
+        var fs = api.mode === 'letters' ? 40 : (shown.length > 7 ? 20 : (shown.length > 5 ? 25 : 30));
         ctx.fillStyle = '#fff6dc';
         U.roundRect(ctx, x + 22, y + 38, c.w - 44, 50, 10); ctx.fill();
         ctx.fillStyle = '#3b2412';
         ctx.font = U.font(fs);
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(c.text, c.x + dx, y + 64);
+        ctx.fillText(shown, c.x + dx, y + 64);
         /* lid, hinged at the back */
         ctx.save();
         ctx.translate(x, y);

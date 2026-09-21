@@ -92,6 +92,51 @@
   };
   PH.util = util;
 
+  /* Picture labels look like "🐱 cat". Drawn as plain text the emoji is only as big as the
+     letters, which is too small for a three year old. This teaches the canvas to draw the
+     emoji about 1.7x larger in a dedicated emoji font, and to measure it that way too,
+     so every game's tiles, bubbles and signs make room for it automatically.            */
+  var PIC_SCALE = 1.7;
+  var EMOJI_FONT = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+  var LABEL_RE = /^(\p{Extended_Pictographic}️?)\s(.+)$/u;
+  function bigPictures(ctx) {
+    var rawFill = ctx.fillText.bind(ctx);
+    var rawMeasure = ctx.measureText.bind(ctx);
+    function px() {
+      var m = /(\d+(?:\.\d+)?)px/.exec(ctx.font);
+      return m ? parseFloat(m[1]) : 20;
+    }
+    function parts(text) {
+      var m = LABEL_RE.exec(String(text));
+      if (!m) { return null; }
+      var font = ctx.font, size = Math.round(px() * PIC_SCALE);
+      ctx.font = size + 'px ' + EMOJI_FONT;
+      var ew = rawMeasure(m[1]).width;
+      ctx.font = font;
+      var ww = rawMeasure(' ' + m[2]).width;
+      return { pic: m[1], word: ' ' + m[2], size: size, ew: ew, ww: ww, font: font };
+    }
+    ctx.measureText = function (text) {
+      var p = parts(text);
+      if (!p) { return rawMeasure(text); }
+      return { width: p.ew + p.ww };
+    };
+    ctx.fillText = function (text, x, y, maxWidth) {
+      var p = parts(text);
+      if (!p) { return rawFill(text, x, y, maxWidth); }
+      var total = p.ew + p.ww;
+      var align = ctx.textAlign;
+      var left = align === 'center' ? x - total / 2 : (align === 'right' || align === 'end') ? x - total : x;
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.font = p.size + 'px ' + EMOJI_FONT;
+      rawFill(p.pic, left, y);
+      ctx.font = p.font;
+      rawFill(p.word, left + p.ew, y);
+      ctx.restore();
+    };
+  }
+
   PH.COLORS = ['#ff5d8f', '#ff9f40', '#ffd23f', '#3ddc84', '#2ec4b6', '#4d8dff', '#9b5de5'];
 
   /* ---------------- particles ---------------- */
@@ -174,11 +219,10 @@
       var self = this;
       this.canvas = canvas;
       this.dom = dom;
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = W * dpr;
-      canvas.height = H * dpr;
+      canvas.width = W;
+      canvas.height = H;
       this.ctx = canvas.getContext('2d');
-      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      bigPictures(this.ctx);
 
       this.fit();
       window.addEventListener('resize', function () { self.fit(); });
@@ -219,8 +263,18 @@
       var aw = stage.clientWidth - pad, ah = stage.clientHeight - pad;
       if (aw <= 0 || ah <= 0) { return; }
       var s = Math.min(aw / W, ah / H);
-      this.canvas.style.width = Math.floor(W * s) + 'px';
-      this.canvas.style.height = Math.floor(H * s) + 'px';
+      var cssW = Math.floor(W * s), cssH = Math.floor(H * s);
+      this.canvas.style.width = cssW + 'px';
+      this.canvas.style.height = cssH + 'px';
+      /* draw at the real screen resolution so text and pictures stay sharp at any size */
+      var dpr = Math.min(window.devicePixelRatio || 1, 3);
+      var bw = Math.round(cssW * dpr), bh = Math.round(cssH * dpr);
+      if (this.canvas.width !== bw || this.canvas.height !== bh) {
+        this.canvas.width = bw;
+        this.canvas.height = bh;
+      }
+      this.ctx.setTransform(bw / W, 0, 0, bh / H, 0, 0);
+      this.ctx.imageSmoothingQuality = 'high';
     },
 
     /* ---- the api handed to each mini game ---- */
@@ -234,8 +288,13 @@
         sfx: PH.sfx,
         particles: this.particles,
 
+        /* pre-reader levels (ages 3 and 4) */
+        mode: this.level.mode || 'words',
+        pre: this.level.id <= 0,
+        label: function (text) { return self.labelFor(text); },
+
         say: function (t, o) { PH.speech.say(t, o); },
-        sayWord: function (w, o) { PH.speech.sayWord(w, o); },
+        sayWord: function (w, o) { self.sayWord(w, o); },
         soundOut: function (wordObj) { PH.speech.soundOut(wordObj); },
 
         /* label shows in the banner; word is what the speaker/peek buttons use */
@@ -248,25 +307,59 @@
       };
     },
 
+    /* how a word is shown: at the pre-reader levels a picture word gets its emoji */
+    labelFor: function (text) {
+      text = String(text);
+      if (this.level && this.level.id <= 0 && PH.picFor[text]) { return PH.picFor[text] + ' ' + text; }
+      return text;
+    },
+
+    /* the same label for the prompt bar, with the picture in its own bigger span */
+    htmlLabel: function (text) {
+      text = String(text);
+      if (this.level && this.level.id <= 0 && PH.picFor[text]) {
+        return '<span class="pic">' + PH.picFor[text] + '</span> ' + text;
+      }
+      return text;
+    },
+
+    /* at the letters level a letter is said as name, sound and keyword: "b... buh... like bear" */
+    sayWord: function (text, o) {
+      o = o || {};
+      var item = null;
+      if (this.level && this.level.mode === 'letters') {
+        item = this.level.words.filter(function (w) { return w.w === text; })[0];
+      }
+      if (item) {
+        PH.speech.say(item.w, { rate: 0.7, queue: o.queue });
+        PH.speech.say(PH.soundHint(item.w), { rate: 0.55, queue: true });
+        PH.speech.say('like ' + item.key, { rate: 0.75, queue: true });
+      } else {
+        PH.speech.sayWord(text, o);
+      }
+    },
+
     setPrompt: function (label, opts) {
       opts = opts || {};
       var el = this.dom.promptText;
       var word = opts.word || '';
+      /* three year olds cannot read yet, so the picture is always on show */
+      var show = opts.show || (this.level && this.level.mode === 'pictures');
       this.repeatFn = opts.repeat || null;
       this.peekWord = word;
-      if (word && opts.show) {
-        el.innerHTML = label + ' <span class="target">' + word + '</span>';
+      if (word && show) {
+        el.innerHTML = label + ' <span class="target">' + this.htmlLabel(word) + '</span>';
       } else {
         el.textContent = label;
       }
-      this.dom.peek.classList.toggle('hidden', !(word && !opts.show));
+      this.dom.peek.classList.toggle('hidden', !(word && !show));
     },
 
     peek: function () {
       if (!this.peekWord) { return; }
       var el = this.dom.promptText;
       var old = el.innerHTML;
-      el.innerHTML = '<span class="target">' + this.peekWord + '</span>';
+      el.innerHTML = '<span class="target">' + this.htmlLabel(this.peekWord) + '</span>';
       clearTimeout(this._peekT);
       var self = this;
       this._peekT = setTimeout(function () { el.innerHTML = old; }, 1700);

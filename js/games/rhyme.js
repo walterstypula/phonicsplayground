@@ -20,7 +20,8 @@
       }
 
       /* rhyme families drawn from this level and everything below it */
-      var pool = PH.wordsUpTo(api.level.id);
+      /* rhyming is a listening skill for 3 and 4 year olds, so they rhyme pictures */
+      var pool = api.pre ? PH.PICTURES : PH.wordsUpTo(api.level.id);
       var families = {};
       pool.forEach(function (w) {
         (families[w.rime] = families[w.rime] || []).push(w);
@@ -75,6 +76,10 @@
       function sayPrompt() {
         api.say('Which word rhymes with');
         api.sayWord(target.w, { queue: true });
+        /* little ones cannot read the planets, so name each picture in turn */
+        if (api.pre) {
+          planets.forEach(function (pl) { api.sayWord(pl.word.w + '?', { queue: true }); });
+        }
       }
 
       function down(p) {
@@ -165,10 +170,10 @@
         ctx.beginPath(); ctx.arc(0, -8, 12, 0, Math.PI * 2); ctx.fill();
 
         ctx.fillStyle = '#1f2340';
-        ctx.font = U.font(target && target.w.length > 6 ? 15 : 19);
+        ctx.font = U.font(target && api.label(target.w).length > 6 ? 14 : 19);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(target ? target.w : '', 0, 24);
+        ctx.fillText(target ? api.label(target.w) : '', 0, 24);
         ctx.restore();
       }
 
@@ -205,7 +210,7 @@
           ctx.restore();
 
           ctx.fillStyle = 'rgba(255,255,255,.94)';
-          var word = p.word.w;
+          var word = api.label(p.word.w);
           var fs = word.length > 7 ? 24 : (word.length > 5 ? 30 : 36);
           ctx.font = U.font(fs);
           var tw = ctx.measureText(word).width;
