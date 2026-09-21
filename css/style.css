@@ -1,224 +1,264 @@
 /* ---------- Phonics Playground ---------- */
 :root{
-  --ink:#1f2340;
-  --paper:#fff7e8;
-  --pink:#ff5d8f;
-  --orange:#ff9f40;
-  --yellow:#ffd23f;
-  --green:#3ddc84;
-  --teal:#2ec4b6;
-  --blue:#4d8dff;
-  --purple:#9b5de5;
-  --shadow:0 6px 0 rgba(31,35,64,.18);
-  --lift:0 5px 0 rgba(31,35,64,.22), 0 10px 18px rgba(31,35,64,.14);
-  --font:"Comic Sans MS","Chalkboard SE","Marker Felt","Trebuchet MS",system-ui,sans-serif;
+  --ink:#232a45;
+  --ink-soft:#5c6480;
+  --ink-faint:#6b7290;
+  --paper:#f7f7fb;
+  --surface:#fff;
+  --line:rgba(35,42,69,.10);
+  /* Every colour that carries text is dark enough to clear 4.5:1 on white, so the small
+     print and the buttons stay readable; the lighter tints below are backgrounds only. */
+  --pink:#cf3f6b;
+  --orange:#c9681f;
+  --yellow:#f0b429;
+  --gold:#8a6010;
+  --green:#1b7f4f;
+  --teal:#1b8378;
+  --blue:#2f66c4;
+  --purple:#6f4cb8;
+
+  --shadow-sm:0 1px 2px rgba(35,42,69,.06), 0 2px 6px rgba(35,42,69,.05);
+  --shadow-md:0 2px 6px rgba(35,42,69,.07), 0 10px 24px rgba(35,42,69,.10);
+  --shadow-lg:0 12px 34px rgba(35,42,69,.18);
+  --radius:18px;
+
+  /* Chrome and labels: the clean face the grown-ups read.                       */
+  --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --font-display:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  /* Letters and words the child reads. A geometric face keeps the single-storey
+     "a" and "g" they are taught to write; the usual UI faces draw a two-storey
+     "a", which is a different shape from the one on the page in front of them.  */
+  --font-reading:"Century Gothic","Questrial","Futura","Avenir Next","Trebuchet MS",system-ui,sans-serif;
   --emoji:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0; font-family:var(--font); color:var(--ink);
+  margin:0; font-family:var(--font); color:var(--ink); font-size:16px; line-height:1.45;
   background:
-    radial-gradient(circle at 20% 10%,#ffe9a8 0%,transparent 42%),
-    radial-gradient(circle at 85% 20%,#bde0ff 0%,transparent 42%),
-    radial-gradient(circle at 50% 95%,#ffd0e2 0%,transparent 48%),
-    radial-gradient(rgba(31,35,64,.05) 2px, transparent 2.5px) 0 0/28px 28px,
+    radial-gradient(ellipse 70% 50% at 15% 0%,rgba(255,214,168,.35),transparent 70%),
+    radial-gradient(ellipse 60% 45% at 90% 8%,rgba(168,208,255,.32),transparent 70%),
+    radial-gradient(ellipse 80% 40% at 50% 100%,rgba(255,196,219,.26),transparent 70%),
     var(--paper);
   -webkit-tap-highlight-color:transparent;
   overflow:hidden;
 }
-button{font-family:inherit;cursor:pointer;border:none}
+button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 .hidden{display:none !important}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column}
 
-/* soft shapes drifting behind the menu */
-#menu::before,#menu::after{
-  content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(2px);opacity:.55;pointer-events:none;
-}
-#menu::before{width:260px;height:260px;left:-60px;top:40%;background:radial-gradient(circle,#ffd6e6,transparent 70%);animation:drift 18s ease-in-out infinite}
-#menu::after{width:320px;height:320px;right:-80px;top:8%;background:radial-gradient(circle,#c5f6fa,transparent 70%);animation:drift 22s ease-in-out infinite reverse}
-@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-30px)}}
+/* a visible ring for anyone driving this from the keyboard */
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:12px}
 
 /* ---------- Menu ---------- */
-#menu{align-items:center;padding:18px 16px 8px;overflow-y:auto}
+#menu{align-items:center;padding:26px 20px 8px;overflow-y:auto}
 .logo{
-  margin:6px 0 0; font-size:clamp(34px,6.4vw,64px); letter-spacing:1px; text-align:center; line-height:1.05;
-  text-shadow:
-    3px 0 0 #fff,-3px 0 0 #fff,0 3px 0 #fff,0 -3px 0 #fff,
-    2px 2px 0 #fff,-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff,
-    0 7px 0 rgba(31,35,64,.18), 0 12px 20px rgba(31,35,64,.12);
+  margin:0; font-family:var(--font-display); font-weight:700;
+  font-size:clamp(30px,5.2vw,50px); letter-spacing:-.5px; text-align:center; line-height:1.1;
 }
-.logo span{color:var(--pink);display:inline-block;animation:bob 3.2s ease-in-out infinite}
-.logo em{color:var(--blue);font-style:normal;display:inline-block;animation:bob 3.2s ease-in-out .4s infinite}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-4px) rotate(1deg)}}
-.tagline{margin:4px 0 14px;font-size:clamp(14px,2.4vw,20px);color:#5a6080}
+.logo span{color:var(--ink)}
+.logo em{color:var(--pink);font-style:normal}
+.tagline{margin:6px 0 20px;font-size:clamp(14px,2vw,17px);color:var(--ink-soft)}
 
 .agebar{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;
-  background:rgba(255,255,255,.65);padding:8px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(31,35,64,.08);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;
+  background:var(--surface);padding:10px 18px;border-radius:999px;
+  border:1px solid var(--line);box-shadow:var(--shadow-sm);
 }
-.agebar-label{font-size:18px;color:#5a6080}
-.ages{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.agebar-label{font-size:15px;color:var(--ink-soft);font-weight:500}
+.ages{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .age{
-  width:54px;height:54px;border-radius:50%;font-size:24px;font-weight:bold;color:var(--ink);
-  background:linear-gradient(180deg,#ffffff,#eef1f8);
-  box-shadow:0 4px 0 #c9cfdf, 0 8px 12px rgba(31,35,64,.12);
-  transition:transform .12s, box-shadow .12s;
+  width:46px;height:46px;border-radius:50%;font-size:19px;font-weight:600;color:var(--ink);
+  font-family:var(--font-reading);
+  background:var(--surface);border:1.5px solid var(--line);
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease, color .12s ease;
 }
-.age:hover{transform:translateY(-2px)}
-.age:active{transform:translateY(3px);box-shadow:0 1px 0 #c9cfdf}
+.age:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:rgba(47,102,196,.4)}
+.age:active{transform:translateY(0)}
 .age[aria-pressed="true"]{
-  background:linear-gradient(180deg,#ffe98a,#ffc61a);
-  box-shadow:0 4px 0 #d99a00, 0 8px 14px rgba(217,154,0,.35);
-  transform:translateY(-3px) scale(1.08);
+  background:var(--blue);border-color:var(--blue);color:#fff;
+  box-shadow:0 4px 12px rgba(47,102,196,.35);
 }
-.level-note{margin:12px 0 4px;font-size:18px;color:#3c4162;text-align:center}
-.level-note b{color:var(--purple)}
+.level-note{margin:18px 0 2px;font-size:15px;color:var(--ink-soft);text-align:center}
+.level-note b{color:var(--purple);font-weight:600}
 
 .cards{
-  display:grid;gap:16px;width:min(1040px,100%);padding:12px 4px 20px;
-  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  display:grid;gap:14px;width:min(1060px,100%);padding:16px 2px 24px;
+  grid-template-columns:repeat(auto-fit,minmax(236px,1fr));
 }
 .card{
-  --edge:#e6d9c8;
+  --accent:var(--pink);
   position:relative;overflow:hidden;
-  display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;
-  padding:16px 16px 16px;border-radius:24px;background:#fff;
-  box-shadow:0 6px 0 var(--edge), 0 12px 22px rgba(31,35,64,.12);
-  transition:transform .15s, box-shadow .15s;
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;
+  padding:18px;border-radius:var(--radius);background:var(--surface);
+  border:1px solid var(--line);box-shadow:var(--shadow-sm);
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
-/* a glossy sheen across the top of every card */
+/* a quiet band of the card's colour, so the set still reads as colour-coded */
 .card::before{
-  content:"";position:absolute;left:0;right:0;top:0;height:46%;
-  background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,0));pointer-events:none;
+  content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--accent);opacity:.85;
 }
-.card:hover{transform:translateY(-5px) rotate(-.4deg);box-shadow:0 10px 0 var(--edge), 0 18px 26px rgba(31,35,64,.16)}
-.card:active{transform:translateY(4px);box-shadow:0 2px 0 var(--edge), 0 4px 8px rgba(31,35,64,.1)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:rgba(35,42,69,.16)}
+.card:active{transform:translateY(0);box-shadow:var(--shadow-sm)}
 .card .icon{
-  font-size:34px;line-height:1;width:62px;height:62px;border-radius:20px;
+  font-size:28px;line-height:1;width:52px;height:52px;border-radius:14px;
   display:flex;align-items:center;justify-content:center;font-family:var(--emoji);
-  background:radial-gradient(circle at 30% 25%,#fff,rgba(255,255,255,.35) 60%),var(--tint,#ffe6ef);
-  box-shadow:inset 0 -4px 0 rgba(31,35,64,.08), 0 4px 10px rgba(31,35,64,.12);
-  margin-bottom:4px;transition:transform .2s;position:relative;z-index:1;
+  background:var(--tint,#fdeaf0);
+  margin-bottom:2px;transition:transform .25s ease;
 }
 .card:hover .icon{animation:hop .5s ease}
-@keyframes hop{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-8px) scale(1.08) rotate(-6deg)}70%{transform:translateY(2px) scale(.97)}}
-.card .name{font-size:22px;font-weight:bold;position:relative}
-.card .blurb{font-size:15px;color:#5a6080;line-height:1.3;position:relative}
-.card .train-line{font-size:15px;color:#1971c2;font-weight:bold;word-break:break-all;line-height:1.4;position:relative}
-.card.c0{background:linear-gradient(160deg,#fff 30%,#ffe6ef);--edge:#f4b8cc;--tint:#ffc9dc}
-.card.c1{background:linear-gradient(160deg,#fff 30%,#e4f0ff);--edge:#b5cff5;--tint:#c7ddff}
-.card.c2{background:linear-gradient(160deg,#fff 30%,#e2fbf4);--edge:#a8e6d4;--tint:#bff2e3}
-.card.c3{background:linear-gradient(160deg,#fff 30%,#fff2d6);--edge:#f0d39a;--tint:#ffe4a8}
-.card.c4{background:linear-gradient(160deg,#fff 30%,#f1e6ff);--edge:#d3bdf2;--tint:#e0cfff}
-.card.c5{background:linear-gradient(160deg,#fff 30%,#e8fbe0);--edge:#b9e3a8;--tint:#cff3c0}
+@keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-5px) scale(1.06)}75%{transform:translateY(1px)}}
+.card .name{font-family:var(--font-display);font-size:19px;font-weight:600;letter-spacing:-.2px}
+.card .blurb{font-size:14px;color:var(--ink-soft);line-height:1.45}
+/* long sound chains (c-a-t-s) must be allowed to break, but only where they have to:
+   break-all splits ordinary words mid-letter and "carriage" came out as "carriag e" */
+.card .train-line{font-family:var(--font-reading);font-size:14px;color:var(--blue);font-weight:600;overflow-wrap:anywhere;line-height:1.5}
+.card.c0{--accent:var(--pink);--tint:#fdeaf0}
+.card.c1{--accent:var(--blue);--tint:#e8f0fd}
+.card.c2{--accent:var(--teal);--tint:#e2f6f4}
+.card.c3{--accent:var(--yellow);--tint:#fdf2dc}
+.card.c4{--accent:var(--purple);--tint:#efe9fa}
+.card.c5{--accent:var(--green);--tint:#e5f6ed}
 
-.grownups{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;padding-bottom:14px}
+.grownups{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;padding:4px 0 20px}
 .mini{
-  background:linear-gradient(180deg,#fff,#f1f3f9);border-radius:999px;padding:8px 14px;font-size:14px;color:var(--ink);
-  box-shadow:0 3px 0 #cfd5e3, 0 6px 10px rgba(31,35,64,.1);
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;
+  padding:8px 16px;font-size:14px;color:var(--ink);box-shadow:var(--shadow-sm);
+  transition:transform .12s ease, border-color .12s ease;
 }
-.mini:active{transform:translateY(2px);box-shadow:0 1px 0 #cfd5e3}
-.hint{font-size:13px;color:#7a80a0}
+.mini:hover{border-color:rgba(35,42,69,.2)}
+.mini:active{transform:translateY(1px)}
+.hint{font-size:13px;color:var(--ink-faint)}
+
+/* the voice picker: step back and forth, or open the list and choose one outright */
+.voicebar{display:flex;align-items:center;gap:6px;padding:4px 8px}
+.voicebar:active{transform:none}
+.voice-ico{font-family:var(--emoji);font-size:14px;line-height:1}
+.voice-step{
+  background:none;border-radius:50%;width:24px;height:24px;font-size:11px;
+  color:var(--ink-soft);display:flex;align-items:center;justify-content:center;
+  transition:background .12s ease, color .12s ease;
+}
+.voice-step:hover{background:rgba(35,42,69,.07);color:var(--ink)}
+.voice-step:disabled{opacity:.35;cursor:default;background:none}
+#voice-select{
+  font-family:inherit;font-size:14px;color:var(--ink);background:none;border:none;
+  padding:4px 2px;max-width:190px;cursor:pointer;
+}
+#voice-select:focus{outline:none}
+.visually-hidden{
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
 
 /* ---------- HUD ---------- */
 #hud{
-  display:flex;align-items:center;gap:10px;padding:8px 12px;flex-wrap:wrap;
-  background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.7));backdrop-filter:blur(6px);
-  border-bottom:3px solid rgba(31,35,64,.08);box-shadow:0 4px 14px rgba(31,35,64,.06);
+  display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap;
+  background:rgba(255,255,255,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
 }
 .hud-btn{
-  background:linear-gradient(180deg,#fff,#eef1f8);border-radius:999px;padding:10px 16px;font-size:16px;color:var(--ink);
-  box-shadow:0 4px 0 #c9cfdf, 0 6px 10px rgba(31,35,64,.1);
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;
+  padding:9px 16px;font-size:15px;color:var(--ink);box-shadow:var(--shadow-sm);
+  transition:transform .12s ease, border-color .12s ease;
 }
-.hud-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #c9cfdf}
+.hud-btn:hover{border-color:rgba(35,42,69,.2)}
+.hud-btn:active{transform:translateY(1px)}
 .prompt{
   flex:1;display:flex;align-items:center;gap:10px;justify-content:center;
-  background:linear-gradient(180deg,#fff,#f7f8fc);border-radius:999px;padding:6px 14px;min-width:240px;
-  box-shadow:0 4px 0 #d6dbe8, 0 6px 12px rgba(31,35,64,.08);
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;
+  padding:7px 14px;min-width:240px;box-shadow:var(--shadow-sm);
 }
-#prompt-text{font-size:clamp(16px,2.6vw,24px);font-weight:bold;text-align:center}
-#prompt-text .target{color:var(--pink);text-transform:lowercase}
-#prompt-text .pic{
-  font-size:1.8em;line-height:1;vertical-align:-.18em;font-family:var(--emoji);
-}
+#prompt-text{font-size:clamp(16px,2.4vw,22px);font-weight:600;text-align:center}
+#prompt-text .target{font-family:var(--font-reading);color:var(--pink);text-transform:lowercase;font-weight:700;letter-spacing:.5px}
+#prompt-text .pic{font-size:1.7em;line-height:1;vertical-align:-.18em;font-family:var(--emoji)}
 .say,.peek{
-  border-radius:50%;width:44px;height:44px;font-size:20px;flex:0 0 auto;
-  background:linear-gradient(180deg,#ffe98a,#ffc61a);box-shadow:0 4px 0 #d99a00;
+  border-radius:50%;width:42px;height:42px;font-size:19px;flex:0 0 auto;color:#fff;
+  background:var(--yellow);box-shadow:0 2px 8px rgba(240,180,41,.4);
+  transition:transform .12s ease, box-shadow .12s ease;
 }
-.peek{background:linear-gradient(180deg,#63e6d7,#20b2a4);box-shadow:0 4px 0 #148a7f}
-.say:active,.peek:active{transform:translateY(3px);box-shadow:0 1px 0 #d99a00}
-.say{animation:pulse 2.4s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.peek{background:var(--teal);box-shadow:0 2px 8px rgba(27,131,120,.4)}
+.say:hover,.peek:hover{transform:translateY(-1px)}
+.say:active,.peek:active{transform:translateY(1px);box-shadow:none}
+.say{animation:pulse 2.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .hud-right{display:flex;gap:8px;align-items:center}
 .progress,.starcount{
-  background:linear-gradient(180deg,#fff,#f1f3f9);border-radius:999px;padding:8px 14px;font-size:16px;font-weight:bold;
-  box-shadow:0 4px 0 #d6dbe8;
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;
+  padding:8px 14px;font-size:14px;font-weight:600;color:var(--ink-soft);
 }
-.starcount{color:#b8860b}
+.starcount{color:var(--gold)}
 
 /* ---------- Stage ---------- */
-#stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:8px;min-height:0}
+#stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:14px;min-height:0}
 #canvas{
   max-width:100%;max-height:100%;width:auto;height:auto;
-  border-radius:22px;touch-action:none;display:block;
-  box-shadow:0 0 0 5px #fff, 0 12px 0 5px rgba(31,35,64,.12), 0 18px 36px rgba(31,35,64,.22);
+  border-radius:16px;touch-action:none;display:block;background:#fff;
+  box-shadow:0 0 0 1px var(--line), var(--shadow-lg);
 }
 
 .rotate-hint{display:none}
 @media (orientation:portrait) and (max-width:760px){
   .rotate-hint{
     display:block;position:absolute;left:0;right:0;bottom:16px;margin:0;
-    text-align:center;font-size:14px;color:#5a6080;
+    text-align:center;font-size:13px;color:var(--ink-soft);
   }
 }
 
 /* ---------- Results ---------- */
 .results{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 50% 45%,rgba(31,35,64,.25),rgba(31,35,64,.6));
+  background:rgba(35,42,69,.45);backdrop-filter:blur(3px);
 }
 .results-card{
-  position:relative;overflow:hidden;
-  background:linear-gradient(180deg,#fff 40%,#fff5d6);border-radius:30px;padding:30px 36px 26px;text-align:center;
-  box-shadow:0 8px 0 #e8cf8c, 0 24px 50px rgba(0,0,0,.3);
-  animation:pop .45s cubic-bezier(.2,1.5,.4,1);max-width:90vw;
+  position:relative;overflow:hidden;background:var(--surface);
+  border-radius:24px;padding:32px 40px 28px;text-align:center;
+  box-shadow:var(--shadow-lg);animation:pop .4s cubic-bezier(.2,1.3,.4,1);max-width:90vw;
 }
-/* sunburst rays behind the title */
+/* a warm glow behind the stars: the moment should still feel like a reward. Rays were
+   tried here and read as stray streaks once the rest of the card got quieter; the stars
+   popping in carry it well enough on their own. */
 .results-card::before{
-  content:"";position:absolute;left:50%;top:-120px;width:420px;height:420px;margin-left:-210px;
-  background:repeating-conic-gradient(rgba(255,210,63,.18) 0 12deg, transparent 12deg 24deg);
-  border-radius:50%;animation:spin 20s linear infinite;pointer-events:none;
+  content:"";position:absolute;left:50%;top:78px;width:300px;height:170px;margin-left:-150px;
+  background:radial-gradient(ellipse at center,rgba(240,180,41,.22),transparent 70%);
+  pointer-events:none;
 }
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 .results-card > *{position:relative}
 .results-card h2{
-  margin:0 0 6px;font-size:40px;color:var(--pink);
-  text-shadow:2px 0 0 #fff,-2px 0 0 #fff,0 2px 0 #fff,0 -2px 0 #fff,0 5px 0 rgba(31,35,64,.15);
+  margin:0 0 8px;font-family:var(--font-display);font-size:32px;font-weight:700;
+  letter-spacing:-.4px;color:var(--ink);
 }
-.results-stars{font-size:48px;letter-spacing:4px;margin:4px 0 6px;font-family:var(--emoji)}
-.results-stars span{display:inline-block;opacity:0;animation:starpop .5s cubic-bezier(.2,1.8,.4,1) forwards}
+.results-stars{font-size:42px;letter-spacing:4px;margin:6px 0;font-family:var(--emoji)}
+.results-stars span{display:inline-block;opacity:0;animation:starpop .5s cubic-bezier(.2,1.6,.4,1) forwards}
 .results-stars span.off{filter:grayscale(1);opacity:0;animation-name:starfade}
 @keyframes starpop{from{transform:scale(0) rotate(-90deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
-@keyframes starfade{from{opacity:0}to{opacity:.35}}
-.results-card p{margin:4px 0 18px;color:#5a6080;font-size:17px}
-.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+@keyframes starfade{from{opacity:0}to{opacity:.3}}
+.results-card p{margin:6px 0 22px;color:var(--ink-soft);font-size:15px}
+.results-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .big{
-  background:linear-gradient(180deg,#6ff0a8,#2fc977);color:#0f3a22;border-radius:999px;padding:14px 28px;font-size:20px;font-weight:bold;
-  box-shadow:0 5px 0 #1f9656, 0 10px 18px rgba(31,150,86,.25);transition:transform .1s;
+  background:var(--green);color:#fff;border-radius:999px;padding:13px 30px;
+  font-size:17px;font-weight:600;box-shadow:0 3px 12px rgba(27,127,79,.35);
+  transition:transform .12s ease, box-shadow .12s ease;
 }
-.big:hover{transform:translateY(-2px)}
-.big:active{transform:translateY(4px);box-shadow:0 1px 0 #1f9656}
-.big.ghost{background:linear-gradient(180deg,#fff,#eef1f8);color:var(--ink);box-shadow:0 5px 0 #c9cfdf, 0 10px 18px rgba(31,35,64,.1)}
+.big:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(27,127,79,.4)}
+.big:active{transform:translateY(1px);box-shadow:none}
+.big.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+.big.ghost:hover{box-shadow:var(--shadow-md)}
 
 @media (max-width:560px){
+  #menu{padding:18px 14px 8px}
   .prompt{order:3;width:100%;flex-basis:100%}
-  .age{width:46px;height:46px;font-size:20px}
-  .card .icon{width:54px;height:54px;font-size:30px}
+  /* the label takes its own line here, so the ages have the width to stay on one row */
+  .agebar{border-radius:22px;padding:10px 12px;gap:8px;width:100%}
+  .agebar-label{width:100%;text-align:center}
+  .ages{gap:4px;width:100%;justify-content:space-between}
+  .age{width:40px;height:40px;font-size:17px}
+  .card{padding:15px}
+  .card .icon{width:46px;height:46px;font-size:25px}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
   .results-stars span{opacity:1}
-  .results-stars span.off{opacity:.35}
+  .results-stars span.off{opacity:.3}
 }

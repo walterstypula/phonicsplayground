@@ -52,8 +52,11 @@
       }
       ctx.closePath();
     },
+    /* Everything drawn on the canvas is a letter or a word the child is reading, so it
+       uses the reading face from the stylesheet: a geometric sans, whose "a" and "g" are
+       the single-storey shapes children are taught to write. */
     font: function (size, weight) {
-      return (weight || 'bold') + ' ' + size + 'px "Comic Sans MS","Chalkboard SE","Trebuchet MS",sans-serif';
+      return (weight || 'bold') + ' ' + size + 'px "Century Gothic","Questrial","Futura","Avenir Next","Trebuchet MS",sans-serif';
     },
     /* ---------- the art kit: shared looks so every game feels part of one set ---------- */
 

@@ -39,6 +39,19 @@
     return englishVoices().sort(function (a, b) { return score(b) - score(a); });
   }
 
+  /* "Microsoft Zira - English (United States)" is the whole truth and far too much of it
+     for a button: the part worth showing is the name and where it is from. */
+  function shortName(v) {
+    var n = (v.name || '')
+      .replace(/^(Microsoft|Google|Apple)\s+/i, '')
+      .replace(/\s*[-–]\s*English.*$/i, '')
+      .replace(/\s*\((Natural|Enhanced|Premium|Online.*?)\)\s*/ig, ' ')
+      .replace(/\s+English\s*$/i, '')
+      .trim() || v.name;
+    var lang = (v.lang || '').replace('_', '-');
+    return lang ? n + ' (' + lang + ')' : n;
+  }
+
   function chooseVoice() {
     var list = rankedVoices();
     if (!list.length) { return; }
@@ -51,9 +64,17 @@
     voiceIndex = 0;
   }
 
+  /* The list usually arrives after the page does, so whoever draws the voice picker asks
+     to be told when it lands - and again if the browser swaps the list out later. */
+  var voiceWatchers = [];
+  function voicesChanged() {
+    chooseVoice();
+    for (var i = 0; i < voiceWatchers.length; i++) { voiceWatchers[i](); }
+  }
+
   if ('speechSynthesis' in window) {
     chooseVoice();
-    window.speechSynthesis.onvoiceschanged = chooseVoice;
+    window.speechSynthesis.onvoiceschanged = voicesChanged;
   }
 
   /* ---------------- The 43 sounds of American English the games use ----------------
@@ -198,15 +219,40 @@
   var speech = {
     supported: ('speechSynthesis' in window),
 
-    /* cycle through the installed English voices - some sound much clearer than others */
-    nextVoice: function () {
+    /* the installed English voices, best first - some sound much clearer than others */
+    voices: function () {
+      return rankedVoices().map(function (v) { return { name: v.name, label: shortName(v) }; });
+    },
+
+    /* the one being used, as { name, label }, or null before any voice has loaded */
+    voice: function () {
+      return voice ? { name: voice.name, label: shortName(voice) } : null;
+    },
+
+    /* tell me when the browser's list of voices arrives or changes */
+    onVoicesChanged: function (fn) { voiceWatchers.push(fn); },
+
+    /* pick one by name. `quiet` skips the hello, for restoring a voice without fuss. */
+    setVoice: function (name, quiet) {
       var list = rankedVoices();
-      if (!list.length) { return 'No voices installed'; }
-      voiceIndex = (voiceIndex + 1) % list.length;
-      voice = list[voiceIndex];
-      try { localStorage.setItem('ph-voice', voice.name); } catch (e) { /* private mode */ }
-      speech.say('Hello, I am ' + voice.name.split(/[ (]/)[1]);
-      return voice.name;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].name === name) {
+          voice = list[i]; voiceIndex = i;
+          try { localStorage.setItem('ph-voice', voice.name); } catch (e) { /* private mode */ }
+          if (!quiet) { speech.say('Hello, I am ' + shortName(voice).replace(/\s*\(.*\)$/, '')); }
+          return speech.voice();
+        }
+      }
+      return speech.voice();
+    },
+
+    /* step through the list: +1 for the next voice, -1 to go back to the one before */
+    stepVoice: function (by) {
+      var list = rankedVoices();
+      if (!list.length) { return null; }
+      var i = (voiceIndex + (by || 1)) % list.length;
+      if (i < 0) { i += list.length; }
+      return speech.setVoice(list[i].name);
     },
 
     cancel: function () {

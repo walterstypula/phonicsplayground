@@ -208,6 +208,32 @@
         for (var j = 1; j <= upto; j++) { ctx.lineTo(pts[j].x, pts[j].y); }
       }
 
+      /* The comet paint runs from blue at the start of a stroke to gold at the end. A
+         closed stroke - the bowl of a, b, d, g, o, p, q - finishes exactly where it
+         started, and a canvas gradient whose two ends are the same point paints nothing
+         at all, so a finished bowl used to disappear. When the ends meet, the gradient
+         runs across the stroke's box instead. */
+      function paint(ctx, pts, upto) {
+        var a = pts[0], b = pts[upto];
+        if (Math.abs(a.x - b.x) > 2 || Math.abs(a.y - b.y) > 2) {
+          return grad(ctx, a.x, a.y, b.x, b.y);
+        }
+        var minX = a.x, minY = a.y, maxX = a.x, maxY = a.y;
+        for (var j = 1; j <= upto; j++) {
+          minX = Math.min(minX, pts[j].x); maxX = Math.max(maxX, pts[j].x);
+          minY = Math.min(minY, pts[j].y); maxY = Math.max(maxY, pts[j].y);
+        }
+        if (maxX - minX < 2 && maxY - minY < 2) { return '#8ef0ff'; }   /* the dot on an i */
+        return grad(ctx, minX, minY, maxX, maxY);
+      }
+
+      function grad(ctx, x0, y0, x1, y1) {
+        var g = ctx.createLinearGradient(x0, y0, x1, y1);
+        g.addColorStop(0, '#8ef0ff');
+        g.addColorStop(1, '#fff3a0');
+        return g;
+      }
+
       function draw(ctx) {
         var now = performance.now() / 1000;
         var bg = ctx.createLinearGradient(0, 0, 0, api.H);
@@ -258,10 +284,7 @@
         strokes.forEach(function (st, n) {
           var upto = n < si || state !== 'trace' ? st.pts.length - 1 : (n === si ? k : -1);
           if (upto < 1) { return; }
-          var g = ctx.createLinearGradient(st.pts[0].x, st.pts[0].y, st.pts[upto].x, st.pts[upto].y);
-          g.addColorStop(0, '#8ef0ff');
-          g.addColorStop(1, '#fff3a0');
-          ctx.strokeStyle = g;
+          ctx.strokeStyle = paint(ctx, st.pts, upto);
           ctx.lineWidth = st.width;
           path(ctx, st.pts, upto); ctx.stroke();
         });

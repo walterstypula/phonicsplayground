@@ -118,11 +118,42 @@
     this.setAttribute('aria-pressed', String(state.soundOn));
   });
 
-  $('btn-voice').addEventListener('click', function () {
+  /* ---------- the voice picker ----------
+     The list of voices usually turns up a moment after the page does, so the picker is
+     drawn whenever it changes as well as once at the start. */
+  function renderVoices() {
+    var sel = $('voice-select');
+    var list = PH.speech.voices();
+    var now = PH.speech.voice();
+    if (!list.length) {
+      sel.innerHTML = '<option>No voices installed</option>';
+      sel.disabled = true;
+      $('btn-voice-prev').disabled = $('btn-voice-next').disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    $('btn-voice-prev').disabled = $('btn-voice-next').disabled = list.length < 2;
+    sel.innerHTML = list.map(function (v) {
+      return '<option value="' + v.name.replace(/"/g, '&quot;') + '">' + v.label + '</option>';
+    }).join('');
+    if (now) { sel.value = now.name; }
+  }
+
+  $('voice-select').addEventListener('change', function () {
     PH.sfx.warmUp();
-    var name = PH.speech.nextVoice();
-    this.textContent = '🗣️ ' + String(name);
+    PH.speech.setVoice(this.value);
   });
+  $('btn-voice-prev').addEventListener('click', function () {
+    PH.sfx.warmUp();
+    var v = PH.speech.stepVoice(-1);
+    if (v) { $('voice-select').value = v.name; }
+  });
+  $('btn-voice-next').addEventListener('click', function () {
+    PH.sfx.warmUp();
+    var v = PH.speech.stepVoice(1);
+    if (v) { $('voice-select').value = v.name; }
+  });
+  PH.speech.onVoicesChanged(renderVoices);
 
   /* ---------- boot ---------- */
   state.levelId = PH.levelForAge(state.age);
@@ -131,6 +162,7 @@
   renderAges();
   renderLevelNote();
   renderCards();
+  renderVoices();
   PH.Engine.init($('canvas'), dom);
 
   if (!PH.speech.supported) {

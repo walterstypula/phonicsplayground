@@ -24,7 +24,13 @@
 
   <footer class="grownups">
     <button id="btn-sound" class="mini" aria-pressed="true">🔊 Sound: on</button>
-    <button id="btn-voice" class="mini">🗣️ Voice</button>
+    <div class="mini voicebar">
+      <button id="btn-voice-prev" class="voice-step" aria-label="Previous voice" title="Previous voice">◀</button>
+      <span class="voice-ico" aria-hidden="true">🗣️</span>
+      <label class="visually-hidden" for="voice-select">Voice</label>
+      <select id="voice-select" title="Choose the voice"></select>
+      <button id="btn-voice-next" class="voice-step" aria-label="Next voice" title="Next voice">▶</button>
+    </div>
     <span class="hint">Tip: headphones help a lot. Works offline.</span>
   </footer>
 </section>
