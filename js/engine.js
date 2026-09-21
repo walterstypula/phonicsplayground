@@ -99,6 +99,10 @@
 
     /* a soft oval shadow on the ground under a character or object */
     shadow: function (ctx, x, y, rx, ry, alpha) {
+      /* A radius is worked out from something's width, and a width can be zero for a
+         frame while the canvas is being resized. Canvas throws on a negative one, and a
+         throw here takes the whole frame down - a black screen for a dropped shadow. */
+      if (!(rx > 0) || !(ry > 0)) { return; }
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(1, ry / rx);

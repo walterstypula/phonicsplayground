@@ -133,7 +133,7 @@
   ];
 
   /* ---------- pre-reader levels (ages 3 and 4) ----------
-     Pictures: "word|emoji|group|syllables|rime". Groups drive "munch all the animals" style
+     Pictures: "word|emoji|group|syllables|rime". Groups drive "catch all the animals" style
      rules, syllables drive clapping, and rimes are given so that bear / pear / chair rhyme.  */
   var PICTURES = [
     'cat|🐱|animal|cat|at', 'bat|🦇|animal|bat|at', 'hat|🎩|thing|hat|at',

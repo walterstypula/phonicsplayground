@@ -20,7 +20,6 @@ Abracadabra!
 All the leaks are fixed!
 Awesome!
 Blast off!
-Boing! The Troggle bumped you!
 Bonk bonk! Awesome!
 Bonk the little letter that goes with big
 Capital
@@ -518,11 +517,6 @@ Clap it together.
 Feed me the
 How many claps in
 How many sounds in
-Munch all the animals!
-Munch every letter
-Munch the words that rhyme with
-Munch the words that start with
-Munch the words with the sound
 Read the spell card, then tap the picture it makes.
 Read the words and build a question.
 Slide the snail and sound it out with me
@@ -607,13 +601,6 @@ Catch the words with the sound
 Catch the words that start with
 Catch the words that rhyme with
 Catch every letter
-Munch all the animals!
-Munch all the food!
-Munch all the things that go!
-Munch the words with the sound
-Munch the words that start with
-Munch the words that rhyme with
-Munch every letter
 Read the words and build a sentence.
 
 # ---- the last stragglers the full audit turned up ----

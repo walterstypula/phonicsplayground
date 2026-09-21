@@ -1,6 +1,6 @@
 # Phonics Playground
 
-Twenty listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
+Twenty-one listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
 JavaScript: no build step, no frameworks, no asset files, no network calls.
 
 ## Playing
@@ -24,7 +24,6 @@ level can be nudged up or down with the **change level** button.
 | Octopus Treasure Hunt | Picks the chest with the spoken word from look-alikes like lip, zip, cip | Careful letter-by-letter decoding |
 | The Floor is Lava | Hops stone to stone over lava by tapping the word it hears | Fast recognition, with a goal to reach |
 | Pilot Wings | Flies through the ring holding the sound missing from a word | Which spelling makes which sound |
-| Word Munchers | Walks a grid munching every word that fits a rule, dodging the Troggle | Sorting by sound, first sound or rhyme |
 | Penalty Kick | Counts the sounds in a word, kicks at that number | Segmenting sounds; claps (syllables) at level 5 |
 | Don't Wake the Giant | Slides a pillow to catch falling words that fit a rule before they crash | Sorting by sound, first sound or rhyme, under time pressure |
 | Stack the Snack | Takes sound chunks off a moving belt in the right order to build a sandwich | Building a word sound by sound |
@@ -32,6 +31,8 @@ level can be nudged up or down with the **change level** button.
 | Space Jumper | Runs and jumps through a space platformer, head-bumping the block with the spoken word to open each star gate | Word recognition, in a Mario-style level |
 | Wizard's Spellbook | Reads a spell card with no voice help, then taps the picture it means; older children read short phrases | Independent reading for meaning |
 | Comet Trails | Drags a comet along a dotted letter in the right order and direction | Letter formation (handwriting) |
+| Stretchy Snail | Slides a snail under a word, stretching each sound into the next | Blending without gaps between sounds |
+| Story Time | Reads a whole story, tapping any word to hear it sounded out | Blending inside a sentence, not on a flashcard |
 | Frog Hop | Changes one sound to turn one word into the next (cat, hat, hot, dot) to hop up to a fly | Swapping sounds within a word |
 | Whack-a-Mole | Bonks the mole holding the tricky word it hears; moles speed up with a streak | Sight words that break the phonics rules |
 | Sentence Train | Hooks word carriages onto an engine in order to build a sentence, then watches it chug away | Word order, capital letters and periods |
@@ -46,8 +47,7 @@ by tapping a block, which sends the astronaut to run over and bump it. At the
 pre-reader levels there are no gaps or aliens.
 
 Every game gives a star per correct answer and never fails the child: a wrong
-tap wobbles and gives a hint, then play continues. The Troggle in Word Munchers
-only bumps the Muncher back to the start, and it does not appear at level 1.
+tap wobbles and gives a hint, then play continues.
 
 Octopus Treasure Hunt makes up look-alike words by swapping one letter. Every
 made-up word is checked against a blocklist in `js/words.js` so a swap can never
