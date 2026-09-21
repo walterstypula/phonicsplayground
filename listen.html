@@ -20,29 +20,47 @@
   button .id{ font-family:"Century Gothic","Trebuchet MS",sans-serif; font-weight:700 }
   button .ms{ color:var(--soft); font-size:12px; margin-left:6px }
   button.playing .ms{ color:rgba(255,255,255,.75) }
+  button .as{ display:block; color:var(--soft); font-size:12px; margin-top:2px }
+  button.playing .as{ color:rgba(255,255,255,.8) }
   .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:14px 0 }
   input[type=text]{ font:inherit; padding:9px 12px; border:1px solid var(--line);
     border-radius:10px; min-width:240px }
   .note{ font-size:13px }
+  .lead{ background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:14px 18px; max-width:70ch; margin:18px 0 0 }
+  .lead p{ margin:0 0 8px } .lead p:last-child{ margin:0 }
 </style>
 </head>
 <body>
 
 <h1>Listening check</h1>
-<p>Every recording the games use, so they can be heard on their own. Nothing here is part
-of the game &mdash; it is a bench for checking what a sound actually sounds like.</p>
+<p>Every recording the games use, so they can be heard on its own. Nothing here is part of
+the game &mdash; it is a bench for checking what a sound actually sounds like.</p>
+
+<div class="lead">
+  <p><strong>If you are helping by listening:</strong> click a sound and say whether it is
+  the sound you would make yourself when reading that word to a child.</p>
+  <p>The word under each one is where that sound is heard. Under <em>b</em> it says
+  "bat", so it should sound like the beginning of <em>bat</em> &mdash; a short push of
+  air, not "buh" as a whole word. A couple say "the end sound" instead, because that is
+  where those live: <em>ng</em> is the end of <em>ring</em>.</p>
+  <p>The ones worth flagging are: a sound that has turned into a different sound, a sound
+  with an "uh" stuck on the end, and anything too faint or too clipped to make out.</p>
+</div>
 
 <div class="row">
   <input id="word" type="text" placeholder="type a word, e.g. cat" value="cat">
   <button id="blend">Sound it out</button>
   <span class="note">plays the sounds run together, the way Stretchy Snail does</span>
 </div>
+<p class="note" id="split"></p>
 <p class="note" id="filenote"></p>
 
-<h2 id="sounds-head">The sounds</h2>
-<div class="grid" id="sounds"></div>
+<div id="sounds"></div>
 
-<h2 id="words-head">Syllables and words</h2>
+<h2 id="words-head">Syllables</h2>
+<p class="note">Pieces of longer words, recorded whole. A child never meets these on their
+own &mdash; they are here because a voice reading "ap" as letters is the thing to catch.</p>
 <div class="grid" id="words"></div>
 
 <h2>Alternatives being compared</h2>
@@ -50,6 +68,7 @@ of the game &mdash; it is a bench for checking what a sound actually sounds like
 <div class="grid" id="compare"></div>
 
 <script src="audio/clips.js"></script>
+<script src="js/audio.js"></script>
 <script>
 (function () {
   var PH = window.PH || {};
@@ -142,19 +161,48 @@ of the game &mdash; it is a bench for checking what a sound actually sounds like
     });
   }
 
-  function button(label, urls, into) {
+  function button(label, urls, into, opts) {
+    opts = opts || {};
     var b = document.createElement('button');
-    b.innerHTML = '<span class="id">' + label + '</span><span class="ms"></span>';
+    b.innerHTML = '<span class="id">' + label + '</span>' +
+      (opts.as ? '<span class="as">' + opts.as + '</span>' : '') +
+      '<span class="ms"></span>';
     b.addEventListener('click', function () { playRun(urls, b); });
-    /* how long it is, read from the file itself rather than by decoding it */
+    /* how long it is, read from the file itself rather than by decoding it. Length is a
+       maker's question, not a listener's, so it sits in the tooltip unless it is the
+       point of the section - or unless the file is not there at all. */
     var probe = new Audio(urls[0]);
     probe.addEventListener('loadedmetadata', function () {
-      b.querySelector('.ms').textContent = Math.round(probe.duration * 1000) + 'ms';
+      var ms = Math.round(probe.duration * 1000) + 'ms';
+      b.title = ms;
+      if (opts.showMs) { b.querySelector('.ms').textContent = ms; }
     });
     probe.addEventListener('error', function () { b.querySelector('.ms').textContent = 'missing'; });
     into.appendChild(b);
     return b;
   }
+
+  /* The 43 in the order a child meets them, rather than all in one heap. A parent asked
+     "does this sound right?" needs to know what they are being asked about, and "the
+     sound ai makes in rain" is a question; a wall of forty-three tiles is not. */
+  var GROUPS = [
+    { name: 'Letter sounds',
+      note: 'One letter, one sound - the first ones a child learns. c and k share a sound, qu is two run together, and so is x.',
+      ids: ['a', 'b', 'k', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'l', 'm', 'n', 'o', 'p',
+        'kw', 'r', 's', 't', 'u', 'v', 'w', 'ks', 'y', 'z'] },
+    { name: 'Two letters, one sound',
+      note: 'The pair makes a sound neither letter makes alone. English spells two of these the same way, so the buzzing th of "that" is written dh here to tell it from the quiet th of "thin".',
+      ids: ['sh', 'ch', 'th', 'dh', 'ng'] },
+    { name: 'Long vowels',
+      note: 'A vowel saying its own name, and the two oo sounds - the long one in "moon" and the short one in "book".',
+      ids: ['ay', 'ee', 'igh', 'oh', 'yoo', 'oo', 'uu'] },
+    { name: 'Sliding vowels',
+      note: 'The mouth moves while the sound is still going.',
+      ids: ['ow', 'oi', 'aw'] },
+    { name: 'Vowel with an r',
+      note: 'An r after a vowel swallows it, and all of bird, her and fur end up in the same place.',
+      ids: ['ar', 'or', 'er'] }
+  ];
 
   var base = function (f) { return f.replace(/\.[a-z0-9]+$/i, ''); };
 
@@ -166,49 +214,80 @@ of the game &mdash; it is a bench for checking what a sound actually sounds like
   CLIPS.sounds = alpha(CLIPS.sounds);
   CLIPS.words = alpha(CLIPS.words);
 
-  CLIPS.sounds.forEach(function (f) {
-    button(base(f), ['audio/sounds/' + f], document.getElementById('sounds'));
+  var soundUrl = {};
+  CLIPS.sounds.forEach(function (f) { soundUrl[base(f)] = 'audio/sounds/' + f; });
+  /* the example word comes from the game's own table, so the two cannot drift apart */
+  var SOUNDS = (window.PH && window.PH.SOUNDS) || {};
+
+  function section(host, title, note) {
+    var h = document.createElement('h2');
+    h.textContent = title;
+    host.appendChild(h);
+    if (note) {
+      var p = document.createElement('p');
+      p.className = 'note';
+      p.textContent = note;
+      host.appendChild(p);
+    }
+    var g = document.createElement('div');
+    g.className = 'grid';
+    host.appendChild(g);
+    return g;
+  }
+
+  var host = document.getElementById('sounds');
+  var placed = {};
+  GROUPS.forEach(function (grp) {
+    var ids = grp.ids.filter(function (id) { return soundUrl[id]; }).sort();
+    if (!ids.length) { return; }
+    var g = section(host, grp.name + ' (' + ids.length + ')', grp.note);
+    ids.forEach(function (id) {
+      placed[id] = 1;
+      button(id, [soundUrl[id]], g, { as: SOUNDS[id] ? SOUNDS[id].as : '' });
+    });
   });
-  document.getElementById('sounds-head').textContent = 'The sounds (' + CLIPS.sounds.length + ')';
+
+  /* a sound added to the game but not to a group above would otherwise vanish from this
+     page without saying so, which is the one thing a checking bench must not do */
+  var loose = Object.keys(soundUrl).filter(function (id) { return !placed[id]; }).sort();
+  if (loose.length) {
+    var g = section(host, 'Not in a group yet (' + loose.length + ')',
+      'These are recorded and in use, but GROUPS in this page has not been told where they belong.');
+    loose.forEach(function (id) {
+      button(id, [soundUrl[id]], g, { as: SOUNDS[id] ? SOUNDS[id].as : '' });
+    });
+  }
 
   CLIPS.words.forEach(function (f) {
     button(base(f), ['audio/words/' + f], document.getElementById('words'));
   });
-  document.getElementById('words-head').textContent =
-    'Syllables and words (' + CLIPS.words.length + ')';
+  document.getElementById('words-head').textContent = 'Syllables (' + CLIPS.words.length + ')';
 
   /* anything dropped into audio/_compare, named "<tag>-<sound>.wav" */
   var VARIANTS = ['1short-b', '2mid-b', '3long-b', '1short-d', '2mid-d', '3long-d',
     '1short-g', '2mid-g', '3long-g'];
   VARIANTS.forEach(function (name) {
-    button(name, ['audio/_compare/' + name + '.wav'], document.getElementById('compare'));
+    /* here the length is the whole question, so it stays on the face of the button */
+    button(name, ['audio/_compare/' + name + '.wav'], document.getElementById('compare'),
+      { showMs: true });
   });
 
-  /* sound a typed word out, using the game's own rules if they are loaded */
+  /* Sound a typed word out exactly as the games do. The rules are not copied out here on
+     purpose: a copy would answer for itself rather than for the game, and a word this
+     page got right while the game got it wrong is worse than no bench at all. */
   document.getElementById('blend').addEventListener('click', function () {
     var w = document.getElementById('word').value.trim().toLowerCase();
-    if (!w) { return; }
-    var urls = [];
-    var byName = {};
-    CLIPS.sounds.forEach(function (f) { byName[base(f)] = 'audio/sounds/' + f; });
-    /* longest spelling first, the same greedy walk PH.soundsIn does */
-    var SPELL = { sh:'sh', ch:'ch', th:'th', ck:'k', ng:'ng', qu:'kw', ph:'f', wh:'w',
-      ai:'ay', ay:'ay', ee:'ee', ea:'ee', ey:'ee', oa:'oh', oo:'oo', ow:'ow', ou:'ow',
-      oi:'oi', oy:'oi', aw:'aw', igh:'igh', ar:'ar', or:'or', ir:'er', ur:'er', er:'er',
-      a:'a', b:'b', c:'k', d:'d', e:'e', f:'f', g:'g', h:'h', i:'i', j:'j', k:'k', l:'l',
-      m:'m', n:'n', o:'o', p:'p', r:'r', s:'s', t:'t', u:'u', v:'v', w:'w', x:'ks',
-      y:'y', z:'z' };
-    var keys = Object.keys(SPELL).sort(function (a, b) { return b.length - a.length; });
-    var i = 0;
-    while (i < w.length) {
-      var hit = null;
-      for (var k = 0; k < keys.length; k++) {
-        if (w.substr(i, keys[k].length) === keys[k]) { hit = keys[k]; break; }
-      }
-      if (!hit) { i++; continue; }
-      if (byName[SPELL[hit]]) { urls.push(byName[SPELL[hit]]); }
-      i += hit.length;
-    }
+    if (!w || !window.PH || !PH.soundOut) { return; }
+    var wordUrl = {};
+    CLIPS.words.forEach(function (f) { wordUrl[base(f)] = 'audio/words/' + f; });
+    var urls = [], said = [];
+    PH.soundOut({ w: w, g: [w] }).forEach(function (p) {
+      if (!p.hint) { return; }                       /* a silent letter says nothing */
+      var url = p.hint.charAt(0) === '/' ? soundUrl[p.hint.slice(1)] : wordUrl[p.hint];
+      if (url) { urls.push(url); said.push(p.text); }
+    });
+    document.getElementById('split').textContent =
+      said.length ? w + ' = ' + said.join(' - ') : 'no sounds for "' + w + '"';
     if (urls.length) { playRun(urls, this); }
   });
 })();
