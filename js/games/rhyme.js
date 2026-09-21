@@ -184,6 +184,14 @@
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, api.W, api.H);
 
+        /* soft nebula clouds behind everything */
+        [[200, 420, 260, '155,93,229'], [820, 470, 300, '77,141,255'], [560, 120, 220, '255,93,143']].forEach(function (n) {
+          var ng = ctx.createRadialGradient(n[0], n[1], 10, n[0], n[1], n[2]);
+          ng.addColorStop(0, 'rgba(' + n[3] + ',.28)');
+          ng.addColorStop(1, 'rgba(' + n[3] + ',0)');
+          ctx.fillStyle = ng;
+          ctx.fillRect(n[0] - n[2], n[1] - n[2], n[2] * 2, n[2] * 2);
+        });
         ctx.fillStyle = '#ffffff';
         stars.forEach(function (s) {
           ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(performance.now() / 800 + s.t));
@@ -195,27 +203,44 @@
           var dx = p.shake > 0 ? Math.sin(p.shake * 60) * 10 : 0;
           ctx.save();
           ctx.translate(p.x + dx, p.y);
+          /* a faint glow, then the back half of the ring, the planet, and the front half */
+          var halo = ctx.createRadialGradient(0, 0, p.r * 0.8, 0, 0, p.r * 1.5);
+          halo.addColorStop(0, 'rgba(255,255,255,.18)'); halo.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = halo;
+          ctx.beginPath(); ctx.arc(0, 0, p.r * 1.5, 0, Math.PI * 2); ctx.fill();
+          ctx.save();
+          ctx.rotate(0.3);
+          ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 8;
+          ctx.beginPath(); ctx.ellipse(0, 0, p.r + 24, 20, 0, Math.PI, Math.PI * 2); ctx.stroke();
+          ctx.restore();
           var g = ctx.createRadialGradient(-30, -34, 12, 0, 0, p.r);
-          g.addColorStop(0, '#ffffff');
-          g.addColorStop(0.3, p.hue);
-          g.addColorStop(1, 'rgba(0,0,0,.45)');
+          g.addColorStop(0, U.shade(p.hue, 0.6));
+          g.addColorStop(0.45, p.hue);
+          g.addColorStop(1, U.shade(p.hue, -0.55));
           ctx.fillStyle = g;
           ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
-
+          /* surface bands and craters give each planet some texture */
           ctx.save();
-          ctx.rotate(p.spin);
-          ctx.strokeStyle = 'rgba(255,255,255,.4)';
-          ctx.lineWidth = 7;
-          ctx.beginPath(); ctx.ellipse(0, 0, p.r + 20, 18, 0.3, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.clip();
+          ctx.rotate(p.spin * 0.3);
+          ctx.fillStyle = 'rgba(255,255,255,.12)';
+          ctx.fillRect(-p.r, -p.r * 0.45, p.r * 2, p.r * 0.18);
+          ctx.fillRect(-p.r, p.r * 0.2, p.r * 2, p.r * 0.12);
+          ctx.fillStyle = 'rgba(0,0,0,.12)';
+          ctx.beginPath(); ctx.arc(p.r * 0.45, p.r * 0.4, p.r * 0.14, 0, Math.PI * 2); ctx.arc(-p.r * 0.5, p.r * 0.55, p.r * 0.09, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+          ctx.save();
+          ctx.rotate(0.3);
+          ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 8;
+          ctx.beginPath(); ctx.ellipse(0, 0, p.r + 24, 20, 0, 0, Math.PI); ctx.stroke();
           ctx.restore();
 
-          ctx.fillStyle = 'rgba(255,255,255,.94)';
           var word = api.label(p.word.w);
           var fs = word.length > 7 ? 24 : (word.length > 5 ? 30 : 36);
           ctx.font = U.font(fs);
           var tw = ctx.measureText(word).width;
-          U.roundRect(ctx, -tw / 2 - 16, -22, tw + 32, 46, 14);
-          ctx.fill();
+          U.plate(ctx, -tw / 2 - 18, -24, tw + 36, 48, { r: 14 });
+          ctx.font = U.font(fs);
           ctx.fillStyle = '#1f2340';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -225,11 +250,7 @@
 
         drawRocket(ctx);
 
-        ctx.fillStyle = 'rgba(255,255,255,.8)';
-        ctx.font = U.font(24);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Tap the planet that rhymes', api.W / 2, api.H - 26);
+        U.badge(ctx, api.W / 2, api.H - 60, 'Tap the planet that rhymes', { align: 'center', icon: '🚀' });
       }
 
       newRound();

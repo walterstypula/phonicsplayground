@@ -197,15 +197,16 @@
         var tw = Math.max(70, ctx.measureText(text).width + 30);
         ctx.fillStyle = '#7a4a2b';
         ctx.fillRect(44, -150, 7, 110);
-        ctx.fillStyle = '#fffaf0';
-        U.roundRect(ctx, 48 - tw / 2, -190, tw, fs + 22, 10); ctx.fill();
-        ctx.strokeStyle = '#c9a14a'; ctx.lineWidth = 3; ctx.stroke();
+        U.plate(ctx, 48 - tw / 2, -190, tw, fs + 22, { fill: '#fff4d6', r: 10, edge: '#b07a3a' });
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(text, 48, -190 + (fs + 22) / 2 + 1);
-        /* body */
-        ctx.fillStyle = '#8d5a3b';
+        /* body: velvety fur with a soft highlight */
+        var fur = ctx.createRadialGradient(-14, -58, 6, 0, -30, 70);
+        fur.addColorStop(0, '#b07a52'); fur.addColorStop(1, '#6f4327');
+        ctx.fillStyle = fur;
         ctx.beginPath(); ctx.ellipse(0, -30, 46, 60, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#4a2a14'; ctx.lineWidth = 2.5; ctx.stroke();
         ctx.fillStyle = '#c69c7a';
         ctx.beginPath(); ctx.ellipse(0, -10, 28, 34, 0, 0, Math.PI * 2); ctx.fill();
         /* face */
@@ -257,16 +258,39 @@
       }
 
       function draw(ctx) {
-        var sky = ctx.createLinearGradient(0, 0, 0, 160);
-        sky.addColorStop(0, '#a5d8ff');
-        sky.addColorStop(1, '#d0ebff');
+        var now = performance.now() / 1000;
+        var sky = ctx.createLinearGradient(0, 0, 0, 170);
+        sky.addColorStop(0, '#74c0fc');
+        sky.addColorStop(1, '#e7f5ff');
         ctx.fillStyle = sky;
-        ctx.fillRect(0, 0, api.W, 160);
-        ctx.fillStyle = '#69db7c';
-        ctx.fillRect(0, 140, api.W, api.H - 140);
-        ctx.fillStyle = '#51cf66';
-        for (var sx = 0; sx < api.W; sx += 40) {
-          ctx.beginPath(); ctx.moveTo(sx, 150); ctx.lineTo(sx + 10, 132); ctx.lineTo(sx + 20, 150); ctx.fill();
+        ctx.fillRect(0, 0, api.W, 170);
+        /* sun and a couple of lazy clouds */
+        var sg = ctx.createRadialGradient(90, 50, 10, 90, 50, 90);
+        sg.addColorStop(0, 'rgba(255,236,150,.95)'); sg.addColorStop(1, 'rgba(255,236,150,0)');
+        ctx.fillStyle = sg; ctx.fillRect(0, 0, 200, 150);
+        ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(90, 50, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        [[(now * 12) % 1200 - 100, 60, 1], [(now * 8 + 600) % 1200 - 100, 95, 0.7]].forEach(function (c) {
+          ctx.beginPath(); ctx.arc(c[0], c[1], 22 * c[2], 0, Math.PI * 2); ctx.arc(c[0] + 26 * c[2], c[1] + 6, 17 * c[2], 0, Math.PI * 2);
+          ctx.arc(c[0] - 24 * c[2], c[1] + 6, 15 * c[2], 0, Math.PI * 2); ctx.fill();
+        });
+        /* bushes along the back */
+        ctx.fillStyle = '#40a95a';
+        for (var bx = -20; bx < api.W + 40; bx += 70) {
+          ctx.beginPath(); ctx.arc(bx, 160, 42 + (bx % 3) * 6, Math.PI, Math.PI * 2); ctx.fill();
+        }
+        /* a white picket fence */
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 138, api.W, 7);
+        for (var fx = 8; fx < api.W; fx += 34) {
+          ctx.beginPath(); ctx.moveTo(fx, 170); ctx.lineTo(fx, 118); ctx.lineTo(fx + 9, 110); ctx.lineTo(fx + 18, 118); ctx.lineTo(fx + 18, 170); ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(0,0,0,.08)';
+        ctx.fillRect(0, 152, api.W, 5);
+        /* mown lawn stripes */
+        for (var ly = 160; ly < api.H; ly += 60) {
+          ctx.fillStyle = (ly / 60 | 0) % 2 ? '#69db7c' : '#5fcf72';
+          ctx.fillRect(0, ly, api.W, 60);
         }
         flowers.forEach(function (f) {
           ctx.fillStyle = f.c;
@@ -278,26 +302,26 @@
         });
 
         holes.forEach(function (h) {
-          ctx.fillStyle = '#5c3b1e';
-          ctx.beginPath(); ctx.ellipse(h.x, h.y, 78, 26, 0, 0, Math.PI * 2); ctx.fill();
+          /* a mound of dug-up earth, then the dark hole in it */
+          var mound = ctx.createRadialGradient(h.x, h.y - 6, 20, h.x, h.y, 96);
+          mound.addColorStop(0, '#a47148'); mound.addColorStop(1, '#6f4524');
+          ctx.fillStyle = mound;
+          ctx.beginPath(); ctx.ellipse(h.x, h.y + 2, 92, 32, 0, 0, Math.PI * 2); ctx.fill();
           ctx.fillStyle = '#2b1a0c';
           ctx.beginPath(); ctx.ellipse(h.x, h.y + 2, 64, 18, 0, 0, Math.PI * 2); ctx.fill();
           if (h.mole) { drawMole(ctx, h); }
           /* front lip of the hole hides the mole's bottom */
-          ctx.fillStyle = '#7a5230';
-          ctx.beginPath(); ctx.ellipse(h.x, h.y + 10, 80, 18, 0, 0, Math.PI); ctx.fill();
+          var lip = ctx.createLinearGradient(0, h.y, 0, h.y + 30);
+          lip.addColorStop(0, '#9c6b43'); lip.addColorStop(1, '#6f4524');
+          ctx.fillStyle = lip;
+          ctx.beginPath(); ctx.ellipse(h.x, h.y + 10, 82, 20, 0, 0, Math.PI); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.12)';
+          ctx.beginPath(); ctx.ellipse(h.x - 30, h.y + 14, 18, 4, 0, 0, Math.PI * 2); ctx.fill();
         });
 
-        ctx.fillStyle = 'rgba(31,35,64,.7)';
-        U.roundRect(ctx, 16, 14, 190, 44, 14); ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = U.font(22);
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText('Bonked ' + got + ' of ' + NEED, 32, 37);
+        U.badge(ctx, 16, 14, 'Bonked ' + got + ' of ' + NEED, { icon: '🔨' });
         if (streak >= 3) {
-          ctx.fillStyle = '#ff9f40';
-          ctx.textAlign = 'right';
-          ctx.fillText('🔥 ' + streak + ' in a row!', api.W - 24, 37);
+          U.badge(ctx, api.W - 16, 14, streak + ' in a row!', { align: 'right', icon: '🔥', top: 'rgba(255,146,43,.95)', bottom: 'rgba(232,89,12,.95)' });
         }
 
         drawHammer(ctx);

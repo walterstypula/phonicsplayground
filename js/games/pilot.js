@@ -196,8 +196,8 @@
         var fs = api.mode === 'letters' ? 38 : (shown.length > 3 ? 22 : 30);
         ctx.font = U.font(fs);
         var tw = Math.max(34, ctx.measureText(shown).width + 18);
-        ctx.fillStyle = 'rgba(255,255,255,.95)';
-        U.roundRect(ctx, wave.x - tw / 2, r.y - 22, tw, 44, 12); ctx.fill();
+        U.plate(ctx, wave.x - tw / 2, r.y - 23, tw, 44, { r: 12, shadow: false });
+        ctx.font = U.font(fs);
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(shown, wave.x, r.y + 1);
@@ -239,8 +239,7 @@
           ctxw.push(w); total += w + pad;
         });
         var x = api.W / 2 - total / 2;
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
-        U.roundRect(ctx, x - 20, 18, total + 30, 66, 20); ctx.fill();
+        U.plate(ctx, x - 20, 16, total + 30, 66, { r: 20 });
         target.g.forEach(function (g, k) {
           var w = ctxw[k];
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -264,20 +263,29 @@
 
       function draw(ctx) {
         var sky = ctx.createLinearGradient(0, 0, 0, api.H);
-        sky.addColorStop(0, '#6ec6ff');
-        sky.addColorStop(1, '#d9f1ff');
+        sky.addColorStop(0, '#4dabf7');
+        sky.addColorStop(0.7, '#bfe3ff');
+        sky.addColorStop(1, '#fff3d6');
         ctx.fillStyle = sky;
         ctx.fillRect(0, 0, api.W, api.H);
+        var sg = ctx.createRadialGradient(860, 120, 10, 860, 120, 170);
+        sg.addColorStop(0, 'rgba(255,240,170,.9)'); sg.addColorStop(1, 'rgba(255,240,170,0)');
+        ctx.fillStyle = sg; ctx.fillRect(660, 0, 340, 320);
+        ctx.fillStyle = '#fff3bf'; ctx.beginPath(); ctx.arc(860, 120, 38, 0, Math.PI * 2); ctx.fill();
 
-        ctx.fillStyle = 'rgba(255,255,255,.9)';
         clouds.forEach(function (c) {
           ctx.save(); ctx.translate(c.x, c.y); ctx.scale(c.s, c.s);
+          ctx.fillStyle = 'rgba(150,185,220,.4)';
+          ctx.beginPath(); ctx.arc(2, 10, 30, 0, Math.PI * 2); ctx.arc(36, 16, 24, 0, Math.PI * 2); ctx.arc(-30, 18, 22, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.arc(34, 8, 24, 0, Math.PI * 2); ctx.arc(-32, 10, 22, 0, Math.PI * 2);
           ctx.fill(); ctx.restore();
         });
-        ctx.fillStyle = '#7fd67a';
-        hills.forEach(function (h) {
+        hills.forEach(function (h, n) {
+          var hg = ctx.createLinearGradient(0, api.H - h.h, 0, api.H);
+          hg.addColorStop(0, n % 2 ? '#8ce99a' : '#69db7c'); hg.addColorStop(1, '#2f9e44');
+          ctx.fillStyle = hg;
           ctx.beginPath(); ctx.ellipse(h.x + 110, api.H + 10, 150, h.h, 0, Math.PI, Math.PI * 2); ctx.fill();
         });
 
@@ -292,10 +300,7 @@
 
         drawGappedWord(ctx);
 
-        ctx.fillStyle = 'rgba(31,35,64,.6)';
-        ctx.font = U.font(20);
-        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Drag up and down (or ↑ ↓) to steer', api.W / 2, api.H - 16);
+        U.badge(ctx, api.W / 2, api.H - 56, 'Drag up and down (or ↑ ↓) to steer', { align: 'center', icon: '✈️', size: 18 });
       }
 
       newRound();

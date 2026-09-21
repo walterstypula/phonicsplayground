@@ -17,9 +17,9 @@
   function chooseVoice() {
     var list = englishVoices();
     if (!list.length) { return; }
-    /* prefer a natural sounding female voice if the platform has one */
-    var preferred = ['zira', 'samantha', 'karen', 'moira', 'serena', 'google uk english female',
-      'google us english', 'hazel', 'fiona', 'libby', 'sonia', 'aria'];
+    /* Sonia by default, then other natural sounding female voices if the platform has them */
+    var preferred = ['sonia', 'zira', 'samantha', 'karen', 'moira', 'serena', 'google uk english female',
+      'google us english', 'hazel', 'fiona', 'libby', 'aria'];
     for (var i = 0; i < preferred.length; i++) {
       for (var j = 0; j < list.length; j++) {
         if (list[j].name.toLowerCase().indexOf(preferred[i]) >= 0) {

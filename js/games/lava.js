@@ -177,10 +177,28 @@
         if (r.x > api.W + 40 || r.x + r.w < -40) { return; }
         /* slab */
         var hot = s.hot > 0 ? s.hot : 0;
-        ctx.fillStyle = hot ? 'rgb(' + Math.round(110 + 145 * hot) + ',70,50)' : '#6d5a60';
+        /* the lava lights the underside of every stone */
+        var glow = ctx.createLinearGradient(0, r.y + r.h - 10, 0, r.y + r.h + 18);
+        glow.addColorStop(0, 'rgba(255,120,40,.55)'); glow.addColorStop(1, 'rgba(255,120,40,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(r.x - 6, r.y + r.h - 10, r.w + 12, 28);
+        var stone = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
+        if (hot) {
+          stone.addColorStop(0, 'rgb(' + Math.round(150 + 105 * hot) + ',110,70)');
+          stone.addColorStop(1, 'rgb(' + Math.round(110 + 145 * hot) + ',50,30)');
+        } else {
+          stone.addColorStop(0, '#8a7780');
+          stone.addColorStop(0.7, '#5f4d55');
+          stone.addColorStop(1, '#c0572e');
+        }
+        ctx.fillStyle = stone;
         U.roundRect(ctx, r.x, r.y, r.w, r.h, 18); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,.18)';
+        ctx.strokeStyle = 'rgba(30,15,20,.5)'; ctx.lineWidth = 3;
+        U.roundRect(ctx, r.x, r.y, r.w, r.h, 18); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.2)';
         U.roundRect(ctx, r.x + 8, r.y + 6, r.w - 16, 12, 6); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.18)';
+        ctx.beginPath(); ctx.arc(r.x + r.w * 0.3, r.y + 32, 5, 0, Math.PI * 2); ctx.arc(r.x + r.w * 0.7, r.y + 28, 4, 0, Math.PI * 2); ctx.fill();
         if (cols[i].island) {
           ctx.fillStyle = '#3ddc84';
           U.roundRect(ctx, r.x - 10, r.y - 10, r.w + 20, 26, 12); ctx.fill();
@@ -194,8 +212,7 @@
           ctx.closePath(); ctx.fill();
         }
         if (isNext && s.text) {
-          ctx.fillStyle = '#fffaf0';
-          U.roundRect(ctx, r.x + 12, r.y - 34, r.w - 24, 50, 14); ctx.fill();
+          U.plate(ctx, r.x + 12, r.y - 36, r.w - 24, 50, { r: 14 });
           ctx.fillStyle = '#1f2340';
           ctx.font = U.font(s.fs);
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -206,6 +223,7 @@
       function drawHero(ctx) {
         var x = hero.x - camX, y = hero.y;
         var sq = hero.squash > 0 ? hero.squash * 0.2 : 0;
+        if (state !== 'hop') { U.shadow(ctx, x, y + 3, 26, 6, 0.4); }
         ctx.save();
         ctx.translate(x, y);
         ctx.scale(1 + sq, 1 - sq);
@@ -275,10 +293,7 @@
           ctx.fillRect(e.x, e.y, 3, 3);
         });
 
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
-        ctx.font = U.font(24);
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Stones to go: ' + Math.max(0, COLS - col), 22, 44);
+        U.badge(ctx, 18, 16, 'Stones to go: ' + Math.max(0, COLS - col), { icon: '🌋' });
       }
 
       reset();

@@ -232,8 +232,7 @@
       }
 
       function drawMeter(ctx) {
-        ctx.fillStyle = 'rgba(31,35,64,.8)';
-        U.roundRect(ctx, 16, 16, 290, 64, 16); ctx.fill();
+        U.plate(ctx, 16, 14, 290, 66, { fill: '#343a6b', r: 16, edge: 'rgba(255,255,255,.3)', shine: 0.12 });
         ctx.fillStyle = '#fff';
         ctx.font = U.font(18);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
@@ -263,61 +262,94 @@
         var fs = api.mode === 'letters' ? 34 : (shown.length > 7 ? 20 : 26);
         ctx.font = U.font(fs);
         var tw = ctx.measureText(shown).width + 22;
-        ctx.fillStyle = '#fffaf0';
-        U.roundRect(ctx, -tw / 2, 24, tw, 32, 10); ctx.fill();
-        ctx.strokeStyle = 'rgba(31,35,64,.2)'; ctx.lineWidth = 2; ctx.stroke();
+        U.plate(ctx, -tw / 2, 22, tw, 34, { r: 10 });
+        ctx.font = U.font(fs);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillStyle = '#1f2340';
         ctx.fillText(shown, 0, 41);
         ctx.restore();
       }
 
       function draw(ctx) {
+        var now = performance.now() / 1000;
+        /* night-time wallpaper with a pattern of tiny stars */
         var wall = ctx.createLinearGradient(0, 0, 0, api.H);
-        wall.addColorStop(0, '#2d2a55');
-        wall.addColorStop(1, '#3f3a70');
+        wall.addColorStop(0, '#2b2760');
+        wall.addColorStop(1, '#433c82');
         ctx.fillStyle = wall;
         ctx.fillRect(0, 0, api.W, api.H);
-        /* moon in the window */
-        ctx.fillStyle = '#1c1a3a';
-        U.roundRect(ctx, 60, 110, 170, 130, 12); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.07)';
+        for (var py = 20; py < FLOOR; py += 50) {
+          for (var px = 20 + (py / 50 % 2) * 25; px < api.W; px += 50) { U.star(ctx, px, py, 5, 2); ctx.fill(); }
+        }
+        /* a bedside lamp casting a warm pool of light */
+        var lamp = ctx.createRadialGradient(270, 330, 10, 270, 330, 230);
+        lamp.addColorStop(0, 'rgba(255,214,140,.35)'); lamp.addColorStop(1, 'rgba(255,214,140,0)');
+        ctx.fillStyle = lamp; ctx.fillRect(40, 100, 460, 460);
+        /* the window: night sky, moon, curtains */
+        ctx.fillStyle = '#6d4c8a'; U.roundRect(ctx, 52, 102, 186, 146, 14); ctx.fill();
+        var night = ctx.createLinearGradient(0, 110, 0, 240);
+        night.addColorStop(0, '#0b0930'); night.addColorStop(1, '#2a2470');
+        ctx.fillStyle = night; U.roundRect(ctx, 60, 110, 170, 130, 10); ctx.fill();
         ctx.fillStyle = '#fff4c2';
         ctx.beginPath(); ctx.arc(170, 160, 28, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#1c1a3a';
+        ctx.fillStyle = '#0f0c38';
         ctx.beginPath(); ctx.arc(182, 152, 24, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        [[88, 132], [110, 210], [210, 222], [140, 124]].forEach(function (s, n) {
+          ctx.globalAlpha = 0.5 + 0.5 * Math.sin(now * 2 + n);
+          U.star(ctx, s[0], s[1], 4, 1.6); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#8f5fb8';
+        ctx.beginPath(); ctx.moveTo(44, 96); ctx.quadraticCurveTo(84, 170, 56, 256); ctx.lineTo(44, 256); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(246, 96); ctx.quadraticCurveTo(206, 170, 234, 256); ctx.lineTo(246, 256); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#c29a6b'; ctx.fillRect(36, 92, 218, 8);
 
-        /* shelf */
-        ctx.fillStyle = '#9c5b2e';
+        /* wooden shelf */
+        var shelf = ctx.createLinearGradient(0, SHELF + 26, 0, SHELF + 40);
+        shelf.addColorStop(0, '#c07a45'); shelf.addColorStop(1, '#7a4320');
+        ctx.fillStyle = shelf;
         ctx.fillRect(LEFT, SHELF + 26, RIGHT - LEFT, 14);
-        ctx.fillStyle = '#7a4320';
+        ctx.fillStyle = '#6a3a1a';
         ctx.fillRect(LEFT + 20, SHELF + 40, 12, 26); ctx.fillRect(RIGHT - 32, SHELF + 40, 12, 26);
 
-        /* floor + rug */
-        ctx.fillStyle = '#6b4a3a';
+        /* floorboards + a patterned rug */
+        var fl = ctx.createLinearGradient(0, FLOOR, 0, api.H);
+        fl.addColorStop(0, '#7a5240'); fl.addColorStop(1, '#5a3a2c');
+        ctx.fillStyle = fl;
         ctx.fillRect(0, FLOOR, api.W, api.H - FLOOR);
+        ctx.strokeStyle = 'rgba(0,0,0,.2)'; ctx.lineWidth = 2;
+        for (var fx = 0; fx < api.W; fx += 90) { ctx.beginPath(); ctx.moveTo(fx, FLOOR); ctx.lineTo(fx, api.H); ctx.stroke(); }
         ctx.fillStyle = '#c05a8a';
-        U.roundRect(ctx, LEFT + 10, FLOOR + 6, RIGHT - LEFT - 20, 22, 10); ctx.fill();
+        U.roundRect(ctx, LEFT + 10, FLOOR + 6, RIGHT - LEFT - 20, 26, 12); ctx.fill();
+        ctx.strokeStyle = '#ffd6e8'; ctx.lineWidth = 3; ctx.setLineDash([10, 8]);
+        U.roundRect(ctx, LEFT + 18, FLOOR + 11, RIGHT - LEFT - 36, 16, 8); ctx.stroke();
+        ctx.setLineDash([]);
 
         drawGiant(ctx);
         items.forEach(function (it) { drawItem(ctx, it); });
 
-        /* pillow */
+        /* a quilted pillow with a button in the middle */
         var sq = pillow.squish > 0 ? pillow.squish : 0;
+        U.shadow(ctx, pillow.x, PILLOW_Y + 48, pillow.w * 0.52, 10, 0.35);
         ctx.save();
         ctx.translate(pillow.x, PILLOW_Y + 20);
         ctx.scale(1 + sq * 0.08, 1 - sq * 0.25);
-        ctx.fillStyle = 'rgba(0,0,0,.2)';
-        U.roundRect(ctx, -pillow.w / 2 + 4, -12, pillow.w, 44, 22); ctx.fill();
-        ctx.fillStyle = '#ffe3f0';
+        var pg = ctx.createLinearGradient(0, -20, 0, 24);
+        pg.addColorStop(0, '#fff0f6'); pg.addColorStop(1, '#ffc2da');
+        ctx.fillStyle = pg;
         U.roundRect(ctx, -pillow.w / 2, -20, pillow.w, 44, 22); ctx.fill();
-        ctx.strokeStyle = '#ff9fc4'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.strokeStyle = '#f783ac'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.strokeStyle = 'rgba(247,131,172,.5)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-pillow.w / 4, -16); ctx.lineTo(-pillow.w / 4, 20); ctx.moveTo(pillow.w / 4, -16); ctx.lineTo(pillow.w / 4, 20); ctx.stroke();
+        ctx.fillStyle = '#f06595';
+        ctx.beginPath(); ctx.arc(0, 2, 5, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
 
         drawMeter(ctx);
 
-        ctx.fillStyle = 'rgba(255,255,255,.7)';
-        ctx.font = U.font(18);
-        ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Drag the pillow (or ← →)', RIGHT, 40);
+        U.badge(ctx, RIGHT, 14, 'Drag the pillow (or ← →)', { align: 'right', size: 17 });
       }
 
       newRound();

@@ -211,6 +211,7 @@
         var x = 150, y = 560;
         var t = performance.now() / 1000;
         var wave = state === 'cast' ? -1.2 : Math.sin(t * 1.5) * 0.08 - 0.3;
+        U.shadow(ctx, x, y + 4, 90, 14, 0.4);
         /* robe */
         ctx.fillStyle = '#5b3fc4';
         ctx.beginPath(); ctx.moveTo(x - 70, y); ctx.lineTo(x - 30, y - 190); ctx.lineTo(x + 30, y - 190); ctx.lineTo(x + 70, y); ctx.closePath(); ctx.fill();
@@ -243,6 +244,11 @@
 
       function drawCauldron(ctx) {
         var t = performance.now() / 1000;
+        /* the fire lights the floor under the pot */
+        var fireGlow = ctx.createRadialGradient(CAUL.x, 620, 10, CAUL.x, 620, 200);
+        fireGlow.addColorStop(0, 'rgba(255,170,60,.45)'); fireGlow.addColorStop(1, 'rgba(255,170,60,0)');
+        ctx.fillStyle = fireGlow;
+        ctx.fillRect(CAUL.x - 200, 420, 400, 220);
         /* fire */
         for (var f = 0; f < 5; f++) {
           ctx.fillStyle = f % 2 ? '#ff9f40' : '#ffd23f';
@@ -363,8 +369,7 @@
         drawCard(ctx);
 
         /* the spellbook: everything conjured so far */
-        ctx.fillStyle = 'rgba(0,0,0,.3)';
-        U.roundRect(ctx, 700, 580, 290, 52, 14); ctx.fill();
+        U.plate(ctx, 700, 576, 290, 54, { fill: '#6b3fa0', r: 14, edge: '#ffd23f', lineWidth: 2, shine: 0.15 });
         ctx.fillStyle = '#ffd23f';
         ctx.font = U.font(18);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';

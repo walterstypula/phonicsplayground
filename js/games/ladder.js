@@ -268,10 +268,20 @@
         ctx.save();
         ctx.globalAlpha = 1 - (fade || 0);
         ctx.translate(x, y + (sink || 0) * 30);
-        ctx.fillStyle = '#2f9e44';
+        /* a dark reflection in the water, then the leaf with its notch, veins and a bright rim */
+        ctx.fillStyle = 'rgba(10,50,90,.3)';
+        ctx.beginPath(); ctx.ellipse(6, 10, r, r * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#237a3a';
         ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.55, 0, 0.25, Math.PI * 2 - 0.25); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#51cf66';
+        var leaf = ctx.createRadialGradient(-r * 0.3, -r * 0.3, 4, 0, -6, r);
+        leaf.addColorStop(0, '#8ce99a'); leaf.addColorStop(1, '#40c057');
+        ctx.fillStyle = leaf;
         ctx.beginPath(); ctx.ellipse(0, -6, r - 8, r * 0.55 - 8, 0, 0.3, Math.PI * 2 - 0.3); ctx.lineTo(0, -6); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(35,122,58,.45)'; ctx.lineWidth = 2;
+        for (var v = 0; v < 7; v++) {
+          var a = 0.6 + v * 0.8;
+          ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(Math.cos(a) * (r - 14), -6 + Math.sin(a) * (r * 0.55 - 12)); ctx.stroke();
+        }
         ctx.restore();
       }
 
@@ -318,8 +328,7 @@
         var widths = parts.map(function (g) { return ctx.measureText(g).width + 6; });
         var total = widths.reduce(function (a, b) { return a + b; }, 0);
         var w = total + 40 + (picture ? 56 : 0);
-        ctx.fillStyle = 'rgba(255,255,255,.92)';
-        U.roundRect(ctx, x - w / 2, y - 30, w, 60, 18); ctx.fill();
+        U.plate(ctx, x - w / 2, y - 31, w, 60, { r: 18 });
         var cx = x - w / 2 + 20;
         if (picture) {
           ctx.font = '40px ' + EMOJI;
@@ -378,6 +387,10 @@
           ctx.fillStyle = '#ffffff';
           ctx.font = U.font(pics ? 30 : 52);
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          if (!pics) {
+            ctx.strokeStyle = '#1b5e2e'; ctx.lineWidth = 8; ctx.lineJoin = 'round';
+            ctx.strokeText(pd.label, pd.x, pd.y + 6 + pd.sink * 30);
+          }
           ctx.fillText(pics ? api.label(pd.label) : pd.label, pd.x, pd.y + 6 + pd.sink * 30);
           ctx.restore();
         });
@@ -398,11 +411,8 @@
         drawFrog(ctx);
         if (state === 'think' || state === 'hop' || state === 'swim') { drawWord(ctx, BASE.x, BASE.y + 88); }
 
-        ctx.fillStyle = 'rgba(255,255,255,.9)';
-        ctx.font = U.font(20);
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         var left = Math.max(0, chain.length - 1 - step);
-        ctx.fillText(state === 'fly' ? 'Tap the fly!' : 'Hops to the fly: ' + left, 22, 32);
+        U.badge(ctx, 16, 14, state === 'fly' ? 'Tap the fly!' : 'Hops to the fly: ' + left, { icon: '🐸' });
       }
 
       newRound();

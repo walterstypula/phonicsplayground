@@ -159,6 +159,7 @@
       function drawKeeper(ctx) {
         var x = 500 + keeper.dir * 150 * keeper.dive;
         var y = 300 - Math.sin(keeper.dive * Math.PI) * 30 * Math.abs(keeper.dir);
+        U.shadow(ctx, x, 334, 40, 8, 0.3);
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(keeper.dir * keeper.dive * 1.2);
@@ -188,7 +189,9 @@
         ctx.translate(ball.x, ball.y);
         ctx.scale(ball.s, ball.s);
         if (state === 'kick') { ctx.rotate(timer * 14); }
-        ctx.fillStyle = '#fff';
+        var bg = ctx.createRadialGradient(-9, -10, 3, 0, 0, 28);
+        bg.addColorStop(0, '#ffffff'); bg.addColorStop(1, '#ced4da');
+        ctx.fillStyle = bg;
         ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#1f2340'; ctx.lineWidth = 2; ctx.stroke();
         ctx.fillStyle = '#1f2340';
@@ -222,21 +225,46 @@
 
       function draw(ctx) {
         var now = performance.now() / 1000;
-        /* stands and crowd */
-        ctx.fillStyle = '#3a3f66';
+        /* stands under floodlights */
+        var stand = ctx.createLinearGradient(0, 0, 0, 96);
+        stand.addColorStop(0, '#1f2350'); stand.addColorStop(1, '#3a3f7a');
+        ctx.fillStyle = stand;
         ctx.fillRect(0, 0, api.W, 96);
+        ctx.fillStyle = 'rgba(255,255,255,.06)';
+        ctx.fillRect(0, 32, api.W, 4); ctx.fillRect(0, 64, api.W, 4);
         var party = state === 'result' && shot && shot.right;
         crowd.forEach(function (c) {
           var hop = party ? Math.abs(Math.sin(now * 10 + c.p)) * 10 : Math.sin(now * 2 + c.p) * 1.5;
+          ctx.fillStyle = U.shade(c.c, -0.2);
+          U.roundRect(ctx, c.x - 11, c.y - hop + 18, 22, 14, 5); ctx.fill();
+          ctx.fillStyle = '#f1c9a5';
+          ctx.beginPath(); ctx.arc(c.x, c.y - hop + 10, 9, 0, Math.PI * 2); ctx.fill();
           ctx.fillStyle = c.c;
-          ctx.beginPath(); ctx.arc(c.x, c.y - hop + 10, 11, 0, Math.PI * 2); ctx.fill();
-          ctx.fillRect(c.x - 11, c.y - hop + 18, 22, 14);
+          ctx.beginPath(); ctx.arc(c.x, c.y - hop + 7, 9, Math.PI, Math.PI * 2); ctx.fill();   /* team hat */
+          if (party) {
+            ctx.strokeStyle = '#f1c9a5'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(c.x - 10, c.y - hop + 20); ctx.lineTo(c.x - 16, c.y - hop + 4);
+            ctx.moveTo(c.x + 10, c.y - hop + 20); ctx.lineTo(c.x + 16, c.y - hop + 4); ctx.stroke();
+          }
         });
-        /* pitch */
+        /* pitch, lighter in the distance, with mown stripes */
         for (var s = 0; s < 8; s++) {
           ctx.fillStyle = s % 2 ? '#4cbb5c' : '#44ad53';
           ctx.fillRect(0, 96 + s * 68, api.W, 68);
         }
+        var haze = ctx.createLinearGradient(0, 96, 0, 330);
+        haze.addColorStop(0, 'rgba(255,255,255,.18)'); haze.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = haze; ctx.fillRect(0, 96, api.W, 234);
+        /* floodlight towers with their glow */
+        [40, api.W - 40].forEach(function (fx) {
+          var fg = ctx.createRadialGradient(fx, 20, 4, fx, 20, 120);
+          fg.addColorStop(0, 'rgba(255,255,220,.8)'); fg.addColorStop(1, 'rgba(255,255,220,0)');
+          ctx.fillStyle = fg; ctx.fillRect(fx - 120, 0, 240, 140);
+          ctx.fillStyle = '#dee2e6';
+          U.roundRect(ctx, fx - 22, 6, 44, 26, 6); ctx.fill();
+          ctx.fillStyle = '#fff9db';
+          for (var lx = 0; lx < 3; lx++) { for (var ly = 0; ly < 2; ly++) { ctx.beginPath(); ctx.arc(fx - 12 + lx * 12, 13 + ly * 12, 4, 0, Math.PI * 2); ctx.fill(); } }
+        });
         ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 4;
         ctx.strokeRect(130, GOAL.bottom, 740, 150);
         ctx.beginPath(); ctx.arc(SPOT.x, SPOT.y, 4, 0, Math.PI * 2); ctx.stroke();
@@ -261,9 +289,16 @@
         targets.forEach(function (t) {
           var grow = state === 'aim' ? Math.sin(t.pulse) * 3 : 0;
           var picked = shot && shot.t === t;
-          ctx.fillStyle = picked ? (shot.right ? '#3ddc84' : '#ff5d8f') : 'rgba(255,255,255,.92)';
+          var face = picked ? (shot.right ? '#3ddc84' : '#ff5d8f') : '#ffffff';
+          var tg = ctx.createRadialGradient(t.x - 16, t.y - 18, 6, t.x, t.y, t.r + grow);
+          tg.addColorStop(0, '#ffffff'); tg.addColorStop(1, picked ? face : '#dfe7f2');
+          ctx.fillStyle = 'rgba(0,0,0,.25)';
+          ctx.beginPath(); ctx.arc(t.x + 3, t.y + 6, t.r + grow, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = tg;
           ctx.beginPath(); ctx.arc(t.x, t.y, t.r + grow, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = '#ff9f40'; ctx.lineWidth = 6; ctx.stroke();
+          ctx.strokeStyle = '#ff922b'; ctx.lineWidth = 7; ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(t.x, t.y, t.r + grow - 6, 0, Math.PI * 2); ctx.stroke();
           ctx.fillStyle = '#1f2340';
           ctx.font = U.font(48);
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -283,18 +318,17 @@
           ctx.strokeText(word, 500, 486); ctx.fillText(word, 500, 486);
         }
 
-        /* scoreboard */
-        ctx.fillStyle = '#1f2340';
-        U.roundRect(ctx, 16, 108, 150, 50, 12); ctx.fill();
-        ctx.fillStyle = '#ffd23f';
+        /* a stadium scoreboard with glowing digits */
+        U.plate(ctx, 14, 106, 158, 58, { fill: '#343a40', r: 12, edge: '#868e96' });
+        ctx.save();
+        ctx.fillStyle = '#ffd43b';
+        ctx.shadowColor = '#ffd43b'; ctx.shadowBlur = 10;
         ctx.font = U.font(24);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText('GOALS ' + goals, 32, 134);
+        ctx.restore();
 
-        ctx.fillStyle = 'rgba(255,255,255,.9)';
-        ctx.font = U.font(20);
-        ctx.textAlign = 'center';
-        ctx.fillText(claps ? 'Clap it out, then kick at the number' : 'Say each sound, then kick at the number', 500, api.H - 16);
+        U.badge(ctx, 500, api.H - 56, claps ? 'Clap it out, then kick at the number' : 'Say each sound, then kick at the number', { align: 'center', icon: '⚽', size: 18 });
       }
 
       newRound();

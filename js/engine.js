@@ -55,7 +55,90 @@
     font: function (size, weight) {
       return (weight || 'bold') + ' ' + size + 'px "Comic Sans MS","Chalkboard SE","Trebuchet MS",sans-serif';
     },
-    /* chunky word tile used by most games */
+    /* ---------- the art kit: shared looks so every game feels part of one set ---------- */
+
+    /* lighten (amt > 0) or darken (amt < 0) a #rrggbb colour; anything else passes through */
+    shade: function (col, amt) {
+      var m = /^#([0-9a-f]{6})$/i.exec(col || '');
+      if (!m) { return col; }
+      var n = parseInt(m[1], 16), out = [];
+      [16, 8, 0].forEach(function (s) {
+        var c = (n >> s) & 255;
+        c = amt >= 0 ? c + (255 - c) * amt : c * (1 + amt);
+        out.push(Math.round(util.clamp(c, 0, 255)));
+      });
+      return 'rgb(' + out.join(',') + ')';
+    },
+
+    /* a raised, glossy plate: soft shadow, darker bottom lip, gradient face, top shine, rim */
+    plate: function (ctx, x, y, w, h, o) {
+      o = o || {};
+      var r = o.r === undefined ? Math.min(16, h / 2.4) : o.r;
+      var fill = o.fill || '#fffdf7';
+      var lip = o.lip === undefined ? Math.max(3, Math.round(h / 14)) : o.lip;
+      if (o.shadow !== false) {
+        ctx.fillStyle = 'rgba(20,24,48,.22)';
+        util.roundRect(ctx, x + 2, y + lip + 5, w, h, r); ctx.fill();
+      }
+      ctx.fillStyle = o.lipColor || util.shade(fill, -0.22);
+      util.roundRect(ctx, x, y + lip, w, h, r); ctx.fill();
+      var g = ctx.createLinearGradient(0, y, 0, y + h);
+      g.addColorStop(0, util.shade(fill, 0.35));
+      g.addColorStop(1, util.shade(fill, -0.05));
+      ctx.fillStyle = g;
+      util.roundRect(ctx, x, y, w, h, r); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,' + (o.shine === undefined ? 0.45 : o.shine) + ')';
+      util.roundRect(ctx, x + 5, y + 3, w - 10, Math.max(4, h * 0.32), Math.max(2, r - 4)); ctx.fill();
+      ctx.lineWidth = o.lineWidth || 2;
+      ctx.strokeStyle = o.edge || 'rgba(31,35,64,.22)';
+      util.roundRect(ctx, x, y, w, h, r); ctx.stroke();
+    },
+
+    /* a soft oval shadow on the ground under a character or object */
+    shadow: function (ctx, x, y, rx, ry, alpha) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(1, ry / rx);
+      var g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+      g.addColorStop(0, 'rgba(0,0,0,' + (alpha === undefined ? 0.28 : alpha) + ')');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    },
+
+    /* the in-game counter pill ("Still hiding: 2"), identical in every game */
+    badge: function (ctx, x, y, text, o) {
+      o = o || {};
+      ctx.font = util.font(o.size || 21);
+      var tw = ctx.measureText(text).width;
+      var icon = o.icon || '';
+      var iw = icon ? 30 : 0;
+      var w = tw + iw + 30, h = 42;
+      var left = o.align === 'right' ? x - w : (o.align === 'center' ? x - w / 2 : x);
+      ctx.fillStyle = 'rgba(15,18,40,.28)';
+      util.roundRect(ctx, left + 2, y + 4, w, h, 21); ctx.fill();
+      var g = ctx.createLinearGradient(0, y, 0, y + h);
+      g.addColorStop(0, o.top || 'rgba(58,64,110,.92)');
+      g.addColorStop(1, o.bottom || 'rgba(31,35,64,.92)');
+      ctx.fillStyle = g;
+      util.roundRect(ctx, left, y, w, h, 21); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2;
+      util.roundRect(ctx, left + 1, y + 1, w - 2, h - 2, 20); ctx.stroke();
+      ctx.textBaseline = 'middle';
+      if (icon) {
+        ctx.font = '22px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(icon, left + 15 + 11, y + h / 2 + 1);
+      }
+      ctx.font = util.font(o.size || 21);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = o.color || '#ffffff';
+      ctx.fillText(text, left + 15 + iw, y + h / 2 + 1);
+      return w;
+    },
+
+    /* chunky word tile used by most games - now drawn as a glossy plate */
     tile: function (ctx, o) {
       var x = o.x, y = o.y, w = o.w, h = o.h;
       ctx.save();
@@ -63,23 +146,22 @@
       if (o.rot) { ctx.rotate(o.rot); }
       if (o.scale && o.scale !== 1) { ctx.scale(o.scale, o.scale); }
       ctx.translate(-w / 2, -h / 2);
-      /* drop shadow */
-      ctx.fillStyle = 'rgba(31,35,64,.18)';
-      util.roundRect(ctx, 3, 7, w, h, o.r || 16);
-      ctx.fill();
-      ctx.fillStyle = o.fill || '#ffffff';
-      util.roundRect(ctx, 0, 0, w, h, o.r || 16);
-      ctx.fill();
-      if (o.stroke) {
-        ctx.lineWidth = o.lineWidth || 5;
-        ctx.strokeStyle = o.stroke;
-        ctx.stroke();
-      }
+      var fill = o.fill || '#ffffff';
+      /* plain white tiles get a warm cream face so the shine reads */
+      if (fill === '#ffffff') { fill = '#fffaf0'; }
+      util.plate(ctx, 0, 0, w, h, {
+        fill: fill, r: o.r || 16,
+        edge: o.stroke || 'rgba(31,35,64,.2)', lineWidth: o.stroke ? (o.lineWidth || 4) : 2
+      });
       if (o.text) {
-        ctx.fillStyle = o.textColor || '#1f2340';
         ctx.font = util.font(o.fontSize || 40);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        if (!o.textColor || o.textColor === '#1f2340') {
+          ctx.fillStyle = 'rgba(255,255,255,.55)';
+          ctx.fillText(o.text, w / 2, h / 2 + 3.5);               /* a soft letterpress edge */
+        }
+        ctx.fillStyle = o.textColor || '#1f2340';
         ctx.fillText(o.text, w / 2, h / 2 + 2);
       }
       ctx.restore();
@@ -264,6 +346,18 @@
       });
     },
 
+    /* a gentle darkening at the edges pulls the eye to the middle and gives every scene depth */
+    vignette: function (ctx) {
+      if (!this._vig) {
+        var g = ctx.createRadialGradient(W / 2, H * 0.46, H * 0.42, W / 2, H * 0.46, W * 0.72);
+        g.addColorStop(0, 'rgba(10,12,40,0)');
+        g.addColorStop(1, 'rgba(10,12,40,.26)');
+        this._vig = g;
+      }
+      ctx.fillStyle = this._vig;
+      ctx.fillRect(0, 0, W, H);
+    },
+
     fit: function () {
       var stage = this.canvas.parentElement;
       if (!stage) { return; }
@@ -428,6 +522,7 @@
       ctx.clearRect(0, 0, W, H);
       if (this.game && this.game.draw) { this.game.draw(ctx); }
       this.particles.draw(ctx);
+      this.vignette(ctx);
       var self = this;
       this.raf = requestAnimationFrame(function (n) { self.loop(n); });
     },
@@ -442,7 +537,13 @@
       var big = pct >= 0.9 ? 3 : (pct >= 0.6 ? 2 : 1);
       setTimeout(function () {
         self.dom.resultsTitle.textContent = title || (big === 3 ? 'Superstar!' : big === 2 ? 'Well done!' : 'Good try!');
-        self.dom.resultsStars.textContent = '⭐'.repeat(big) + '☆'.repeat(3 - big);
+        /* three stars that pop in one after another; unearned ones stay faint */
+        var html = '';
+        for (var s = 0; s < 3; s++) {
+          html += '<span class="' + (s < big ? 'on' : 'off') + '" style="animation-delay:' + (0.25 + s * 0.3) + 's">⭐</span>';
+        }
+        self.dom.resultsStars.innerHTML = html;
+        for (var t = 0; t < big; t++) { setTimeout(function () { PH.sfx.good(); }, 950 + t * 300); }
         self.dom.resultsSub.textContent = 'You collected ' + self.stars + ' star' +
           (self.stars === 1 ? '' : 's') + '.';
         self.dom.results.classList.remove('hidden');

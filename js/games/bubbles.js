@@ -178,13 +178,40 @@
         ctx.lineTo(api.W, api.H);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#2f9e6b';
+        var now = performance.now() / 1000;
+        /* fish silhouettes drifting far away */
+        ctx.fillStyle = 'rgba(10,60,100,.25)';
+        [[0.03, 180, 1], [0.05, 300, 0.7], [0.02, 420, 0.8]].forEach(function (f, n) {
+          var fx = ((now * f[0] * 1000 + n * 400) % (api.W + 200)) - 100;
+          ctx.save(); ctx.translate(fx, f[1] + Math.sin(now + n) * 8); ctx.scale(f[2], f[2]);
+          ctx.beginPath(); ctx.ellipse(0, 0, 30, 12, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(-44, -12); ctx.lineTo(-44, 12); ctx.closePath(); ctx.fill();
+          ctx.restore();
+        });
+        /* rocks and coral on the sea bed */
+        [[60, 18, '#8e7d6b'], [470, 14, '#9c8a76'], [930, 20, '#85735f']].forEach(function (r) {
+          ctx.fillStyle = r[2];
+          ctx.beginPath(); ctx.ellipse(r[0], api.H - 40, r[1] * 2.4, r[1], 0, Math.PI, Math.PI * 2); ctx.fill();
+        });
+        [[220, '#ff8787'], [760, '#f783ac']].forEach(function (c) {
+          ctx.strokeStyle = c[1]; ctx.lineWidth = 9; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(c[0], api.H - 40); ctx.lineTo(c[0], api.H - 100);
+          ctx.moveTo(c[0], api.H - 70); ctx.lineTo(c[0] - 22, api.H - 96);
+          ctx.moveTo(c[0], api.H - 80); ctx.lineTo(c[0] + 20, api.H - 112); ctx.stroke();
+        });
+        /* leafy seaweed swaying */
         [120, 300, 640, 860].forEach(function (sx, k) {
           ctx.save();
           ctx.translate(sx, api.H - 46);
-          var sway = Math.sin(performance.now() / 900 + k) * 0.16;
-          ctx.rotate(sway);
-          U.roundRect(ctx, -9, -110, 18, 112, 9); ctx.fill();
+          ctx.rotate(Math.sin(now * 1.1 + k) * 0.12);
+          ctx.strokeStyle = '#2f9e6b'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(0, 0);
+          ctx.quadraticCurveTo(14, -60, 0, -120); ctx.stroke();
+          ctx.fillStyle = '#40c057';
+          for (var l = 0; l < 5; l++) {
+            var ly = -20 - l * 22, side = l % 2 ? 1 : -1;
+            ctx.beginPath(); ctx.ellipse(side * 12, ly, 14, 6, side * 0.6, 0, Math.PI * 2); ctx.fill();
+          }
           ctx.restore();
         });
 
@@ -221,6 +248,15 @@
           ctx.strokeStyle = 'rgba(255,255,255,.85)';
           ctx.lineWidth = 3;
           ctx.stroke();
+          if (!b.dead) {
+            /* a rainbow sheen round the rim, like a real soap bubble */
+            var sheen = ctx.createLinearGradient(-b.r, -b.r, b.r, b.r);
+            sheen.addColorStop(0, 'rgba(255,140,200,.55)');
+            sheen.addColorStop(0.5, 'rgba(140,255,220,.45)');
+            sheen.addColorStop(1, 'rgba(150,170,255,.55)');
+            ctx.strokeStyle = sheen; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(0, 0, b.r - 4, 0.4, 2.4); ctx.stroke();
+          }
 
           ctx.fillStyle = 'rgba(255,255,255,.75)';
           ctx.beginPath(); ctx.ellipse(-b.r * 0.35, -b.r * 0.42, b.r * 0.22, b.r * 0.13, -0.6, 0, Math.PI * 2); ctx.fill();
@@ -233,11 +269,7 @@
           ctx.restore();
         });
 
-        ctx.fillStyle = 'rgba(255,255,255,.9)';
-        ctx.font = U.font(26);
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Popped ' + got + ' of ' + NEED, 26, 48);
+        U.badge(ctx, 18, 16, 'Popped ' + got + ' of ' + NEED, { icon: '🐠' });
       }
 
       newRound();

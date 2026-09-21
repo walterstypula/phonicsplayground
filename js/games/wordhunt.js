@@ -179,35 +179,91 @@
         }
       }
 
-      function draw(ctx) {
-        /* meadow */
-        var sky = ctx.createLinearGradient(0, 0, 0, api.H);
-        sky.addColorStop(0, '#bfe9ff');
-        sky.addColorStop(0.62, '#e8f7ff');
-        sky.addColorStop(0.63, '#a8e6a1');
-        sky.addColorStop(1, '#6fce7a');
+      /* scenery, placed once */
+      var flowers = [], tufts = [];
+      for (var f = 0; f < 34; f++) {
+        flowers.push({ x: U.rand(10, api.W - 10), y: U.rand(400, api.H - 8), c: U.pick(['#ff8fab', '#ffd23f', '#ffffff', '#b197fc', '#ff922b']), s: U.rand(0.7, 1.3) });
+      }
+      for (var tt = 0; tt < 40; tt++) { tufts.push({ x: U.rand(0, api.W), y: U.rand(380, api.H), s: U.rand(0.7, 1.4) }); }
+      flowers.sort(function (a, b) { return a.y - b.y; });
+
+      function drawScenery(ctx) {
+        var now = performance.now() / 1000;
+        var sky = ctx.createLinearGradient(0, 0, 0, 380);
+        sky.addColorStop(0, '#6ec3ff');
+        sky.addColorStop(1, '#e3f5ff');
         ctx.fillStyle = sky;
         ctx.fillRect(0, 0, api.W, api.H);
 
-        ctx.fillStyle = '#ffe66d';
-        ctx.beginPath(); ctx.arc(895, 88, 46, 0, Math.PI * 2); ctx.fill();
+        /* sun with a warm glow */
+        var glow = ctx.createRadialGradient(880, 90, 20, 880, 90, 150);
+        glow.addColorStop(0, 'rgba(255,236,150,.9)');
+        glow.addColorStop(1, 'rgba(255,236,150,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(700, 0, 300, 260);
+        ctx.fillStyle = '#ffe066';
+        ctx.beginPath(); ctx.arc(880, 90, 44, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff3bf';
+        ctx.beginPath(); ctx.arc(868, 78, 18, 0, Math.PI * 2); ctx.fill();
 
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
         clouds.forEach(function (cl) {
           ctx.save(); ctx.translate(cl.x, cl.y); ctx.scale(cl.s, cl.s);
-          ctx.beginPath();
-          ctx.arc(0, 0, 26, 0, Math.PI * 2);
-          ctx.arc(30, 6, 20, 0, Math.PI * 2);
-          ctx.arc(-28, 8, 18, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillStyle = 'rgba(160,190,220,.35)';
+          ctx.beginPath(); ctx.arc(2, 8, 26, 0, Math.PI * 2); ctx.arc(32, 14, 20, 0, Math.PI * 2); ctx.arc(-26, 16, 18, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.arc(30, 6, 20, 0, Math.PI * 2); ctx.arc(-28, 8, 18, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
         });
 
+        /* three layers of rolling hills, lighter in the distance */
+        [['#b8e6a7', 330, 70, 0.004], ['#8fd98a', 362, 60, 0.006], ['#6cc970', 398, 44, 0.009]].forEach(function (h, n) {
+          ctx.fillStyle = h[0];
+          ctx.beginPath();
+          ctx.moveTo(0, api.H);
+          for (var x = 0; x <= api.W; x += 20) {
+            ctx.lineTo(x, h[1] - Math.sin(x * h[3] + n * 2) * h[2] * 0.5 - Math.sin(x * h[3] * 2.3 + n) * h[2] * 0.2);
+          }
+          ctx.lineTo(api.W, api.H); ctx.closePath(); ctx.fill();
+        });
+        var meadow = ctx.createLinearGradient(0, 420, 0, api.H);
+        meadow.addColorStop(0, 'rgba(90,190,100,0)');
+        meadow.addColorStop(1, 'rgba(60,160,80,.55)');
+        ctx.fillStyle = meadow;
+        ctx.fillRect(0, 420, api.W, api.H - 420);
+
+        tufts.forEach(function (t) {
+          ctx.strokeStyle = 'rgba(40,130,60,.55)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+          for (var b = -1; b <= 1; b++) {
+            ctx.beginPath(); ctx.moveTo(t.x + b * 4, t.y);
+            ctx.quadraticCurveTo(t.x + b * 6, t.y - 8 * t.s, t.x + b * 9 + Math.sin(now + t.x) * 2, t.y - 14 * t.s);
+            ctx.stroke();
+          }
+        });
+        flowers.forEach(function (fl) {
+          ctx.save(); ctx.translate(fl.x, fl.y); ctx.scale(fl.s, fl.s);
+          ctx.strokeStyle = '#2f9e44'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 12); ctx.stroke();
+          ctx.fillStyle = fl.c;
+          for (var p = 0; p < 5; p++) {
+            ctx.beginPath(); ctx.arc(Math.cos(p * 1.257) * 5, Math.sin(p * 1.257) * 5, 4, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.fillStyle = '#ffd43b';
+          ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      function draw(ctx) {
+        drawScenery(ctx);
+
         var left = remaining();
-        ctx.font = U.font(26);
-        ctx.textAlign = 'left';
-        ctx.fillStyle = 'rgba(31,35,64,.75)';
-        ctx.fillText(left > 0 ? 'Still hiding: ' + left : 'All found!', 26, 52);
+        U.badge(ctx, 20, 20, left > 0 ? 'Still hiding: ' + left : 'All found!', { icon: '🔍' });
+
+        /* soft shadows first, so every tile sits above the meadow */
+        tiles.forEach(function (t) {
+          if (t.pop >= 0) { return; }
+          U.shadow(ctx, t.x + t.w / 2, t.y + t.h + 16, t.w * 0.46, 10, 0.2);
+        });
 
         tiles.forEach(function (t) {
           var scale = 1, alpha = 1, rot = t.tilt;

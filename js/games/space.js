@@ -459,8 +459,8 @@
           ctx.fillStyle = '#ffd23f';
           U.star(ctx, x + b.w / 2, y + b.h / 2, 20, 9); ctx.fill();
         } else if (b.text && !b.spent) {
-          ctx.fillStyle = '#fffaf0';
-          U.roundRect(ctx, x + 10, y + 9, b.w - 20, b.h - 18, 8); ctx.fill();
+          U.plate(ctx, x + 9, y + 8, b.w - 18, b.h - 20, { r: 8, shadow: false, lip: 3 });
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillStyle = '#1f2340';
           ctx.font = U.font(b.fs);
           ctx.fillText(api.label(b.text), x + b.w / 2, y + b.h / 2 + 1);
@@ -563,6 +563,11 @@
         if (hero.hidden) { return; }
         var x = hero.x - camX, y = hero.y;
         var stride = hero.onGround && Math.abs(hero.vx) > 1 ? Math.sin(hero.run) : 0;
+        /* shadow on the moon surface, shrinking as the astronaut jumps */
+        if (y <= GROUND + 2) {
+          var lift = U.clamp((GROUND - y) / 200, 0, 1);
+          U.shadow(ctx, x, GROUND + 3, 26 * (1 - lift * 0.6), 6 * (1 - lift * 0.6), 0.45 * (1 - lift));
+        }
         ctx.save();
         if (hero.poof > 0) { ctx.globalAlpha = 0.5 + 0.5 * Math.sin(hero.poof * 30); }
         ctx.translate(x, y);
@@ -622,14 +627,7 @@
         drawHero(ctx);
         drawButtons(ctx);
 
-        ctx.fillStyle = 'rgba(31,35,64,.6)';
-        U.roundRect(ctx, 14, 14, 128, 42, 14); ctx.fill();
-        ctx.fillStyle = '#8ef0ff';
-        ctx.beginPath(); ctx.moveTo(38, 23); ctx.lineTo(48, 35); ctx.lineTo(38, 47); ctx.lineTo(28, 35); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = U.font(24);
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText('x ' + gemCount, 58, 36);
+        U.badge(ctx, 14, 14, 'Crystals: ' + gemCount, { icon: '💎' });
       }
 
       build();

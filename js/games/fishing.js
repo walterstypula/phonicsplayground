@@ -184,11 +184,20 @@
         ctx.restore();
         /* body */
         var g = ctx.createLinearGradient(0, -34, 0, 34);
-        g.addColorStop(0, '#ffffff');
-        g.addColorStop(0.45, f.color);
-        g.addColorStop(1, 'rgba(0,0,0,.25)');
+        g.addColorStop(0, U.shade(f.color, 0.55));
+        g.addColorStop(0.5, f.color);
+        g.addColorStop(1, U.shade(f.color, -0.35));
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.ellipse(0, 0, 62, 36, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = U.shade(f.color, -0.45); ctx.lineWidth = 3; ctx.stroke();
+        /* a couple of stripes and a smile */
+        ctx.save();
+        ctx.beginPath(); ctx.ellipse(0, 0, 62, 36, 0, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = 'rgba(255,255,255,.22)';
+        ctx.fillRect(-30, -40, 12, 80); ctx.fillRect(-6, -40, 10, 80);
+        ctx.restore();
+        ctx.strokeStyle = U.shade(f.color, -0.5); ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(48, 8, 7, 0.2, 1.4); ctx.stroke();
         /* fin */
         ctx.fillStyle = 'rgba(255,255,255,.55)';
         ctx.beginPath(); ctx.ellipse(-4, -30, 20, 10, -0.3, 0, Math.PI * 2); ctx.fill();
@@ -203,8 +212,7 @@
         var shown = api.label(f.g);
         ctx.font = U.font(api.mode === 'letters' ? 36 : (shown.length > 2 ? 24 : 32));
         var tw = ctx.measureText(shown).width;
-        U.roundRect(ctx, -tw / 2 - 12, -18, tw + 24, 38, 12);
-        ctx.fill();
+        U.plate(ctx, -tw / 2 - 12, -20, tw + 24, 40, { r: 12, shine: 0.35 });
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -213,13 +221,49 @@
       }
 
       function draw(ctx) {
-        ctx.fillStyle = '#bfe9ff';
-        ctx.fillRect(0, 0, api.W, api.H);
+        var now = performance.now() / 1000;
+        var sky = ctx.createLinearGradient(0, 0, 0, 125);
+        sky.addColorStop(0, '#74c0fc'); sky.addColorStop(1, '#e7f5ff');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, api.W, 125);
+        var sg = ctx.createRadialGradient(120, 40, 8, 120, 40, 80);
+        sg.addColorStop(0, 'rgba(255,236,150,.95)'); sg.addColorStop(1, 'rgba(255,236,150,0)');
+        ctx.fillStyle = sg; ctx.fillRect(40, 0, 160, 120);
+        ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(120, 40, 24, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        [[(now * 10) % 1200 - 100, 40], [(now * 6 + 700) % 1200 - 100, 70]].forEach(function (c) {
+          ctx.beginPath(); ctx.arc(c[0], c[1], 16, 0, Math.PI * 2); ctx.arc(c[0] + 20, c[1] + 4, 12, 0, Math.PI * 2); ctx.arc(c[0] - 18, c[1] + 4, 11, 0, Math.PI * 2); ctx.fill();
+        });
+        /* a far green shore */
+        ctx.fillStyle = '#8ce99a';
+        ctx.beginPath(); ctx.ellipse(160, 124, 220, 26, 0, Math.PI, Math.PI * 2); ctx.ellipse(880, 124, 190, 20, 0, Math.PI, Math.PI * 2); ctx.fill();
+
         var water = ctx.createLinearGradient(0, 120, 0, api.H);
-        water.addColorStop(0, '#5ec8f0');
-        water.addColorStop(1, '#0f4f7a');
+        water.addColorStop(0, '#4dc3ef');
+        water.addColorStop(0.6, '#1c7ed6');
+        water.addColorStop(1, '#0b3f6e');
         ctx.fillStyle = water;
         ctx.fillRect(0, 120, api.W, api.H - 120);
+        /* shafts of sunlight through the water */
+        ctx.save();
+        ctx.globalAlpha = 0.1;
+        ctx.fillStyle = '#ffffff';
+        for (var ray = 0; ray < 6; ray++) {
+          var rx = 80 + ray * 170 + Math.sin(now * 0.5 + ray) * 20;
+          ctx.beginPath(); ctx.moveTo(rx, 120); ctx.lineTo(rx + 50, 120); ctx.lineTo(rx + 150, api.H); ctx.lineTo(rx + 60, api.H); ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+        /* sandy bottom with swaying weed */
+        ctx.fillStyle = '#e9cf93';
+        ctx.beginPath(); ctx.moveTo(0, api.H);
+        for (var bx = 0; bx <= api.W; bx += 40) { ctx.lineTo(bx, api.H - 26 - Math.sin(bx * 0.02) * 8); }
+        ctx.lineTo(api.W, api.H); ctx.closePath(); ctx.fill();
+        [70, 330, 610, 950].forEach(function (wx, n) {
+          ctx.strokeStyle = '#2f9e44'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(wx, api.H - 20);
+          ctx.quadraticCurveTo(wx + Math.sin(now + n) * 20, api.H - 70, wx + Math.sin(now * 1.3 + n) * 10, api.H - 110);
+          ctx.stroke();
+        });
 
         /* surface wobble */
         ctx.strokeStyle = 'rgba(255,255,255,.6)';
@@ -267,11 +311,7 @@
         ctx.arc(hook.x, hook.y + 10, 11, Math.PI * 0.1, Math.PI * 1.25);
         ctx.stroke();
 
-        ctx.fillStyle = 'rgba(255,255,255,.9)';
-        ctx.font = U.font(24);
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Tap the fish with the right sound', 24, 50);
+        U.badge(ctx, api.W - 18, 132, 'Tap the fish with the right sound', { align: 'right', icon: '🎣', size: 18 });
       }
 
       newRound();

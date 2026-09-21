@@ -254,6 +254,8 @@
         ctx.font = U.font(api.mode === 'letters' ? 28 : (label.length > 5 ? 19 : 24));
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(label, x, y - h / 2 + 1);
+        ctx.fillStyle = "rgba(255,255,255,.35)";
+        U.roundRect(ctx, x - w / 2 + 8, y - h + 3, w - 16, 7, 4); ctx.fill();   /* a little shine */
         ctx.restore();
       }
 
@@ -262,6 +264,7 @@
         var climbing = chef.plan.length && chef.plan[0].type === 'climb';
         var bob = chef.plan.length ? Math.abs(Math.sin(chef.walkT * 12)) * 4 : 0;
         var squash = chef.stomp > 0 ? 0.15 : 0;
+        if (!climbing) { U.shadow(ctx, x, y + 2, 26, 5, 0.4); }
         ctx.save();
         ctx.translate(x, y - bob);
         ctx.scale((climbing ? 1 : chef.face) * (1 + squash), 1 - squash);
@@ -288,10 +291,13 @@
         var n = target.g.length, cw = 70, gap = 10;
         var total = n * cw + (n - 1) * gap + 150;
         var x = api.W / 2 - total / 2;
-        ctx.fillStyle = '#fffaf0';
-        U.roundRect(ctx, x, 16, total, 72, 14); ctx.fill();
-        ctx.strokeStyle = '#e0c9a0'; ctx.lineWidth = 3; ctx.stroke();
-        ctx.fillStyle = '#b8860b';
+        /* an order ticket: cream paper with a red header stripe */
+        U.plate(ctx, x, 16, total, 72, { fill: '#fff8e1', r: 14 });
+        ctx.fillStyle = '#e03131';
+        U.roundRect(ctx, x + 6, 20, 104, 64, 10); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.25)';
+        U.roundRect(ctx, x + 10, 23, 96, 16, 6); ctx.fill();
+        ctx.fillStyle = '#ffffff';
         ctx.font = U.font(22);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText('ORDER', x + 18, 52);
@@ -310,36 +316,75 @@
         }
       }
 
-      function draw(ctx) {
-        var bg = ctx.createLinearGradient(0, 0, 0, api.H);
-        bg.addColorStop(0, '#12213f');
-        bg.addColorStop(1, '#1d3561');
-        ctx.fillStyle = bg;
+      /* a retro diner: teal panelled wall, neon sign, chrome ladders, red girders, checked counter */
+      function drawDiner(ctx) {
+        var now = performance.now() / 1000;
+        var wall = ctx.createLinearGradient(0, 0, 0, api.H);
+        wall.addColorStop(0, '#0c4a57');
+        wall.addColorStop(1, '#0a2f3d');
+        ctx.fillStyle = wall;
         ctx.fillRect(0, 0, api.W, api.H);
+        ctx.fillStyle = 'rgba(255,255,255,.04)';
+        for (var px = 0; px < api.W; px += 80) { ctx.fillRect(px, 0, 40, COUNTER_Y); }
+        /* neon sign, flickering gently */
+        var flick = Math.sin(now * 13) > -0.95 ? 1 : 0.4;
+        ctx.save();
+        ctx.font = U.font(34);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#ff6b9e'; ctx.shadowBlur = 22 * flick;
+        ctx.fillStyle = flick > 0.5 ? '#ffd6e6' : '#b9738c';
+        ctx.fillText('BURGERS', 860, 54);
+        ctx.shadowColor = '#74f0ff';
+        ctx.strokeStyle = flick > 0.5 ? '#9ff5ff' : '#5a8d94'; ctx.lineWidth = 4;
+        U.roundRect(ctx, 760, 26, 200, 56, 18); ctx.stroke();
+        ctx.restore();
+        ctx.font = '38px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🍔', 120, 56);
+        ctx.fillText('🥤', 170, 60);
 
-        /* ladders */
+        /* chrome ladders */
         LADDERS.forEach(function (lx) {
-          ctx.strokeStyle = '#8fd3ff'; ctx.lineWidth = 5;
-          ctx.beginPath();
-          ctx.moveTo(lx - 18, FLOORS[0] - 4); ctx.lineTo(lx - 18, FLOORS[2] + 4);
-          ctx.moveTo(lx + 18, FLOORS[0] - 4); ctx.lineTo(lx + 18, FLOORS[2] + 4);
-          ctx.stroke();
-          ctx.lineWidth = 4;
-          for (var y = FLOORS[0] + 10; y < FLOORS[2]; y += 22) {
-            ctx.beginPath(); ctx.moveTo(lx - 18, y); ctx.lineTo(lx + 18, y); ctx.stroke();
-          }
+          [-18, 18].forEach(function (off) {
+            var g = ctx.createLinearGradient(lx + off - 4, 0, lx + off + 4, 0);
+            g.addColorStop(0, '#6c757d'); g.addColorStop(0.5, '#f8f9fa'); g.addColorStop(1, '#6c757d');
+            ctx.fillStyle = g;
+            ctx.fillRect(lx + off - 4, FLOORS[0] - 4, 8, FLOORS[2] - FLOORS[0] + 8);
+          });
+          ctx.fillStyle = '#ced4da';
+          for (var y = FLOORS[0] + 10; y < FLOORS[2]; y += 22) { ctx.fillRect(lx - 16, y - 2, 32, 5); }
         });
-        /* girders */
+        /* red riveted girders */
         FLOORS.forEach(function (fy) {
-          ctx.fillStyle = '#ff9f40';
-          ctx.fillRect(20, fy, api.W - 40, 10);
-          ctx.fillStyle = 'rgba(0,0,0,.25)';
-          for (var x = 20; x < api.W - 20; x += 30) { ctx.fillRect(x, fy + 3, 14, 4); }
+          var g = ctx.createLinearGradient(0, fy, 0, fy + 14);
+          g.addColorStop(0, '#ff8787'); g.addColorStop(1, '#c92a2a');
+          ctx.fillStyle = g;
+          ctx.fillRect(20, fy, api.W - 40, 14);
+          ctx.fillStyle = '#8f1d1d';
+          ctx.fillRect(20, fy + 12, api.W - 40, 3);
+          ctx.fillStyle = '#ffe3e3';
+          for (var x = 34; x < api.W - 20; x += 40) { ctx.beginPath(); ctx.arc(x, fy + 7, 2.2, 0, Math.PI * 2); ctx.fill(); }
         });
-        /* counter + plate + bottom bun */
-        ctx.fillStyle = '#c9ced9';
-        ctx.fillRect(0, COUNTER_Y, api.W, api.H - COUNTER_Y);
-        ctx.fillStyle = '#ffffff';
+        /* the counter: chrome edge and a black-and-white checked front */
+        var chrome = ctx.createLinearGradient(0, COUNTER_Y - 4, 0, COUNTER_Y + 10);
+        chrome.addColorStop(0, '#f8f9fa'); chrome.addColorStop(1, '#868e96');
+        ctx.fillStyle = chrome;
+        ctx.fillRect(0, COUNTER_Y - 4, api.W, 14);
+        for (var cx = 0; cx < api.W; cx += 20) {
+          for (var cy = COUNTER_Y + 10; cy < api.H; cy += 20) {
+            ctx.fillStyle = ((cx + cy) / 20) % 2 === 0 ? '#f1f3f5' : '#212529';
+            ctx.fillRect(cx, cy, 20, 20);
+          }
+        }
+      }
+
+      function draw(ctx) {
+        drawDiner(ctx);
+        /* plate + bottom bun */
+        U.shadow(ctx, PLATE_X, COUNTER_Y + 8, 130, 12, 0.35);
+        var pg = ctx.createRadialGradient(PLATE_X, COUNTER_Y, 10, PLATE_X, COUNTER_Y + 4, 110);
+        pg.addColorStop(0, '#ffffff'); pg.addColorStop(1, '#dee2e6');
+        ctx.fillStyle = pg;
         ctx.beginPath(); ctx.ellipse(PLATE_X, COUNTER_Y + 4, 110, 14, 0, 0, Math.PI * 2); ctx.fill();
         bun(ctx, PLATE_X, COUNTER_Y - 18, false);
         if (state === 'done') { bun(ctx, PLATE_X, COUNTER_Y - 36 - built.length * 26, true); }
@@ -349,10 +394,7 @@
         drawChef(ctx);
         drawTicket(ctx);
 
-        ctx.fillStyle = 'rgba(255,255,255,.7)';
-        ctx.font = U.font(18);
-        ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-        ctx.fillText('Tap an ingredient to send the chef', api.W - 24, api.H - 8);
+        U.badge(ctx, api.W - 20, 104, 'Tap an ingredient', { align: 'right', icon: '👆', size: 18 });
       }
 
       newRound();

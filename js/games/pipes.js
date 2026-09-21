@@ -214,9 +214,8 @@
         ctx.font = U.font(fs);
         var tw = ctx.measureText(shown).width + 26;
         var ty = s.y - 64;
-        ctx.fillStyle = L.wobble > 0 ? '#ffd7de' : '#fffaf0';
-        U.roundRect(ctx, s.x - tw / 2 + dx, ty - 20, tw, 40, 12); ctx.fill();
-        ctx.strokeStyle = '#4d8dff'; ctx.lineWidth = 3; ctx.stroke();
+        U.plate(ctx, s.x - tw / 2 + dx, ty - 21, tw, 40, { fill: L.wobble > 0 ? '#ffd7de' : '#fffaf0', r: 12, edge: '#4d8dff', lineWidth: 3 });
+        ctx.font = U.font(fs);
         ctx.fillStyle = '#1f2340';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(shown, s.x + dx, ty + 1);
@@ -266,8 +265,7 @@
 
         /* flood gauge */
         var full = U.clamp(depth / (api.H - PIPES[0]), 0, 1);
-        ctx.fillStyle = 'rgba(31,35,64,.8)';
-        U.roundRect(ctx, api.W - 250, 14, 236, 44, 14); ctx.fill();
+        U.plate(ctx, api.W - 250, 12, 236, 46, { fill: '#343a6b', r: 16, edge: 'rgba(255,255,255,.3)', shine: 0.12 });
         ctx.fillStyle = 'rgba(255,255,255,.2)';
         U.roundRect(ctx, api.W - 150, 28, 124, 16, 8); ctx.fill();
         ctx.fillStyle = full < 0.5 ? '#6fd0ff' : (full < 0.8 ? '#ffd23f' : '#ff5d8f');
@@ -277,9 +275,7 @@
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText('Flood', api.W - 236, 37);
 
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
-        ctx.font = U.font(22);
-        ctx.fillText('Fixed ' + fixed + ' / ' + FIXES, 110, 36);
+        U.badge(ctx, 100, 14, 'Fixed ' + fixed + ' of ' + FIXES, { icon: '🔧' });
       }
 
       function fillLeaks() {

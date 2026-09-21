@@ -201,8 +201,17 @@
           ctx.fillText(c.right ? '💎' : c.junk, c.x + dx, y - 26 * c.lid);
         }
         /* box */
-        ctx.fillStyle = '#9c5b2e';
+        U.shadow(ctx, c.x + dx, y + c.h + 6, c.w * 0.6, 12, 0.35);
+        var wood = ctx.createLinearGradient(0, y, 0, y + c.h);
+        wood.addColorStop(0, '#b56d37'); wood.addColorStop(1, '#7a4320');
+        ctx.fillStyle = wood;
         U.roundRect(ctx, x, y, c.w, c.h, 12); ctx.fill();
+        ctx.strokeStyle = 'rgba(60,30,10,.35)'; ctx.lineWidth = 2;
+        for (var gy = y + 40; gy < y + c.h - 6; gy += 16) {
+          ctx.beginPath(); ctx.moveTo(x + 6, gy); ctx.lineTo(x + c.w - 6, gy); ctx.stroke();
+        }
+        ctx.strokeStyle = '#4a2410'; ctx.lineWidth = 3;
+        U.roundRect(ctx, x, y, c.w, c.h, 12); ctx.stroke();
         ctx.fillStyle = '#7a4320';
         ctx.fillRect(x, y + 18, c.w, 10);
         ctx.fillStyle = '#e8b64a';
@@ -211,8 +220,7 @@
         /* word plaque */
         var shown = api.label(c.text);
         var fs = api.mode === 'letters' ? 40 : (shown.length > 7 ? 20 : (shown.length > 5 ? 25 : 30));
-        ctx.fillStyle = '#fff6dc';
-        U.roundRect(ctx, x + 22, y + 38, c.w - 44, 50, 10); ctx.fill();
+        U.plate(ctx, x + 22, y + 36, c.w - 44, 50, { fill: '#fff4d6', r: 10, edge: '#8a5a2b', shadow: false });
         ctx.fillStyle = '#3b2412';
         ctx.font = U.font(fs);
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -260,12 +268,7 @@
         drawOctopus(ctx);
         chests.forEach(function (c) { drawChest(ctx, c); });
 
-        ctx.font = '28px ' + EMOJI;
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText('💰', 22, 40);
-        ctx.fillStyle = '#fff';
-        ctx.font = U.font(26);
-        ctx.fillText('x ' + treasure, 62, 42);
+        U.badge(ctx, 18, 16, 'Treasure: ' + treasure, { icon: '💰' });
       }
 
       newRound();

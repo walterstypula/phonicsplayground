@@ -181,12 +181,19 @@
         var p = cellXY(me.c, me.r);
         var x = p.x + me.dx, y = p.y + me.dy;
         var open = me.munch > 0 ? Math.sin((0.35 - me.munch) / 0.35 * Math.PI * 3) * 0.5 + 0.5 : 0.1;
+        U.shadow(ctx, x, y + 46, 50, 10, 0.4);
         ctx.save();
         ctx.translate(x, y);
         if (me.sick > 0) { ctx.rotate(Math.sin(me.sick * 30) * 0.15); }
         if (me.safe > 0 && Math.floor(me.safe * 8) % 2) { ctx.globalAlpha = 0.45; }
-        ctx.fillStyle = me.sick > 0 ? '#a8c65a' : '#3ddc84';
+        var body = ctx.createRadialGradient(-16, -8, 6, 0, 6, 52);
+        body.addColorStop(0, me.sick > 0 ? '#d3e39a' : '#8cf5b5');
+        body.addColorStop(1, me.sick > 0 ? '#8aa83f' : '#1fb866');
+        ctx.fillStyle = body;
         ctx.beginPath(); ctx.ellipse(0, 6, 46, 40, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#11773f'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.beginPath(); ctx.ellipse(-20, -6, 12, 7, -0.5, 0, Math.PI * 2); ctx.fill();
         [-18, 18].forEach(function (ex) {
           ctx.fillStyle = me.sick > 0 ? '#a8c65a' : '#3ddc84';
           ctx.beginPath(); ctx.arc(ex, -30, 15, 0, Math.PI * 2); ctx.fill();
@@ -206,6 +213,7 @@
         if (!trog) { return; }
         var p = cellXY(trog.c, trog.r);
         var x = p.x + trog.drawX, y = p.y + trog.drawY + Math.sin(performance.now() / 150) * 3;
+        U.shadow(ctx, x, p.y + trog.drawY + 40, 42, 9, 0.4);
         ctx.save();
         ctx.translate(x, y);
         ctx.fillStyle = '#9b5de5';
@@ -225,45 +233,63 @@
       }
 
       function draw(ctx) {
-        var bg = ctx.createLinearGradient(0, 0, 0, api.H);
-        bg.addColorStop(0, '#1c2b4a');
-        bg.addColorStop(1, '#27406b');
+        var now = performance.now() / 1000;
+        /* a glowing arcade board */
+        var bg = ctx.createRadialGradient(api.W / 2, api.H / 2, 60, api.W / 2, api.H / 2, 640);
+        bg.addColorStop(0, '#2f3d8a');
+        bg.addColorStop(1, '#141a45');
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, api.W, api.H);
+        ctx.strokeStyle = 'rgba(120,160,255,.08)'; ctx.lineWidth = 1;
+        for (var gx = 0; gx < api.W; gx += 32) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, api.H); ctx.stroke(); }
+        for (var gy = 0; gy < api.H; gy += 32) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(api.W, gy); ctx.stroke(); }
 
-        ctx.fillStyle = '#ffd23f';
-        ctx.font = U.font(26);
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(rule ? rule.label + ':' : '', 30, 42);
+        /* the rule on a yellow banner, and how many are left on a badge */
         if (rule) {
-          var lw = ctx.measureText(rule.label + ': ').width;
-          ctx.fillStyle = '#ffffff';
-          ctx.font = U.font(34);
-          ctx.fillText(api.label(rule.show), 30 + lw, 40);
+          ctx.font = U.font(24);
+          var lab = rule.label + ':  ';
+          var lw = ctx.measureText(lab).width;
+          ctx.font = U.font(32);
+          var sw = ctx.measureText(api.label(rule.show)).width;
+          U.plate(ctx, 24, 14, lw + sw + 36, 52, { fill: '#ffd43b', r: 18 });
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#5c3b00'; ctx.font = U.font(24);
+          ctx.fillText(lab, 42, 41);
+          ctx.fillStyle = '#1f2340'; ctx.font = U.font(32);
+          ctx.fillText(api.label(rule.show), 42 + lw, 40);
         }
-        ctx.fillStyle = 'rgba(255,255,255,.7)';
-        ctx.font = U.font(20);
-        ctx.textAlign = 'right';
-        ctx.fillText('Left to munch: ' + left(), api.W - 30, 42);
+        U.badge(ctx, api.W - 24, 19, 'Left to munch: ' + left(), { align: 'right', icon: '😋' });
 
         for (var r = 0; r < ROWS; r++) {
           for (var c = 0; c < COLS; c++) {
             var cell = cells[r * COLS + c];
             var x = GX + c * CW, y = GY + r * CH;
             var here = me.c === c && me.r === r;
-            ctx.fillStyle = here ? 'rgba(255,210,63,.22)' : 'rgba(255,255,255,.06)';
-            U.roundRect(ctx, x + 4, y + 4, CW - 8, CH - 8, 14); ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,.18)';
-            ctx.lineWidth = 2; ctx.stroke();
-            if (cell && !cell.eaten && !here) {
+            if (cell && !cell.eaten) {
               var dx = cell.wobble > 0 ? Math.sin(cell.wobble * 50) * 6 : 0;
-              var t = api.label(cell.word.w);
-              ctx.fillStyle = cell.wobble > 0 ? '#ff8fb0' : '#ffffff';
-              ctx.font = U.font(api.mode === 'letters' ? 46 : (t.length > 7 ? 24 : 30));
-              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              ctx.fillText(t, x + CW / 2 + dx, y + CH / 2);
+              var fill = cell.wobble > 0 ? '#ffc9d6' : (here ? '#ffe066' : '#e7f0ff');
+              U.plate(ctx, x + 8 + dx, y + 6, CW - 16, CH - 20, { fill: fill, r: 16 });
+              if (!here) {
+                var t = api.label(cell.word.w);
+                ctx.fillStyle = '#1f2340';
+                ctx.font = U.font(api.mode === 'letters' ? 46 : (t.length > 7 ? 24 : 30));
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(t, x + CW / 2 + dx, y + CH / 2 - 3);
+              }
+            } else {
+              /* an empty, already-munched hole in the board */
+              ctx.fillStyle = 'rgba(0,0,20,.35)';
+              U.roundRect(ctx, x + 8, y + 8, CW - 16, CH - 20, 16); ctx.fill();
+              ctx.strokeStyle = here ? 'rgba(255,224,102,.8)' : 'rgba(140,170,255,.25)'; ctx.lineWidth = 2;
+              U.roundRect(ctx, x + 8, y + 8, CW - 16, CH - 20, 16); ctx.stroke();
             }
           }
+        }
+        /* a little sparkle drifting over the board */
+        ctx.fillStyle = 'rgba(255,255,255,.5)';
+        for (var s = 0; s < 6; s++) {
+          var sx = (s * 173 + now * 30) % api.W, sy = 80 + (s * 97) % 540;
+          U.star(ctx, sx, sy, 3 + Math.sin(now * 3 + s) * 1.5, 1.2); ctx.fill();
         }
         drawTroggle(ctx);
         drawMuncher(ctx);

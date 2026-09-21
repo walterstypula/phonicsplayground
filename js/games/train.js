@@ -270,16 +270,16 @@
       function drawCar(ctx, c, dx) {
         var x = c.x + dx + (c.wobble > 0 ? Math.sin(c.wobble * 50) * 6 : 0), y = c.y;
         var end = isEnd(c.text);
-        ctx.fillStyle = 'rgba(0,0,0,.18)';
-        U.roundRect(ctx, x + 3, y + 6, c.w, CAR_H, 10); ctx.fill();
-        ctx.fillStyle = c.color;
-        U.roundRect(ctx, x, y, c.w, CAR_H, 10); ctx.fill();
         if (end) {
           /* the caboose has a little cupola on top */
-          U.roundRect(ctx, x + 14, y - 16, c.w - 28, 20, 6); ctx.fill();
+          ctx.fillStyle = U.shade(c.color, -0.15);
+          U.roundRect(ctx, x + 14, y - 16, c.w - 28, 22, 6); ctx.fill();
         }
-        ctx.fillStyle = 'rgba(255,255,255,.92)';
-        U.roundRect(ctx, x + 8, y + 8, c.w - 16, CAR_H - 16, 8); ctx.fill();
+        U.plate(ctx, x, y, c.w, CAR_H, { fill: c.color, r: 10, lip: 5, edge: U.shade(c.color, -0.45) });
+        /* a roof strip and the white word board */
+        ctx.fillStyle = U.shade(c.color, -0.3);
+        U.roundRect(ctx, x - 3, y - 5, c.w + 6, 9, 4); ctx.fill();
+        U.plate(ctx, x + 8, y + 9, c.w - 16, CAR_H - 20, { r: 8, shadow: false, lip: 2, shine: 0.3 });
         ctx.fillStyle = '#1f2340';
         ctx.font = U.font(end ? 40 : fs);
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -295,17 +295,34 @@
 
       function drawEngine(ctx) {
         var x = ENGINE.x + trainX, base = RAIL - 14;
-        ctx.fillStyle = '#e03131';
-        U.roundRect(ctx, x, base - 70, ENGINE.w - 50, 64, 12); ctx.fill();          /* boiler */
-        ctx.fillStyle = '#1971c2';
-        U.roundRect(ctx, x + ENGINE.w - 60, base - 118, 60, 112, 10); ctx.fill();    /* cab */
-        ctx.fillStyle = '#e7f5ff';
+        U.shadow(ctx, x + ENGINE.w / 2, base + 16, ENGINE.w * 0.6, 8, 0.3);
+        /* boiler: a red cylinder with gold bands */
+        var boiler = ctx.createLinearGradient(0, base - 70, 0, base - 6);
+        boiler.addColorStop(0, '#ff8787'); boiler.addColorStop(0.45, '#e03131'); boiler.addColorStop(1, '#a51d1d');
+        ctx.fillStyle = boiler;
+        U.roundRect(ctx, x, base - 70, ENGINE.w - 50, 64, 12); ctx.fill();
+        ctx.fillStyle = '#fab005';
+        ctx.fillRect(x + 50, base - 70, 6, 64); ctx.fillRect(x + 78, base - 70, 6, 64);
+        /* cab */
+        U.plate(ctx, x + ENGINE.w - 60, base - 118, 60, 112, { fill: '#1971c2', r: 10, shadow: false, edge: '#0b3d73' });
+        ctx.fillStyle = '#fff9db';
         U.roundRect(ctx, x + ENGINE.w - 50, base - 104, 40, 30, 6); ctx.fill();
-        ctx.fillStyle = '#343a40';
-        ctx.fillRect(x + 20, base - 118, 22, 48);                                  /* chimney */
-        ctx.fillRect(x + 14, base - 124, 34, 10);
+        ctx.fillStyle = '#0b3d73';
+        U.roundRect(ctx, x + ENGINE.w - 66, base - 124, 72, 12, 5); ctx.fill();          /* roof */
+        /* chimney */
+        var chim = ctx.createLinearGradient(x + 20, 0, x + 42, 0);
+        chim.addColorStop(0, '#495057'); chim.addColorStop(0.5, '#868e96'); chim.addColorStop(1, '#343a40');
+        ctx.fillStyle = chim;
+        ctx.fillRect(x + 20, base - 118, 22, 48);
+        ctx.fillRect(x + 14, base - 126, 34, 12);
+        /* lamp with a little glow, and a cow-catcher */
+        var lg = ctx.createRadialGradient(x + 4, base - 40, 2, x + 4, base - 40, 30);
+        lg.addColorStop(0, 'rgba(255,236,150,.9)'); lg.addColorStop(1, 'rgba(255,236,150,0)');
+        ctx.fillStyle = lg; ctx.fillRect(x - 26, base - 70, 60, 60);
         ctx.fillStyle = '#ffd43b';
-        ctx.beginPath(); ctx.arc(x + 4, base - 40, 10, 0, Math.PI * 2); ctx.fill();   /* lamp */
+        ctx.beginPath(); ctx.arc(x + 4, base - 40, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#495057';
+        ctx.beginPath(); ctx.moveTo(x + 2, base - 8); ctx.lineTo(x - 18, base + 10); ctx.lineTo(x + 14, base + 10); ctx.closePath(); ctx.fill();
         /* the replay button on the boiler */
         var b = engineButton();
         ctx.fillStyle = '#ffffff';
@@ -313,10 +330,26 @@
         ctx.font = '26px ' + EMOJI;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('🔊', b.x, b.y + 1);
-        ctx.fillStyle = '#343a40';
+        /* spoked wheels that turn as the train moves, joined by a rod */
+        var spin = trainX / 14;
         [x + 22, x + 64, x + 116].forEach(function (wx, n) {
-          ctx.beginPath(); ctx.arc(wx, base + 2, n === 2 ? 16 : 13, 0, Math.PI * 2); ctx.fill();
+          var r = n === 2 ? 16 : 13;
+          ctx.fillStyle = '#343a40';
+          ctx.beginPath(); ctx.arc(wx, base + 2, r, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#ced4da'; ctx.lineWidth = 2;
+          for (var sp = 0; sp < 4; sp++) {
+            var a = spin + sp * Math.PI / 4;
+            ctx.beginPath(); ctx.moveTo(wx - Math.cos(a) * (r - 3), base + 2 - Math.sin(a) * (r - 3));
+            ctx.lineTo(wx + Math.cos(a) * (r - 3), base + 2 + Math.sin(a) * (r - 3)); ctx.stroke();
+          }
+          ctx.fillStyle = '#fab005';
+          ctx.beginPath(); ctx.arc(wx, base + 2, 3.5, 0, Math.PI * 2); ctx.fill();
         });
+        ctx.strokeStyle = '#adb5bd'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x + 22 + Math.cos(spin) * 7, base + 2 + Math.sin(spin) * 7);
+        ctx.lineTo(x + 64 + Math.cos(spin) * 7, base + 2 + Math.sin(spin) * 7);
+        ctx.stroke();
       }
 
       function drawSign(ctx) {
@@ -331,9 +364,7 @@
         var x = api.W - w - 30, y = 50;
         ctx.fillStyle = '#7a4a2b';
         ctx.fillRect(x + w / 2 - 5, y + 70, 10, 90);
-        ctx.fillStyle = '#fff4e0';
-        U.roundRect(ctx, x, y, w, 76, 14); ctx.fill();
-        ctx.strokeStyle = '#7a4a2b'; ctx.lineWidth = 4; ctx.stroke();
+        U.plate(ctx, x, y, w, 76, { fill: '#fff4e0', r: 14, edge: '#7a4a2b', lineWidth: 4 });
         ctx.font = '44px ' + EMOJI;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(emoji || '', x + (text ? w * 0.35 : w / 2), y + 40);
@@ -345,29 +376,47 @@
       }
 
       function draw(ctx) {
-        var sky = ctx.createLinearGradient(0, 0, 0, api.H);
-        sky.addColorStop(0, '#a5d8ff');
-        sky.addColorStop(0.45, '#e7f5ff');
-        sky.addColorStop(0.46, '#8ce99a');
-        sky.addColorStop(1, '#51cf66');
+        var sky = ctx.createLinearGradient(0, 0, 0, 290);
+        sky.addColorStop(0, '#74c0fc');
+        sky.addColorStop(1, '#e7f5ff');
         ctx.fillStyle = sky;
-        ctx.fillRect(0, 0, api.W, api.H);
-        ctx.fillStyle = 'rgba(255,255,255,.9)';
+        ctx.fillRect(0, 0, api.W, 300);
+        var sg = ctx.createRadialGradient(560, 70, 10, 560, 70, 110);
+        sg.addColorStop(0, 'rgba(255,236,150,.9)'); sg.addColorStop(1, 'rgba(255,236,150,0)');
+        ctx.fillStyle = sg; ctx.fillRect(450, 0, 220, 190);
+        ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(560, 70, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
         clouds.forEach(function (cl) {
           ctx.beginPath(); ctx.arc(cl.x, cl.y, 24 * cl.s, 0, Math.PI * 2); ctx.arc(cl.x + 26 * cl.s, cl.y + 6, 18 * cl.s, 0, Math.PI * 2);
           ctx.arc(cl.x - 24 * cl.s, cl.y + 6, 16 * cl.s, 0, Math.PI * 2); ctx.fill();
         });
-        ctx.fillStyle = '#69db7c';
-        ctx.beginPath(); ctx.ellipse(250, 300, 320, 70, 0, Math.PI, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(800, 300, 280, 60, 0, Math.PI, Math.PI * 2); ctx.fill();
+        /* hills with a row of round trees */
+        ctx.fillStyle = '#8ce99a';
+        ctx.beginPath(); ctx.ellipse(250, 300, 330, 80, 0, Math.PI, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(800, 300, 290, 64, 0, Math.PI, Math.PI * 2); ctx.fill();
+        [[90, 238], [150, 228], [380, 236], [700, 250], [760, 242], [900, 252]].forEach(function (t) {
+          ctx.fillStyle = '#7a4a2b'; ctx.fillRect(t[0] - 3, t[1], 6, 18);
+          ctx.fillStyle = '#40c057'; ctx.beginPath(); ctx.arc(t[0], t[1] - 6, 16, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(t[0] - 5, t[1] - 11, 6, 0, Math.PI * 2); ctx.fill();
+        });
+        var grass = ctx.createLinearGradient(0, 290, 0, api.H);
+        grass.addColorStop(0, '#8ce99a'); grass.addColorStop(1, '#40c057');
+        ctx.fillStyle = grass;
+        ctx.fillRect(0, 290, api.W, api.H - 290);
 
-        /* tracks: the main line and two sidings */
+        /* tracks: gravel bed, wooden sleepers, steel rails */
         [RAIL].concat(SIDING).forEach(function (ry) {
-          ctx.fillStyle = '#8d6e63';
-          for (var sx = 0; sx < api.W; sx += 28) { ctx.fillRect(sx, ry - 6, 14, 14); }
-          ctx.fillStyle = '#868e96';
-          ctx.fillRect(0, ry - 4, api.W, 4);
-          ctx.fillRect(0, ry + 4, api.W, 4);
+          ctx.fillStyle = 'rgba(120,110,100,.35)';
+          ctx.fillRect(0, ry - 10, api.W, 22);
+          for (var sx = 0; sx < api.W; sx += 28) {
+            ctx.fillStyle = '#8d6e63'; ctx.fillRect(sx, ry - 7, 14, 16);
+            ctx.fillStyle = '#6d4c41'; ctx.fillRect(sx, ry + 5, 14, 4);
+          }
+          var rail = ctx.createLinearGradient(0, ry - 5, 0, ry + 9);
+          rail.addColorStop(0, '#f1f3f5'); rail.addColorStop(1, '#868e96');
+          ctx.fillStyle = rail;
+          ctx.fillRect(0, ry - 5, api.W, 5);
+          ctx.fillRect(0, ry + 4, api.W, 5);
         });
 
         drawSign(ctx);
@@ -383,8 +432,7 @@
 
         if (state === 'picture' && info) {
           var k = U.clamp(timer / 0.5, 0, 1);
-          ctx.fillStyle = 'rgba(255,255,255,.85)';
-          U.roundRect(ctx, 150, 120, 700, 300, 30); ctx.fill();
+          U.plate(ctx, 150, 120, 700, 300, { r: 30, fill: '#fffdf5' });
           ctx.font = Math.round(60 + k * 50) + 'px ' + EMOJI;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(info.pic || '🚂', 500, 230);
@@ -396,14 +444,7 @@
         }
 
         var n = PH.trainCars();
-        var label = 'Your train: ' + n + (n === 1 ? ' carriage' : ' carriages');
-        ctx.font = U.font(20);
-        var lw = ctx.measureText(label).width + 30;   /* size the box to the text */
-        ctx.fillStyle = 'rgba(31,35,64,.7)';
-        U.roundRect(ctx, 16, 14, lw, 44, 14); ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(label, 31, 37);
+        U.badge(ctx, 16, 14, 'Your train: ' + n + (n === 1 ? ' carriage' : ' carriages'), { icon: '🚃' });
       }
 
       newRound();

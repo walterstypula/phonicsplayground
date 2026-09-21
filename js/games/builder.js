@@ -221,29 +221,47 @@
         if (chew === 1 && state === 'eat') {
           ctx.scale(1 + Math.sin(timer * 22) * 0.04, 1 - Math.sin(timer * 22) * 0.04);
         }
+        U.shadow(ctx, 0, 108, 130, 20, 0.3);
         /* feet */
-        ctx.fillStyle = '#6a3fb5';
+        ctx.fillStyle = '#5a2fa5';
         ctx.beginPath(); ctx.ellipse(-52, 96, 30, 16, 0, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.ellipse(52, 96, 30, 16, 0, 0, Math.PI * 2); ctx.fill();
-        /* body */
-        var g = ctx.createRadialGradient(-30, -40, 20, 0, 0, 120);
-        g.addColorStop(0, '#b98cff');
-        g.addColorStop(1, '#7b3fe4');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.ellipse(0, 0, 104, 96, 0, 0, Math.PI * 2); ctx.fill();
-        /* horns */
-        ctx.fillStyle = '#ffd23f';
+        ctx.fillStyle = '#fff';
+        [-66, -52, -38, 38, 52, 66].forEach(function (tx) { ctx.beginPath(); ctx.arc(tx, 104, 4, 0, Math.PI * 2); ctx.fill(); });
+        /* horns, behind the head */
         [-60, 60].forEach(function (hx) {
+          var hg = ctx.createLinearGradient(hx, -124, hx, -78);
+          hg.addColorStop(0, '#fff3bf'); hg.addColorStop(1, '#f59f00');
+          ctx.fillStyle = hg;
           ctx.beginPath();
-          ctx.moveTo(hx - 12, -80); ctx.lineTo(hx, -124); ctx.lineTo(hx + 12, -78);
+          ctx.moveTo(hx - 14, -76); ctx.quadraticCurveTo(hx - 4, -110, hx + (hx < 0 ? -8 : 8), -130);
+          ctx.quadraticCurveTo(hx + 10, -100, hx + 14, -74);
           ctx.closePath(); ctx.fill();
         });
-        /* eyes */
+        /* body with a soft rim light and an outline */
+        var g = ctx.createRadialGradient(-34, -44, 16, 0, 0, 126);
+        g.addColorStop(0, '#caa6ff');
+        g.addColorStop(0.7, '#8a4cf0');
+        g.addColorStop(1, '#6a32c8');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.ellipse(0, 0, 104, 96, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#4b2196'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.18)';
+        ctx.beginPath(); ctx.ellipse(0, 46, 60, 40, 0, 0, Math.PI * 2); ctx.fill();   /* belly */
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.beginPath(); ctx.ellipse(-50, -52, 22, 12, -0.6, 0, Math.PI * 2); ctx.fill();   /* shine */
+        ctx.fillStyle = 'rgba(255,130,170,.45)';
+        ctx.beginPath(); ctx.ellipse(-68, 6, 14, 9, 0, 0, Math.PI * 2); ctx.ellipse(68, 6, 14, 9, 0, 0, Math.PI * 2); ctx.fill();
+        /* eyes that follow the chunks you tap */
+        var look = state === 'eat' ? 0 : Math.sin(performance.now() / 1300) * 4;
         [-38, 38].forEach(function (ex) {
           ctx.fillStyle = '#fff';
           ctx.beginPath(); ctx.arc(ex, -36, 24, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#4b2196'; ctx.lineWidth = 2.5; ctx.stroke();
           ctx.fillStyle = '#1f2340';
-          ctx.beginPath(); ctx.arc(ex + 3, -33, 11, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(ex + 3 + look, -31, 12, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.beginPath(); ctx.arc(ex + look - 1, -36, 4, 0, Math.PI * 2); ctx.fill();
         });
         /* mouth */
         ctx.fillStyle = '#3a1160';
@@ -261,32 +279,77 @@
         ctx.restore();
       }
 
-      function draw(ctx) {
-        var bg = ctx.createLinearGradient(0, 0, 0, api.H);
-        bg.addColorStop(0, '#fff3d6');
-        bg.addColorStop(1, '#ffd9ec');
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, api.W, api.H);
+      /* a cosy playroom: striped wallpaper, a window, a toy shelf, a wooden floor and a rug */
+      function drawRoom(ctx) {
+        var FLOOR = 470;
+        ctx.fillStyle = '#ffe8cc';
+        ctx.fillRect(0, 0, api.W, FLOOR);
+        ctx.fillStyle = '#ffdcb0';
+        for (var sx = 0; sx < api.W; sx += 56) { ctx.fillRect(sx, 0, 28, FLOOR); }
+        ctx.fillStyle = 'rgba(255,255,255,.45)';
+        for (var dy = 30; dy < FLOOR - 20; dy += 60) {
+          for (var dx = 14 + (dy / 60 % 2) * 28; dx < api.W; dx += 56) { ctx.beginPath(); ctx.arc(dx, dy, 4, 0, Math.PI * 2); ctx.fill(); }
+        }
+        /* skirting board */
+        ctx.fillStyle = '#e8b27d'; ctx.fillRect(0, FLOOR - 18, api.W, 18);
+        ctx.fillStyle = '#c98b52'; ctx.fillRect(0, FLOOR - 4, api.W, 4);
+        /* window */
+        ctx.fillStyle = '#8b5a2b'; U.roundRect(ctx, 40, 150, 170, 150, 12); ctx.fill();
+        var sky = ctx.createLinearGradient(0, 160, 0, 290);
+        sky.addColorStop(0, '#74c0fc'); sky.addColorStop(1, '#d0ebff');
+        ctx.fillStyle = sky; U.roundRect(ctx, 52, 162, 146, 126, 8); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(110, 210, 16, 0, Math.PI * 2); ctx.arc(128, 214, 12, 0, Math.PI * 2); ctx.arc(94, 216, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#8b5a2b'; ctx.fillRect(122, 162, 6, 126); ctx.fillRect(52, 222, 146, 6);
+        ctx.fillStyle = '#ff8fab';
+        ctx.beginPath(); ctx.moveTo(30, 140); ctx.quadraticCurveTo(70, 220, 44, 310); ctx.lineTo(30, 310); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(220, 140); ctx.quadraticCurveTo(180, 220, 206, 310); ctx.lineTo(220, 310); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#e8456f'; ctx.fillRect(24, 134, 202, 10);
+        /* toy shelf */
+        ctx.fillStyle = '#c98b52'; U.roundRect(ctx, 780, 250, 190, 16, 6); ctx.fill();
+        ctx.fillStyle = '#a0683a'; ctx.fillRect(800, 266, 10, 20); ctx.fillRect(940, 266, 10, 20);
+        ctx.font = '40px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ['🧸', '🚂', '🪀', '🎲'].forEach(function (t, n) { ctx.fillText(t, 812 + n * 44, 250); });
+        /* floorboards */
+        var fl = ctx.createLinearGradient(0, FLOOR, 0, api.H);
+        fl.addColorStop(0, '#d9a066'); fl.addColorStop(1, '#b97a42');
+        ctx.fillStyle = fl; ctx.fillRect(0, FLOOR, api.W, api.H - FLOOR);
+        ctx.strokeStyle = 'rgba(90,50,20,.25)'; ctx.lineWidth = 2;
+        for (var py = FLOOR + 34; py < api.H; py += 34) { ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(api.W, py); ctx.stroke(); }
+        for (var px = 60; px < api.W; px += 180) {
+          for (var row = 0; row < 5; row++) {
+            var ox = px + (row % 2) * 90;
+            ctx.beginPath(); ctx.moveTo(ox, FLOOR + row * 34); ctx.lineTo(ox, FLOOR + row * 34 + 34); ctx.stroke();
+          }
+        }
+        /* round rug under the monster */
+        ctx.fillStyle = '#74c0fc';
+        ctx.beginPath(); ctx.ellipse(api.W / 2, 508, 240, 42, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5; ctx.setLineDash([12, 10]);
+        ctx.beginPath(); ctx.ellipse(api.W / 2, 508, 214, 32, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
-        ctx.fillStyle = 'rgba(31,35,64,.55)';
-        ctx.font = U.font(26);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillText(api.pre ? 'Tap the one the monster wants' : 'Tap the chunks in order', api.W / 2, 96);
+      function draw(ctx) {
+        drawRoom(ctx);
+
+        U.badge(ctx, api.W / 2, 70, api.pre ? 'Tap the one the monster wants' : 'Tap the chunks in order', { align: 'center' });
 
         drawMonster(ctx);
 
-        /* slots */
+        /* slots: little inset trays waiting to be filled */
         var sx = shake > 0 ? Math.sin(shake * 55) * 9 : 0;
         slots.forEach(function (s) {
           ctx.save();
+          ctx.fillStyle = 'rgba(80,40,10,.18)';
+          U.roundRect(ctx, s.x + sx, s.y, s.w, s.h, 14); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,.6)';
+          U.roundRect(ctx, s.x + sx, s.y + 5, s.w, s.h - 5, 14); ctx.fill();
           ctx.setLineDash([9, 8]);
           ctx.lineWidth = 4;
-          ctx.strokeStyle = shake > 0 ? '#ff5d8f' : 'rgba(31,35,64,.35)';
-          ctx.fillStyle = 'rgba(255,255,255,.55)';
-          U.roundRect(ctx, s.x + sx, s.y, s.w, s.h, 14);
-          ctx.fill();
-          ctx.stroke();
+          ctx.strokeStyle = shake > 0 ? '#ff5d8f' : 'rgba(120,70,30,.45)';
+          U.roundRect(ctx, s.x + sx, s.y, s.w, s.h, 14); ctx.stroke();
           ctx.restore();
         });
 
