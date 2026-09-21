@@ -4,7 +4,7 @@
 
   var ORDER = ['wordhunt', 'claw', 'bubbles', 'builder', 'rhyme', 'fishing',
     'octopus', 'lava', 'pilot', 'munchers', 'soccer', 'giant', 'burger', 'pipes', 'space',
-    'wizard', 'tracing', 'ladder', 'moles', 'train'];
+    'wizard', 'tracing', 'snail', 'ladder', 'moles', 'train'];
   var $ = function (id) { return document.getElementById(id); };
 
   var dom = {

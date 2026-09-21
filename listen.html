@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phonics Playground &middot; listening check</title>
+<style>
+  :root{ --ink:#232a45; --soft:#5c6480; --line:rgba(35,42,69,.12); }
+  *{box-sizing:border-box}
+  body{ margin:0; padding:28px; background:#f7f7fb; color:var(--ink);
+    font:16px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; }
+  h1{ font-size:24px; margin:0 0 4px }
+  h2{ font-size:16px; margin:32px 0 10px; color:var(--soft); font-weight:600 }
+  p{ color:var(--soft); margin:0 0 6px; max-width:70ch }
+  .grid{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
+  button{ font:inherit; cursor:pointer; background:#fff; color:var(--ink);
+    border:1px solid var(--line); border-radius:10px; padding:9px 14px;
+    box-shadow:0 1px 2px rgba(35,42,69,.06); }
+  button:hover{ border-color:rgba(35,42,69,.3) }
+  button.playing{ background:#2f66c4; border-color:#2f66c4; color:#fff }
+  button .id{ font-family:"Century Gothic","Trebuchet MS",sans-serif; font-weight:700 }
+  button .ms{ color:var(--soft); font-size:12px; margin-left:6px }
+  button.playing .ms{ color:rgba(255,255,255,.75) }
+  .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:14px 0 }
+  input[type=text]{ font:inherit; padding:9px 12px; border:1px solid var(--line);
+    border-radius:10px; min-width:240px }
+  .note{ font-size:13px }
+</style>
+</head>
+<body>
+
+<h1>Listening check</h1>
+<p>Every recording the games use, so they can be heard on their own. Nothing here is part
+of the game &mdash; it is a bench for checking what a sound actually sounds like.</p>
+
+<div class="row">
+  <input id="word" type="text" placeholder="type a word, e.g. cat" value="cat">
+  <button id="blend">Sound it out</button>
+  <span class="note">plays the sounds run together, the way Stretchy Snail does</span>
+</div>
+<p class="note" id="filenote"></p>
+
+<h2 id="sounds-head">The sounds</h2>
+<div class="grid" id="sounds"></div>
+
+<h2 id="words-head">Syllables and words</h2>
+<div class="grid" id="words"></div>
+
+<h2>Alternatives being compared</h2>
+<p class="note">Only present while a sound is being worked on; empty otherwise.</p>
+<div class="grid" id="compare"></div>
+
+<script src="audio/clips.js"></script>
+<script>
+(function () {
+  var PH = window.PH || {};
+  var CLIPS = PH.CLIPS || { sounds: [], words: [] };
+  var ctx = null;
+  var buffers = {};
+
+  /* Opened straight from the file system, a page may not fetch its own folder, so the
+     clips are played with ordinary audio elements. Web Audio is used only for the
+     overlapping run, and only when the files can be read at all; when they cannot, the
+     sounds follow one another instead, which is close enough for a listen. */
+  function ac() {
+    if (!ctx) {
+      var C = window.AudioContext || window.webkitAudioContext;
+      if (!C) { return null; }
+      ctx = new C();
+    }
+    if (ctx.state === 'suspended') { ctx.resume(); }
+    return ctx;
+  }
+
+  function mark(btn, on) { if (btn) { btn.classList.toggle('playing', !!on); } }
+
+  function loadBuffer(url) {
+    if (buffers[url]) { return Promise.resolve(buffers[url]); }
+    var a = ac();
+    if (!a || !window.fetch) { return Promise.reject(new Error('no web audio')); }
+    return fetch(url)
+      .then(function (r) { return r.arrayBuffer(); })
+      .then(function (raw) { return a.decodeAudioData(raw); })
+      .then(function (b) { buffers[url] = b; return b; });
+  }
+
+  /* one clip, the plain way: this works from a file:// page as well as a served one */
+  function playOne(url, btn) {
+    var el = new Audio(url);
+    mark(btn, true);
+    el.addEventListener('ended', function () { mark(btn, false); });
+    el.addEventListener('error', function () { mark(btn, false); note(btn); });
+    var p = el.play();
+    if (p && p.catch) { p.catch(function () { mark(btn, false); note(btn); }); }
+  }
+
+  function note(btn) {
+    if (btn && !btn.querySelector('.ms').textContent) { btn.querySelector('.ms').textContent = '!'; }
+  }
+
+  /* the same overlap the game uses, so a run of sounds is heard as it is played there */
+  function playRun(urls, btn) {
+    if (urls.length === 1) { playOne(urls[0], btn); return Promise.resolve(); }
+    var a = ac();
+    mark(btn, true);
+    return Promise.all(urls.map(loadBuffer)).then(function (bufs) {
+      var at = a.currentTime + 0.03;
+      bufs.forEach(function (buf) {
+        var src = a.createBufferSource();
+        var g = a.createGain();
+        src.buffer = buf;
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.linearRampToValueAtTime(1, at + 0.025);
+        src.connect(g); g.connect(a.destination);
+        src.start(at);
+        at += Math.max(0.07, buf.duration - 0.06);
+      });
+      setTimeout(function () { mark(btn, false); }, (at - a.currentTime) * 1000);
+    }).catch(function () {
+      /* opened from the file system: the clips cannot be read closely enough to overlap */
+      var n = document.getElementById('filenote');
+      if (n) {
+        n.textContent = 'Opened from the file system, so runs of sounds play one after ' +
+          'another rather than overlapping. Serve the folder (tools/serve.ps1) to hear ' +
+          'them blended the way the game plays them.';
+      }
+      return playChain(urls, btn);
+    });
+  }
+
+  /* the fallback: one after another, no overlap */
+  function playChain(urls, btn) {
+    var i = 0;
+    return new Promise(function (done) {
+      (function step() {
+        if (i >= urls.length) { mark(btn, false); done(); return; }
+        var el = new Audio(urls[i++]);
+        el.addEventListener('ended', step);
+        el.addEventListener('error', step);
+        var p = el.play();
+        if (p && p.catch) { p.catch(step); }
+      })();
+    });
+  }
+
+  function button(label, urls, into) {
+    var b = document.createElement('button');
+    b.innerHTML = '<span class="id">' + label + '</span><span class="ms"></span>';
+    b.addEventListener('click', function () { playRun(urls, b); });
+    /* how long it is, read from the file itself rather than by decoding it */
+    var probe = new Audio(urls[0]);
+    probe.addEventListener('loadedmetadata', function () {
+      b.querySelector('.ms').textContent = Math.round(probe.duration * 1000) + 'ms';
+    });
+    probe.addEventListener('error', function () { b.querySelector('.ms').textContent = 'missing'; });
+    into.appendChild(b);
+    return b;
+  }
+
+  var base = function (f) { return f.replace(/\.[a-z0-9]+$/i, ''); };
+
+  /* the folder scan hands them over in whatever order the disk gives, which is no order
+     at all to look through: put them where a reader would expect to find them */
+  function alpha(files) {
+    return files.slice().sort(function (a, b) { return base(a) < base(b) ? -1 : base(a) > base(b) ? 1 : 0; });
+  }
+  CLIPS.sounds = alpha(CLIPS.sounds);
+  CLIPS.words = alpha(CLIPS.words);
+
+  CLIPS.sounds.forEach(function (f) {
+    button(base(f), ['audio/sounds/' + f], document.getElementById('sounds'));
+  });
+  document.getElementById('sounds-head').textContent = 'The sounds (' + CLIPS.sounds.length + ')';
+
+  CLIPS.words.forEach(function (f) {
+    button(base(f), ['audio/words/' + f], document.getElementById('words'));
+  });
+  document.getElementById('words-head').textContent =
+    'Syllables and words (' + CLIPS.words.length + ')';
+
+  /* anything dropped into audio/_compare, named "<tag>-<sound>.wav" */
+  var VARIANTS = ['1short-b', '2mid-b', '3long-b', '1short-d', '2mid-d', '3long-d',
+    '1short-g', '2mid-g', '3long-g'];
+  VARIANTS.forEach(function (name) {
+    button(name, ['audio/_compare/' + name + '.wav'], document.getElementById('compare'));
+  });
+
+  /* sound a typed word out, using the game's own rules if they are loaded */
+  document.getElementById('blend').addEventListener('click', function () {
+    var w = document.getElementById('word').value.trim().toLowerCase();
+    if (!w) { return; }
+    var urls = [];
+    var byName = {};
+    CLIPS.sounds.forEach(function (f) { byName[base(f)] = 'audio/sounds/' + f; });
+    /* longest spelling first, the same greedy walk PH.soundsIn does */
+    var SPELL = { sh:'sh', ch:'ch', th:'th', ck:'k', ng:'ng', qu:'kw', ph:'f', wh:'w',
+      ai:'ay', ay:'ay', ee:'ee', ea:'ee', ey:'ee', oa:'oh', oo:'oo', ow:'ow', ou:'ow',
+      oi:'oi', oy:'oi', aw:'aw', igh:'igh', ar:'ar', or:'or', ir:'er', ur:'er', er:'er',
+      a:'a', b:'b', c:'k', d:'d', e:'e', f:'f', g:'g', h:'h', i:'i', j:'j', k:'k', l:'l',
+      m:'m', n:'n', o:'o', p:'p', r:'r', s:'s', t:'t', u:'u', v:'v', w:'w', x:'ks',
+      y:'y', z:'z' };
+    var keys = Object.keys(SPELL).sort(function (a, b) { return b.length - a.length; });
+    var i = 0;
+    while (i < w.length) {
+      var hit = null;
+      for (var k = 0; k < keys.length; k++) {
+        if (w.substr(i, keys[k].length) === keys[k]) { hit = keys[k]; break; }
+      }
+      if (!hit) { i++; continue; }
+      if (byName[SPELL[hit]]) { urls.push(byName[SPELL[hit]]); }
+      i += hit.length;
+    }
+    if (urls.length) { playRun(urls, this); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -84,6 +84,17 @@ the bank that need it are listed in `WORD_SOUNDS` in `js/audio.js`, where each s
 it sounds like. Same for the `s` of "nose", which says /z/. Add a word there when it is
 sounded out wrongly; there is no rule to fix instead.
 
+`SOUND_OUT`, in the same file, does the same job for the blending games, which need a
+word broken all the way down into its sounds - `b ea=e r` for "bear", `a pp le=ul` for
+"apple". It is written as the letters a child sees, each with the sound it makes where
+that is not the usual one, and `-` where the letters are silent. Most words need no
+entry: the rules get them right, and the word bank's own split covers the rest.
+
+The three stops `b`, `d` and `g` are recorded as a burst plus about a tenth of a second
+of the release after it. That tail is not sloppiness - the bursts of the three are nearly
+alike, and what tells them apart is the way the release bends out of them. Cut it off and
+all three collapse into the same click.
+
 ## Tips
 
 - One adult voice for everything, recorded in a quiet room with a phone held at the same
@@ -91,17 +102,17 @@ sounded out wrongly; there is no rule to fix instead.
 - Trim silence from both ends, so the sounds follow each other quickly when a word is
   sounded out.
 - Keep each file mono, around 64 kbps: an mp3 of a sound is only a few kilobytes.
-- The generated set is 48 kHz mono wav, about 1.9 MB for all 41. That is deliberate:
+- The generated set is 48 kHz mono wav, about 1.9 MB for all 43. That is deliberate:
   s, f and th carry most of their sound above 5 kHz, which is the first thing a low
   bitrate throws away. Halve the size by asking for `riff-24khz-16bit-mono-pcm` in
   `tools/make-sounds-azure.ps1` if it ever matters.
 
 ## Words and syllables
 
-Whole words go in `words/`, named in lower case (`words/seed.mp3`). The longest words are
-sounded out in syllables rather than single sounds (`rab.bit`, `pen.cil`), and a syllable
-is not one of the 43 sounds, so it needs a recording of its own. `words/` holds the 73
-syllables the level 5 words split into; the list they are made from is
+Whole words go in `words/`, named in lower case (`words/seed.mp3`). The clapping and
+spelling games work in syllables rather than single sounds (`rab.bit`, `pen.cil`), and a
+syllable is not one of the 43 sounds, so it needs a recording of its own. `words/` holds
+the 132 syllables the longest words split into; the list they are made from is
 `tools/word-clips.txt`, which also says how to rebuild it if the word bank changes:
 
 ```

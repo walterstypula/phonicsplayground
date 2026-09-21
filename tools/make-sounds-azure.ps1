@@ -26,7 +26,9 @@ param(
   [string]$OutDir = 'audio\sounds',
   [string]$Tag = '',         # prefixes the file names, for comparing voices side by side
   [string]$WordsFile = '',   # a list of whole words or syllables to record into audio/words
-  [switch]$Force             # remake word clips that are already there
+  [switch]$Force,            # remake word clips that are already there
+  [string]$Ipa = '',         # try a different phonetic spelling for the one sound in -Only
+  [double]$KeepMs = 95       # how much of the vowel to keep on a sound cut short of one
 )
 
 $ErrorActionPreference = 'Stop'
@@ -65,6 +67,30 @@ $SOUNDS = @(
   @('oi', '<0254><026a>', 'x-slow'), @('aw', '<0254>', 'x-slow'), @('ar', '<0251><0279>', 'x-slow'),
   @('or', '<0254><0279>', 'x-slow'), @('er', '<025d>', 'x-slow')
 )
+
+# The sounds this voice releases into a vowel, and so need cutting short of it.
+#
+# /b/, /d/ and /g/ are the awkward ones. Asked for one on its own the voice answers "buh",
+# "duh", "guh" - most of the clip is a schwa, and a schwa that long is the "tuh" habit
+# that stops a child blending. So the vowel is cut: IPA_OVERRIDE says what to ask for and
+# CUT_BEFORE_VOWEL says to stop just past where the vowel begins.
+#
+# How far past is the whole question, and cutting too close was the first mistake. What
+# makes a /b/ a /b/ rather than a /d/ is not the burst - the bursts are alike - it is the
+# way the formants bend out of it into whatever follows. Cut that away and all three
+# collapse into the same short click, which is heard as a hiss rather than as a letter.
+# So enough of the vowel is kept to carry the bend, and no more: a tenth of a second,
+# quiet and unstressed, which is how these are taught out loud anyway.
+#
+# The vowel asked for is a schwa, the most neutral one there is, so the bend it leaves
+# behind does not colour the sound towards any particular word.
+#
+# Asking for the end of a syllable ("ob") was tried too. It gives a burst with no vowel
+# after it, but the voicing during the closure then outweighs the burst once the clip is
+# brought up to the same loudness as the rest, and it sounds like a hum with a click.
+$CUT_BEFORE_VOWEL = @('b', 'd', 'g')
+$CUT_AFTER_VOWEL = @()
+$IPA_OVERRIDE = @{ b = "b$([char]0x0259)"; d = "d$([char]0x0259)"; g = "$([char]0x0261)$([char]0x0259)" }
 
 $RATE = 48000      # fricatives like s, f and th live at 5-10 kHz, so ask for the full band
 $ENDPOINT = "https://$REGION.tts.speech.microsoft.com/cognitiveservices/v1"
@@ -139,12 +165,99 @@ function Write-Wav($path, [int[]]$pcm) {
   $w.Close()
 }
 
+# Some stops come back released into a vowel: asked for /b/ the voice says "buh", which is
+# the one habit that stops a child blending. A vowel is low and periodic - few zero
+# crossings, nearly all its energy under about 500 Hz - where a burst is neither. So find
+# where the vowel starts and cut just before it, keeping the closure and the burst.
+# A vowel was first told apart from a burst by how much of it sits under 500 Hz, which
+# worked for the /i/ of "bee" and not for a schwa - a schwa's first formant is higher, so
+# it read as noise and the clip was never cut. What separates the two far more plainly is
+# loudness: a burst is a faint tick, the vowel behind it is the loudest thing in the clip.
+# So the vowel is taken to start at the first frame that is both at least half as loud as
+# the clip's loudest moment and periodic rather than noisy.
+function Trim-BeforeVowel([int[]]$pcm) {
+  $frame = [int]($RATE * 0.01)
+
+  $peak = 0.0
+  for ($f = 0; $f + $frame -le $pcm.Length; $f += $frame) {
+    $e = 0.0
+    for ($k = 0; $k -lt $frame; $k++) { $e += [double]$pcm[$f + $k] * $pcm[$f + $k] }
+    $rms = [Math]::Sqrt($e / $frame)
+    if ($rms -gt $peak) { $peak = $rms }
+  }
+  if ($peak -le 0) { return ,$pcm }
+
+  for ($f = 0; $f + $frame -le $pcm.Length; $f += $frame) {
+    $e = 0.0; $z = 0
+    for ($k = 0; $k -lt $frame; $k++) {
+      $v = [double]$pcm[$f + $k]
+      $e += $v * $v
+      if ($k -gt 0 -and (($pcm[$f + $k] -ge 0) -ne ($pcm[$f + $k - 1] -ge 0))) { $z++ }
+    }
+    $rms = [Math]::Sqrt($e / $frame)
+    if ($rms -gt $peak * 0.5 -and ($z / 0.01) -lt 2500) {
+      # a shade past the vowel's start: the burst runs right up to it, and stopping dead
+      # on the burst clips the very thing that tells a /b/ from a /d/
+      $end = [Math]::Min($pcm.Length, $f + [int]($RATE * $KeepMs / 1000.0))
+      return ,$pcm[0..($end - 1)]
+    }
+  }
+  return ,$pcm
+}
+
+# The other way round: the clip opens with a vowel we do not want and ends with the sound
+# we do. Find where the opening vowel stops sounding - the closure before the burst - and
+# throw away everything before it.
+function Trim-AfterVowel([int[]]$pcm) {
+  $frame = [int]($RATE * 0.01)
+  $peak = 0.0; $start = -1
+  for ($f = 0; $f + $frame -le $pcm.Length; $f += $frame) {
+    $e = 0.0
+    for ($k = 0; $k -lt $frame; $k++) { $e += [double]$pcm[$f + $k] * $pcm[$f + $k] }
+    $rms = [Math]::Sqrt($e / $frame)
+    if ($rms -gt $peak) { $peak = $rms }
+    if ($start -lt 0 -and $rms -gt 400) { $start = $f }
+  }
+  if ($start -lt 0 -or $peak -le 0) { return ,$pcm }
+
+  # the closure: the first quiet stretch after the vowel has been going a little while
+  $closure = -1
+  for ($f = $start + 4 * $frame; $f + $frame -le $pcm.Length; $f += $frame) {
+    $e = 0.0
+    for ($k = 0; $k -lt $frame; $k++) { $e += [double]$pcm[$f + $k] * $pcm[$f + $k] }
+    if ([Math]::Sqrt($e / $frame) -lt $peak * 0.12) { $closure = $f; break }
+  }
+  if ($closure -lt 0) { return ,$pcm }
+
+  # then the burst itself: the clatter of the stop opening, which crosses zero far more
+  # often than the voicing around it. Keep a little of the closure before it - a /b/ does
+  # hum briefly - but not so much that the hum outweighs the burst once levelled.
+  for ($f = $closure; $f + $frame -le $pcm.Length; $f += $frame) {
+    $z = 0
+    for ($k = 1; $k -lt $frame; $k++) {
+      if (($pcm[$f + $k] -ge 0) -ne ($pcm[$f + $k - 1] -ge 0)) { $z++ }
+    }
+    if (($z / 0.01) -gt 2000) {
+      $cut = [Math]::Max(0, $f - [int]($RATE * 0.025))
+      return ,$pcm[$cut..($pcm.Length - 1)]
+    }
+  }
+  $cut = [Math]::Max(0, $closure - [int]($RATE * 0.01))
+  return ,$pcm[$cut..($pcm.Length - 1)]
+}
+
 # Trims the silence either side, brings the clip to the same loudness as the others and
 # saves it. Returns how long it ended up, or 0 if the voice sent nothing but silence.
-function Save-Clip([int[]]$pcm, $path) {
-  # where the sound is: first and last sample above a whisper
+function Save-Clip([int[]]$pcm, $path, $maxGain = 25.0, $floorPct = 0.0) {
+  # Where the sound is: first and last sample above a whisper. A stop trimmed back to its
+  # burst opens with a near-silent closure that still clears a fixed threshold, leaving
+  # dead air in front of the sound, so those clips measure the whisper against their own
+  # loudest moment instead.
+  $loudest = 1
+  foreach ($v in $pcm) { if ([Math]::Abs($v) -gt $loudest) { $loudest = [Math]::Abs($v) } }
+  $floor = [Math]::Max(60, $loudest * $floorPct)
   $first = -1; $last = -1
-  for ($k = 0; $k -lt $pcm.Length; $k++) { if ([Math]::Abs($pcm[$k]) -gt 60) { if ($first -lt 0) { $first = $k }; $last = $k } }
+  for ($k = 0; $k -lt $pcm.Length; $k++) { if ([Math]::Abs($pcm[$k]) -gt $floor) { if ($first -lt 0) { $first = $k }; $last = $k } }
   if ($first -lt 0) { return 0 }
 
   $start = [Math]::Max(0, $first - [int]($RATE * 0.015))
@@ -153,8 +266,11 @@ function Save-Clip([int[]]$pcm, $path) {
 
   # same loudness for every sound: quiet ones like f and th are lifted, within reason
   $peak = 1; foreach ($v in $clip) { if ([Math]::Abs($v) -gt $peak) { $peak = [Math]::Abs($v) } }
-  $gain = [Math]::Min(26000.0 / $peak, 25.0)
-  $fadeIn = [int]($RATE * 0.003); $fadeOut = [int]($RATE * 0.015)
+  $gain = [Math]::Min(26000.0 / $peak, $maxGain)
+  # a short clip that is mostly burst must not have its burst faded away: on a trimmed
+  # stop the sound is at the very end, where a fixed 15 ms fade lands right on top of it
+  $fadeIn = [int]($RATE * 0.003)
+  $fadeOut = [Math]::Min([int]($RATE * 0.015), [int]($clip.Length * 0.06))
   for ($k = 0; $k -lt $clip.Length; $k++) {
     $g = $gain
     if ($k -lt $fadeIn) { $g *= $k / $fadeIn }
@@ -174,14 +290,22 @@ foreach ($s in $SOUNDS) {
   if ($Only.Count -and $Only -notcontains $id) { continue }
   if ($WordsFile) { break }        # a word run leaves the sounds alone
 
+  $ask = if ($Ipa -and $Only.Count -eq 1) { $Ipa }
+         elseif ($IPA_OVERRIDE.ContainsKey($id)) { $IPA_OVERRIDE[$id] }
+         else { $s[1] }
   try {
-    $pcm = Get-Pcm "<phoneme alphabet='ipa' ph='$(Unescape-Ipa $s[1])'>x</phoneme>" $s[2]
+    $pcm = Get-Pcm "<phoneme alphabet='ipa' ph='$(Unescape-Ipa $ask)'>x</phoneme>" $s[2]
   } catch {
     Write-Output "  $id  FAILED: $($_.Exception.Message)"; $failed += $id; continue
   }
 
+  if ($CUT_BEFORE_VOWEL -contains $id) { $pcm = Trim-BeforeVowel $pcm }
+  if ($CUT_AFTER_VOWEL -contains $id) { $pcm = Trim-AfterVowel $pcm }
+
   $name = if ($Tag) { "$Tag-$id.wav" } else { "$id.wav" }
-  $ms = Save-Clip $pcm (Join-Path $out $name)
+  # a clip cut back to its burst has lost its loudest part, so it may be lifted further
+  $lift = if (($CUT_BEFORE_VOWEL -contains $id) -or ($CUT_AFTER_VOWEL -contains $id)) { 70.0 } else { 25.0 }
+  $ms = Save-Clip $pcm (Join-Path $out $name) $lift $(if ($lift -gt 25.0) { 0.06 } else { 0.0 })
   if (-not $ms) { Write-Output "  $id  (silent - skipped)"; $failed += $id; continue }
   $made += $name
   Write-Output ("  {0,-4} {1,4} ms" -f $id, $ms)
@@ -196,22 +320,52 @@ if ($WordsFile) {
   $wordsOut = Join-Path $root 'audio\words'
   New-Item -ItemType Directory -Force $wordsOut | Out-Null
 
-  $items = Get-Content $listPath | ForEach-Object { $_.Trim().ToLower() } |
-    Where-Object { $_ -and -not $_.StartsWith('#') } | Select-Object -Unique
+  # A line is either a word to be read as text ("rabbit"), or a syllable with the sounds it
+  # is made of ("ap = a p"). The second kind is synthesised from phonemes, as one syllable
+  # in one breath - the voice reads a bare "ap" as "A. P.", and stitching the two recorded
+  # sounds together sounds stitched, because neither was spoken with the other in mind.
+  $ipaOf = @{}
+  foreach ($s in $SOUNDS) { $ipaOf[$s[0]] = $s[1] }
+
+  $items = @()
+  foreach ($line in Get-Content $listPath) {
+    $line = ($line -replace '#.*$', '').Trim().ToLower()    # notes to the reader, not data
+    if (-not $line) { continue }
+    if ($line -match '^(\S+)\s*=\s*(.+)$') {
+      $name = $Matches[1]
+      $ids = $Matches[2] -split '\s+'
+      $ipa = ''
+      $ok = $true
+      foreach ($id in $ids) {
+        if (-not $ipaOf.ContainsKey($id)) { Write-Output "  $name  unknown sound '$id'"; $ok = $false; break }
+        $ipa += $ipaOf[$id]
+      }
+      if ($ok) { $items += @{ name = $name; ipa = $ipa } }
+    } else {
+      $items += @{ name = $line; ipa = '' }
+    }
+  }
+  $items = $items | Group-Object { $_.name } | ForEach-Object { $_.Group[0] }
   Write-Output "Words: $($items.Count) from $WordsFile"
 
-  foreach ($w in $items) {
+  foreach ($item in $items) {
+    $w = $item.name
     # a clip that is already there is kept, so a second run only fills what is missing
     if ((Test-Path (Join-Path $wordsOut "$w.wav")) -and -not $Force) { continue }
+    $said = if ($item.ipa) {
+      "<phoneme alphabet='ipa' ph='$(Unescape-Ipa $item.ipa)'>x</phoneme>"
+    } else {
+      [Security.SecurityElement]::Escape($w)
+    }
     try {
-      $pcm = Get-Pcm ([Security.SecurityElement]::Escape($w)) 'slow'
+      $pcm = Get-Pcm $said 'slow'
     } catch {
       Write-Output "  $w  FAILED: $($_.Exception.Message)"; $failed += $w; continue
     }
     $ms = Save-Clip $pcm (Join-Path $wordsOut "$w.wav")
     if (-not $ms) { Write-Output "  $w  (silent - skipped)"; $failed += $w; continue }
     $made += "$w.wav"
-    Write-Output ("  {0,-10} {1,4} ms" -f $w, $ms)
+    Write-Output ("  {0,-10} {1,4} ms  {2}" -f $w, $ms, $(if ($item.ipa) { 'phonemes' } else { 'text' }))
   }
 
   $have = Get-ChildItem $wordsOut -Filter *.wav | ForEach-Object { $_.Name }

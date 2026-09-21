@@ -109,7 +109,9 @@
     w: 'w', x: 'ks', y: 'y', z: 'z',
     sh: 'sh', ch: 'ch', th: 'th', ck: 'k', ll: 'l', ss: 's', ff: 'f', zz: 'z', ng: 'ng',
     wh: 'w', ph: 'f', qu: 'kw',
-    ai: 'ay', ay: 'ay', ee: 'ee', ea: 'ee', oa: 'oh', oo: 'oo', ow: 'ow', ou: 'ow',
+    /* a doubled letter is one sound: egg, rabbit, ladder */
+    bb: 'b', dd: 'd', gg: 'g', mm: 'm', nn: 'n', pp: 'p', rr: 'r', tt: 't', cc: 'k',
+    ai: 'ay', ay: 'ay', ee: 'ee', ea: 'ee', ey: 'ee', ie: 'ee', oa: 'oh', oo: 'oo', ow: 'ow', ou: 'ow',
     oi: 'oi', oy: 'oi', aw: 'aw', igh: 'igh', ar: 'ar', or: 'or', ir: 'er', ur: 'er', er: 'er'
   };
   /* word-ending chunks from the spelling level have no single sound; the voice says them */
@@ -119,6 +121,62 @@
   PH.soundHint = function (g) {
     if (SOUND_OF[g]) { return '/' + SOUND_OF[g]; }
     return CHUNKS[g] || g;
+  };
+
+  /* longest spelling first, so that "igh" is matched before "i" and "sh" before "s" */
+  var GRAPHEMES = Object.keys(SOUND_OF).sort(function (a, b) { return b.length - a.length; });
+
+  /* The letters of a word, grouped into the chunks that each make one sound, and the
+     sound each chunk makes: "cake" comes back as c, a (saying /ay/), k, and a silent e.
+     A chunk with no sound is either that silent e or a letter the rules cannot place. */
+  function graphemesOf(text) {
+    var s = String(text).toLowerCase().replace(/[^a-z]/g, '');
+    /* "-le" after a consonant is the /ul/ of apple and little, not /l/ followed by /e/ */
+    var tail = null;
+    if (s.length > 2 && s.slice(-2) === 'le' && 'aeiou'.indexOf(s.charAt(s.length - 3)) < 0) {
+      /* one chunk to look at and one recording to play, but two sounds to fall back on:
+         /ul/ is a syllable, not a 44th sound, so it has no clip of its own to list */
+      tail = { text: 'le', id: 'ul', ids: ['u', 'l'] };
+      s = s.slice(0, -2);
+    }
+    var found = [], i = 0, j, hit;
+    while (i < s.length) {
+      hit = null;
+      for (j = 0; j < GRAPHEMES.length; j++) {
+        if (s.substr(i, GRAPHEMES[j].length) === GRAPHEMES[j]) { hit = GRAPHEMES[j]; break; }
+      }
+      if (!hit) { found.push({ text: s.charAt(i), id: null }); i++; continue; }
+      found.push({ text: hit, id: SOUND_OF[hit] });
+      i += hit.length;
+    }
+    /* A final e is never sounded. Where it follows a single consonant it is a magic e and
+       lengthens the vowel in front of it - "ake" is /ay/ /k/ - and otherwise it is simply
+       silent: "ouse" is /ow/ /s/, not /ow/ /s/ /e/. */
+    var last = found[found.length - 1];
+    if (found.length >= 2 && last && last.text === 'e') {
+      if (found.length >= 3 && LONG[found[found.length - 3].id]) {
+        found[found.length - 3].id = LONG[found[found.length - 3].id];
+      }
+      last.id = null;
+    }
+    if (tail) { found.push(tail); }
+    return found;
+  }
+
+  /* The sounds a chunk is spelled with, longest spelling first: "oon" is /oo/ /n/, "ap"
+     is /a/ /p/, "ight" is /igh/ /t/.
+
+     This exists because a chunk is neither one of the 43 sounds nor a word, and a voice
+     handed one as text says whatever it resembles rather than what it spells: "ap" comes
+     back as "A. P.", "gg" as "G. G.", "i" as "eye", "to" as "two", "oon" as "un". Played
+     as its own sounds, run together, a chunk sounds like itself.                       */
+  PH.soundsIn = function (text) {
+    var out = [];
+    graphemesOf(text).forEach(function (g) {
+      if (!g.id) { return; }
+      (g.ids || [g.id]).forEach(function (id) { out.push('/' + id); });
+    });
+    return out;
   };
 
   /* The spoken sounds of a whole word, in order. A magic e (c-a-k-e) is silent and
@@ -148,6 +206,78 @@
     return sounds.map(function (g, i) {
       if (magic && i === sounds.length - 2 && LONG[g]) { return '/' + LONG[g]; }
       return PH.soundHint(g);
+    });
+  };
+
+  /* ---------------- Sounding a word out, one sound at a time ----------------
+
+     Blending needs a word broken into its sounds: "seed" is s-ee-d, "apple" is a-p-ul.
+     The word bank cannot supply that on its own, because for the longest words it splits
+     into syllables instead - rab.bit, hel.i.cop.ter - which is what the clapping and
+     spelling games want and the opposite of what blending wants. Neither can the
+     spelling rules always work it out, because English will not be ruled: the ea of
+     "bear" is not the ea of "bead", the c of "pencil" is not the c of "cat".
+
+     So SOUND_OUT says, for the words the rules get wrong, what the word actually says.
+     A piece is written "letters" where the usual sound is right, "letters=sound" where
+     it is not, and "letters=-" where the letters are silent. A sound is one of the 43,
+     or else the name of a recorded syllable ("ture" for the cher of adventure).       */
+  var SOUND_OUT = {
+    /* the ea/ai of bear, pear and chair is the vowel of "bed" with an r after it */
+    bear: 'b ea=e r', pear: 'p ea=e r', chair: 'ch ai=e r',
+    bread: 'b r ea=e d',
+    /* an s between vowels buzzes */
+    nose: 'n o=oh s=z e=-', rose: 'r o=oh s=z e=-', cheese: 'ch ee s=z e=-',
+    /* the oo of "book" is not the oo of "moon" */
+    cookie: 'c oo=uu k ie=ee',
+    /* an unstressed vowel flattens to /u/, whatever it is spelled with */
+    banana: 'b a=u n a n a=u', pizza: 'p i zz a=u', umbrella: 'u m b r e ll a=u',
+    zebra: 'z e=ee b r a=u', tomato: 't o=u m a=ay t o=oh',
+    monkey: 'm o=u n k ey=ee', octopus: 'o c t o=u p u s',
+    lion: 'l i=igh o=u n', watermelon: 'w a=o t er m e l o=u n',
+    wonderful: 'w o=u n d er f u l', computer: 'c o=u m p u=yoo t er',
+    crocodile: 'c r o c o=u d i=igh l e=-', dragon: 'd r a g o=u n',
+    hospital: 'h o s p i t a=u l', elephant: 'e l e=u ph a n t',
+    /* the ar of "carrot" is not the ar of "car": the r belongs to the second half */
+    carrot: 'c a rr o t',
+    /* a lone i saying its name, and the y of butterfly doing the same */
+    tiger: 't i=igh g er', spider: 's p i=igh d er', kindness: 'k i=igh n d n e ss',
+    butterfly: 'b u tt er f l y=igh',
+    dinosaur: 'd i=igh n o=oh s aur=or',
+    /* a c before i or e says /s/ */
+    pencil: 'p e n c=s i l',
+    /* -ture says "cher", which is no single sound, so the recorded syllable says it */
+    adventure: 'a d v e n ture=ture'
+  };
+
+  function pieces(spec) {
+    return spec.split(' ').map(function (tok) {
+      var eq = tok.indexOf('=');
+      if (eq < 0) { return { text: tok, hint: PH.soundHint(tok) }; }
+      var id = tok.slice(eq + 1);
+      return {
+        text: tok.slice(0, eq),
+        hint: id === '-' ? null : SOUNDS[id] ? '/' + id : id
+      };
+    });
+  }
+
+  /* the letters a child sees, paired with the sound each group of them makes */
+  PH.soundOut = function (word) {
+    if (SOUND_OUT[word.w]) { return pieces(SOUND_OUT[word.w]); }
+    /* where the bank already splits into single sounds, use its split: it knows things
+       the spelling does not, such as which words the exceptions above apply to */
+    var single = word.g.every(function (c, i) {
+      return SOUND_OF[c] || (i === word.g.length - 1 && c === 'e');
+    });
+    if (single) {
+      var said = PH.soundHintsFor(word);
+      return word.g.map(function (c, i) {
+        return { text: c, hint: i < said.length ? said[i] : null };
+      });
+    }
+    return graphemesOf(word.w).map(function (g) {
+      return { text: g.text, hint: g.id ? (SOUNDS[g.id] ? '/' + g.id : g.id) : null };
     });
   };
 
@@ -257,6 +387,7 @@
 
     cancel: function () {
       queue = []; busy = false; turn++;
+      stopBlend(0.03);          /* a held blending sound stops with everything else */
       clearTimeout(guard);
       if (current && current.pause) { try { current.pause(); } catch (e) { /* ignore */ } }
       current = null;
@@ -290,6 +421,136 @@
 
     setEnabled: function (on) { enabled = on; if (!on) { speech.cancel(); } }
   };
+
+  /* ---------------- Blending ----------------
+     Sounding a word out is not the same as playing its sounds one after another. A child
+     blends by running each sound into the next without a gap, and by holding the ones
+     that can be held: mmmaaannn, not "m" ... "a" ... "n".
+
+     An <audio> element cannot do that. It takes about 13 ms to start - 130 ms the first
+     time - and the only way to play the next sound is to cut the last one dead, which in
+     practice happened 40 ms into a half-second clip. The result is a stutter of chopped
+     beginnings. So blending plays through Web Audio from clips decoded up front: the next
+     sound fades in across the tail of the one before it, and a sound that can be held
+     loops its own middle for as long as the finger rests on it.
+
+     Anything that cannot be played this way answers false, and the caller falls back to
+     the ordinary queue.                                                                */
+  var STOPS = { b: 1, d: 1, g: 1, k: 1, p: 1, t: 1, ch: 1, j: 1, kw: 1, ks: 1 };
+  var buffers = {}, loading = {}, playing = [];
+
+  /* "/m" is one of the 43 sounds; anything else is a syllable or word recorded in words/ */
+  function clipUrl(key) {
+    if (String(key).charAt(0) === '/') { return listed(clips().sounds, 'audio/sounds/', String(key).slice(1)); }
+    return listed(clips().words, 'audio/words/', String(key).toLowerCase());
+  }
+
+  function loadClip(key) {
+    if (buffers[key] !== undefined || loading[key]) { return; }
+    var url = clipUrl(key);
+    var a = ac();
+    if (!url || !a || !window.fetch) { buffers[key] = null; return; }
+    loading[key] = true;
+    fetch(url)
+      .then(function (r) { return r.arrayBuffer(); })
+      .then(function (raw) { return a.decodeAudioData(raw); })
+      .then(function (buf) { buffers[key] = buf; loading[key] = false; })
+      .catch(function () { buffers[key] = null; loading[key] = false; });
+  }
+
+  function stopBlend(fade) {
+    if (!playing.length) { return; }
+    var a = ac(), list = playing;
+    playing = [];
+    if (!a) { return; }
+    var t = a.currentTime;
+    fade = fade === undefined ? 0.06 : fade;
+    list.forEach(function (p) {
+      try {
+        p.gain.gain.cancelScheduledValues(t);
+        p.gain.gain.setValueAtTime(p.gain.gain.value, t);
+        p.gain.gain.linearRampToValueAtTime(0.0001, t + fade);
+        p.node.stop(t + fade + 0.02);
+      } catch (e) { /* already stopped */ }
+    });
+  }
+
+  /* one clip, starting at `at`, fading in over whatever is still sounding */
+  function startClip(a, id, buf, at, hold) {
+    var src = a.createBufferSource();
+    var gain = a.createGain();
+    src.buffer = buf;
+    if (hold && !STOPS[id] && buf.duration > 0.22) {
+      src.loop = true;
+      src.loopStart = buf.duration * 0.35;   /* the steady middle, past the attack */
+      src.loopEnd = buf.duration * 0.78;     /* and before it tails away */
+    }
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.linearRampToValueAtTime(1, at + 0.025);
+    src.connect(gain); gain.connect(a.destination);
+    src.start(at);
+    playing.push({ node: src, gain: gain });
+    return src;
+  }
+
+  function bufferFor(hint) {
+    if (!hint) { return null; }
+    if (!buffers[hint]) { loadClip(hint); return null; }
+    var id = String(hint).charAt(0) === '/' ? String(hint).slice(1) : '';
+    return { id: id, buf: buffers[hint] };
+  }
+
+  var blend = {
+    supported: !!(window.AudioContext || window.webkitAudioContext) && !!window.fetch,
+
+    /* decode the sounds a word needs before the child reaches them */
+    warm: function (keys) {
+      if (!blend.supported) { return; }
+      keys.forEach(function (k) { if (k) { loadClip(k); } });
+    },
+
+    /* Play one sound, fading in over whatever is still sounding. `hold` keeps a sound
+       that can be held going until release() - a real mmmmm, not the same clip restarted.
+       Returns false if there is no decoded clip, so the caller can say it the slow way. */
+    play: function (hint, hold) {
+      if (!enabled || !blend.supported) { return false; }
+      var a = ac();
+      var clip = bufferFor(hint);
+      if (!a || !clip) { return false; }
+      stopBlend(0.05);
+      startClip(a, clip.id, clip.buf, a.currentTime, hold);
+      return true;
+    },
+
+    /* A run of sounds played back to back, each starting a little before the last has
+       finished, so "a" and "p" arrive as "ap" rather than as two letters. All or nothing:
+       if any clip is missing the caller should say the chunk some other way. */
+    sequence: function (hints) {
+      if (!enabled || !blend.supported || !hints.length) { return false; }
+      var a = ac();
+      if (!a) { return false; }
+      var clips = [], i;
+      for (i = 0; i < hints.length; i++) {
+        var clip = bufferFor(hints[i]);
+        if (!clip) { return false; }
+        clips.push(clip);
+      }
+      stopBlend(0.04);
+      var at = a.currentTime + 0.02;
+      for (i = 0; i < clips.length; i++) {
+        startClip(a, clips[i].id, clips[i].buf, at, false);
+        /* the next sound comes in over the tail of this one, which is what makes a run of
+           sounds a syllable instead of a list */
+        at += Math.max(0.07, clips[i].buf.duration - 0.06);
+      }
+      return true;
+    },
+
+    /* let go of a held sound: it tails off rather than stopping dead */
+    release: function () { stopBlend(0.12); },
+    stop: function () { stopBlend(0.03); }
+  };
+  PH.blend = blend;
 
   /* ---------------- Sound effects ---------------- */
   var ctx = null;

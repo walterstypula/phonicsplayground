@@ -2,88 +2,161 @@
 #
 #   powershell -ExecutionPolicy Bypass -File tools/make-sounds-azure.ps1 -WordsFile tools\word-clips.txt
 #
-# The longest words are sounded out in syllables rather than single sounds (rab.bit,
-# pen.cil), and a syllable is not one of the 43 sounds, so it has to be recorded as a
-# piece of speech. Without a recording here the device's own voice says it, which stands
-# out now that every sound is the same neural voice.
+# A line is either a word to be read as text ("rabbit"), or a syllable followed by the
+# sounds it is made of ("ap = a p"). The second kind is synthesised from those phonemes as
+# one syllable, in one breath.
 #
-# This list is the syllables the level 5 words split into. To rebuild it after changing
-# the word bank, open the game and run in the browser console:
+# Both halves of that matter. A voice handed a bare "ap" reads it as "A. P." - it is not a
+# word, so it gets spelled - and "to" comes back as "two", "i" as "eye", "gg" as "G. G.".
+# But playing the recorded /a/ and /p/ one after the other does not fix it either: the two
+# were spoken separately, so there is no join between them and it sounds stitched. Asked
+# for the phonemes together the voice says one syllable, with the sounds running into each
+# other the way they do in speech.
 #
-#   var c=new Set(); PH.LEVELS.filter(l=>l.id>=1).forEach(l=>l.words.forEach(w=>
-#     PH.soundHintsFor(w).forEach(h=>{if(h[0]!=='/')c.add(h);})));
-#   console.log([...c].sort().join('\n'));
+# The sound names are the ids in PH.SOUNDS (js/audio.js). To rebuild the list of syllables
+# after changing the word bank, open the game and run in the browser console:
+#
+#   var c=new Map();
+#   PH.PICTURES.forEach(w=>{var p=w.g.length>1?w.g:[PH.firstSound(w),w.w.slice(PH.firstSound(w).length)];
+#     p.forEach(x=>c.set(x,1));});
+#   PH.LEVELS.filter(l=>l.id>=1).forEach(l=>l.words.forEach(w=>
+#     PH.soundHintsFor(w).forEach(h=>{if(h[0]!=='/')c.set(h,1);})));
+#   console.log([...c.keys()].sort().filter(x=>PH.soundHint(x)[0]!=='/')
+#     .map(x=>x+' = '+PH.soundsIn(x).map(s=>s.slice(1)).join(' ')).join('\n'));
+#
+# That prints a first draft. Check it by eye before trusting it: the spelling rules cannot
+# tell that the c of "pencil" is soft, or that the i of "tiger" is long. The corrections
+# made by hand are marked below.
 
-ad
-bas
-birth
-bit
-blan
-brel
-but
-chic
-cil
-com
-croc
-day
-den
-der
-di
-dile
-dra
-el
-est
-fast
-fin
-fly
-ful
-gar
-gon
-hel
-hos
-ing
-jac
-jump
-ken
-ket
-kind
-kit
-la
-mag
-mer
-met
-mon
-muf
-nel
-ness
-net
-nic
-ning
-no
-pen
-pet
-phant
-pi
-pic
-pu
-pup
-rab
-roc
-run
-sand
-saur
-set
-ster
-sum
-sun
-tal
-ten
-ter
-thun
-tun
-ture
-um
-ven
-wich
-win
-won
+ad = a d
+air = e r          # chair: /air/ is the vowel of "bed" with an r, not "ay"
+ake = ay k
+an = a n
+ap = a p
+at = a t
+ba = b a
+bas = b a s
+birth = b er th
+bit = b i t
+blan = b l a n
+bra = b r a
+brel = b r e l
+but = b u t
+car = k ar
+chic = ch i k
+cil = s i l        # pencil: a soft c
+com = k o m
+cook = k uu k      # cookie: the short oo of "book"
+cop = k o p
+croc = k r o k
+day = d ay
+den = d e n
+der = d er
+di = d igh         # dinosaur: a long i
+dile = d igh l
+dra = d r a
+ear = e r          # bear, pear: the same vowel as "air"
+eese = ee z        # cheese: the s says /z/
+el = e l
+est = e s t
+fast = f a s t
+fin = f i n
+fly = f l igh      # butterfly: y says the long i
+ful = f u l
+gar = g ar
+ger = g er
+gon = g o n
+hel = h e l
+hos = h o s
+ig = i g
+ike = igh k
+in = i n
+ing = i ng
+ish = i sh
+jac = j a k
+jump = j u m p
+ken = k e n
+ket = k e t
+key = k ee
+kind = k igh n d   # kindness: a long i
+kit = k i t
+la = l a
+lane = l ay n
+li = l igh         # lion: a long i
+lock = l o k
+ma = m ay          # tomato: the stressed middle is "may"
+mag = m a g
+mel = m e l
+mer = m er
+met = m e t
+mon = m o n
+muf = m u f
+na = n a
+nake = n ay k
+nel = n e l
+ness = n e s
+net = n e t
+nic = n i k
+ning = n i ng
+no = n oh          # dinosaur: "no", not the short o
+oat = oh t
+oc = o k
+ock = o k
+og = o g
+on = o n
+oon = oo n
+orn = or n
+ose = oh z         # nose: the s says /z/
+ouse = ow s
+ox = o ks
+pen = p e n
+pet = p e t
+phant = f a n t
+pi = p i
+pic = p i k
+piz = p i z
+ple = p u l        # apple: "-le" is /ul/
+poon = p oo n
+pu = p u
+pup = p u p
+pus = p u s
+rab = r a b
+rain = r ay n
+read = r e d       # bread: the short e, not "reed"
+ree = r ee
+roc = r o k
+rog = r o g
+rot = r o t
+ruck = r u k
+run = r u n
+sand = s a n d
+saur = s or        # dinosaur: "sore"
+sect = s e k t
+set = s e t
+spi = s p igh      # spider: a long i
+ster = s t er
+sum = s u m
+sun = s u n
+tal = t a l
+tar = t ar
+ten = t e n
+ter = t er
+thun = th u n
+ti = t igh         # tiger: a long i
+to = t oh          # tomato
+tor = t or
+trac = t r a k
+tun = t u n
+ture = ch er       # adventure: "cher"
+uck = u k
+ul = u l           # apple, little: the "-le" on the end says /ul/
+um = u m
+un = u n
+us = u s
+ven = v e n
+wa = w o           # watermelon: "wor"
+wich = w i ch
+win = w i n
+won = w u n        # wonderful: the short u
+za = z a
+ze = z ee          # zebra: "zee"
