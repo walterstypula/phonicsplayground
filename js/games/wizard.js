@@ -173,7 +173,8 @@
               api.say('Abracadabra!');
               if (letters) {
                 api.sayWord(spell.speak, { queue: true });
-                api.say('is for ' + chosen.name, { queue: true });
+                api.say('is for', { queue: true });
+                api.sayWord(chosen.name, { queue: true });
               } else {
                 api.say(spell.speak, { queue: true, rate: 0.8 });
               }

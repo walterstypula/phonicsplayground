@@ -321,10 +321,20 @@
     }
     return null;
   }
+  /* A recording is named after its letters and nothing else, so "Order up!" is found as
+     order-up.wav. A single word slugs to itself, which is why every clip recorded before
+     whole phrases existed is still found under the name it already had. */
+  function slug(text) {
+    return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
   function clipFor(text) {
     var c = clips();
     if (text.charAt(0) === '/') { return listed(c.sounds, 'audio/sounds/', text.slice(1)); }
-    return listed(c.words, 'audio/words/', text.toLowerCase().replace(/[.?!,]/g, '').trim());
+    var name = slug(text);
+    /* a whole word or phrase first, and only then the syllables: they share spellings
+       and mean different things by them - the "to" of tomato against the word "to" */
+    return listed(c.spoken || [], 'audio/spoken/', name) ||
+      listed(c.words, 'audio/words/', name);
   }
 
   /* ---------------- One queue for recordings and the device voice ----------------

@@ -109,9 +109,16 @@
 
       function sayPrompt() {
         if (!item) { return; }
-        if (item.kind === 'shape') { api.say('Trace ' + item.text + '. Start at the star!'); return; }
+        /* each piece said on its own, because a sentence glued together out of a fixed
+           part and a changing one matches no recording and falls to the device voice */
+        if (item.kind === 'shape') {
+          api.say('Trace');
+          api.say(item.text, { queue: true });
+          api.say('Start at the star!', { queue: true });
+          return;
+        }
         if (item.kind === 'word') { api.say('Trace the word'); api.sayWord(item.text, { queue: true }); return; }
-        if (item.kind === 'cap') { api.say('Trace capital ' + item.text); return; }
+        if (item.kind === 'cap') { api.say('Trace capital'); api.say(item.text, { queue: true }); return; }
         api.say('Trace the letter');
         if (letters) { api.sayWord(item.text, { queue: true }); }
         else { api.say(item.text, { queue: true }); api.say(PH.soundHint(item.text), { queue: true, rate: 0.55 }); }
@@ -139,11 +146,11 @@
       }
 
       function celebrate() {
-        if (item.kind === 'shape') { api.say('Wow, ' + item.text + '!'); }
+        if (item.kind === 'shape') { api.say('Wow,'); api.say(item.text, { queue: true }); }
         else if (item.kind === 'word') { api.say('You wrote'); api.sayWord(item.text, { queue: true }); }
-        else if (item.kind === 'cap') { api.say('Capital ' + item.text + '!'); }
+        else if (item.kind === 'cap') { api.say('Capital'); api.say(item.text, { queue: true }); }
         else if (letters) { api.sayWord(item.text); }
-        else { api.say(item.text + '!'); }
+        else { api.say(item.text); }
         strokes.forEach(function (st) {
           for (var j = 0; j < st.pts.length; j += 6) {
             api.burst(st.pts[j].x, st.pts[j].y, ['#fff3a0', '#8ef0ff'], 1, { gravity: 0, minSpeed: 10, maxSpeed: 40, lift: 0, shape: 'star' });

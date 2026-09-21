@@ -82,7 +82,8 @@
           api.sayWord(target.w, { queue: true });
           return;
         }
-        api.say('Catch the ' + (mode === 'first' ? 'first' : 'last') + ' sound in');
+        /* said whole rather than built from pieces, so there is a recording of it */
+        api.say(mode === 'first' ? 'Catch the first sound in' : 'Catch the last sound in');
         api.sayWord(target.w, { queue: true });
       }
 

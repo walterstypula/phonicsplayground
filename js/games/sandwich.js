@@ -100,7 +100,10 @@
       function sayPrompt() {
         if (pics) {
           api.say('A sandwich with');
-          target.g.forEach(function (g, i) { api.say((i ? 'then ' : '') + g, { queue: true, rate: 0.8 }); });
+          target.g.forEach(function (g, i) {
+            if (i) { api.say('then', { queue: true, rate: 0.8 }); }
+            api.say(g, { queue: true, rate: 0.8 });
+          });
           return;
         }
         api.say('One sandwich. Please make');

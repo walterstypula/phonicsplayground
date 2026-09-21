@@ -1,0 +1,648 @@
+# Whole words and phrases, recorded so that every device hears the same voice.
+#
+#   powershell -ExecutionPolicy Bypass -File tools/make-sounds-azure.ps1 \
+#     -WordsFile tools\spoken-clips.txt -Spoken -Rate 24000
+#
+# These go to audio/spoken/, kept apart from the syllables in audio/words/ because the
+# same spelling means different things in each: the "to" of tomato is "toh", the word
+# "to" is "too". The game looks in spoken/ first.
+#
+# A line is read as written. The file is named after its letters and nothing else, so
+# "Order up!" is saved as order-up.wav and the game slugs what it is about to say the
+# same way before looking for it.
+#
+# 24 kHz rather than 48: nothing in a spoken word lives above 12 kHz, and it halves the
+# bytes. Still plain uncompressed PCM - no lossy codec has been anywhere near it.
+
+# ---- the things the games say ----
+A sandwich with
+Abracadabra!
+All the leaks are fixed!
+Awesome!
+Blast off!
+Boing! The Troggle bumped you!
+Bonk bonk! Awesome!
+Bonk the little letter that goes with big
+Capital
+Catch the
+Change
+Find every
+Fixed!
+Fly through the
+Fly through the missing sound in
+Glug glug! The drain opened. Phew!
+Goal!
+Grab the word
+Gulp! Yum!
+He is asleep again. Keep it quiet!
+Hmm, what comes next?
+Hook on the
+Hop to
+Hop to the
+Listen again.
+Make a
+Not quite. Listen again
+Not that one yet. Listen:
+Not that one. Look again.
+Now run to the rocket!
+One sandwich. Please make
+Oops!
+Oops! That spell makes
+Order up!
+Pop every
+Pop the words with the sound
+Read the story. Tap any word you get stuck on.
+Saved! Let us count together.
+Shh... great job!
+Spell
+Splash! Not that one.
+Splash! That makes
+Start at the star!
+That is a
+That makes
+That one says
+The star gate is open!
+This one we just know.
+Toot toot! All aboard!
+Trace
+Trace capital
+Trace the letter
+Trace the word
+Treasure!
+Try again
+Which picture starts with
+Which word rhymes with
+Who is there?
+Whoops, you flew past. Try again!
+Whoosh! Back you float.
+Wow,
+Yes!
+Yes! You got
+You blended it
+You caught the
+You found them all!
+You made it across!
+You made it! Catch the flies!
+You wrote
+Yuck!
+Yum! All gone!
+does not fit
+does not rhyme with
+in
+into
+is for
+like in
+period
+question mark
+rhymes with
+with the letters
+
+# ---- every word the games can name ----
+a
+actually
+adventure
+after
+again
+all
+answer
+any
+apple
+are
+b
+back
+bag
+bake
+banana
+basket
+bat
+bath
+be
+bear
+beautiful
+because
+bed
+bee
+believe
+belt
+best
+big
+bike
+bird
+birthday
+blanket
+boat
+bone
+book
+born
+both
+box
+boy
+bread
+breath
+brown
+bug
+build
+bun
+burn
+bus
+busy
+butterfly
+c
+cake
+cap
+car
+card
+carrot
+cash
+cat
+caught
+certain
+chair
+chat
+cheese
+chest
+chicken
+child
+chin
+chip
+chop
+clap
+claw
+clip
+clock
+clothes
+cloud
+coat
+coin
+come
+computer
+cook
+cookie
+corn
+could
+cow
+crab
+crawl
+crocodile
+cube
+cup
+curl
+cut
+d
+different
+dig
+dinosaur
+dirt
+dish
+do
+dog
+door
+dot
+down
+dragon
+drip
+drum
+duck
+e
+early
+egg
+eight
+elephant
+enough
+every
+eye
+f
+far
+farm
+fastest
+father
+feet
+fern
+fight
+find
+fish
+five
+fix
+flag
+flat
+floor
+food
+foot
+fork
+found
+fox
+frog
+g
+game
+garden
+gate
+girl
+go
+goat
+grab
+great
+green
+grin
+h
+half
+ham
+hand
+hat
+have
+he
+heard
+heart
+helicopter
+helmet
+help
+hen
+herd
+hide
+high
+hole
+home
+hop
+horn
+hospital
+hot
+hour
+house
+hug
+hurt
+i
+insect
+into
+is
+island
+jacket
+jam
+join
+joy
+jump
+jumping
+k
+key
+kick
+kind
+kindness
+king
+kite
+kitten
+l
+lake
+lamp
+leaf
+leg
+light
+like
+line
+lion
+lip
+little
+log
+look
+luck
+m
+magnet
+man
+many
+map
+mat
+me
+milk
+minute
+money
+monkey
+monster
+moon
+mop
+most
+moth
+mouse
+move
+much
+muffin
+mug
+mule
+my
+n
+name
+nap
+neck
+nest
+net
+night
+nine
+no
+nose
+note
+now
+nut
+o
+octopus
+of
+often
+old
+one
+only
+out
+p
+paint
+park
+paw
+pear
+peg
+pencil
+people
+pet
+picnic
+pig
+pin
+pizza
+plane
+play
+plum
+point
+poor
+pot
+pretty
+promise
+puppet
+question
+r
+rabbit
+rain
+rat
+read
+red
+rich
+ride
+right
+ring
+road
+rock
+rocket
+room
+rope
+rose
+round
+run
+running
+s
+sad
+said
+sand
+sandwich
+saw
+seed
+sharp
+she
+shed
+shell
+ship
+shirt
+shop
+short
+should
+sigh
+six
+sleep
+slip
+snail
+snake
+so
+soap
+sock
+some
+spider
+spin
+spoon
+star
+step
+stop
+storm
+sugar
+summer
+sun
+sunset
+sure
+swim
+t
+tail
+tap
+tape
+team
+ten
+that
+the
+there
+they
+thin
+third
+though
+through
+thunder
+tiger
+time
+tin
+to
+toad
+tomato
+top
+town
+toy
+tractor
+train
+trap
+tray
+tree
+truck
+tune
+tunnel
+turn
+twin
+u
+umbrella
+v
+van
+w
+wait
+was
+water
+watermelon
+wave
+we
+weight
+were
+what
+who
+whole
+wig
+wild
+win
+winter
+wish
+with
+women
+wonderful
+yawn
+you
+z
+zebra
+zip
+
+# ---- phrases that the games used to build by joining strings together ----
+Catch the first sound in
+Catch the last sound in
+Start at the star!
+then the
+a line down
+a line across
+a circle
+a zigzag
+a wave
+a rainbow
+
+# ---- prompts that sit inside a choice, missed on the first pass ----
+Blend the sounds.
+Bonk the
+Bonk the word
+Build the word
+Bump the block that says
+Bump the block with the
+Catch all the animals!
+Catch every letter
+Catch the words that start with
+Catch the words with the sound
+Clap it together.
+Feed me the
+How many claps in
+How many sounds in
+Munch all the animals!
+Munch every letter
+Munch the words that rhyme with
+Munch the words that start with
+Munch the words with the sound
+Read the spell card, then tap the picture it makes.
+Read the words and build a question.
+Slide the snail and sound it out with me
+Which chest has the
+Which chest says
+then
+bacon
+lettuce
+pickle
+onion
+
+# ---- the sentences the train reads ----
+A dog can dig.
+A duck can swim.
+A pig can run.
+Come and see the moon.
+I can clap.
+I can hop.
+I got a pet.
+I had ten pins.
+I hit the drum.
+I see a bug.
+I wish for a ship.
+Look at my new coat.
+Mom has a hat.
+My feet are in the rain.
+Some bees are in the tree.
+Stop the bus.
+That is my sock.
+The bus is red.
+The cat is big.
+The chick can peck.
+The crab is red.
+The cup is hot.
+The fish can swim.
+The fox ran.
+The frog can jump.
+The lamp is on.
+The little cake is for me.
+The man is sad.
+The ship is big.
+The shop is shut.
+The snail was very slow.
+The sun is hot.
+The toad said no.
+The van is big.
+There is soap on my nose.
+They like to ride a bike.
+We have a green boat.
+What is in the green box?
+You can play a game.
+a cloud is in the sky .
+a crocodile swam under the bridge .
+a rabbit is hiding in the basket .
+can chickens really fly ?
+can you see the star ?
+did the bird fly away ?
+have you seen my umbrella ?
+is the light on ?
+it was snowing all winter .
+my cat likes to sleep .
+my kitten likes to chase butterflies .
+the boy found a toy car .
+the cow is in the barn .
+the dinosaur stomped through the forest .
+the dragon flew over the garden .
+the elephant ate my sandwich .
+the girl has a red shirt .
+the mouse ran into the house .
+the owl hoots at night .
+the rocket zoomed into space .
+we baked muffins for her birthday .
+we went to the farm .
+where is the dog ?
+why is the monster so happy ?
+
+# ---- every verb-and-group combination the rules can produce ----
+Catch all the animals!
+Catch all the food!
+Catch all the things that go!
+Catch the words with the sound
+Catch the words that start with
+Catch the words that rhyme with
+Catch every letter
+Munch all the animals!
+Munch all the food!
+Munch all the things that go!
+Munch the words with the sound
+Munch the words that start with
+Munch the words that rhyme with
+Munch every letter
+Read the words and build a sentence.
+
+# ---- the last stragglers the full audit turned up ----
+it
+up
+blend
+# the four letters the letters level never uses, but tracing does
+j
+q
+x
+y
+# CHUNKS in js/audio.js spells these oddly to steer the device voice; recorded
+# from their sounds instead so they are right in this voice too
+eht = e t
+ann = a n
+
+# ---- Penalty Kick keeps its own extra words (js/games/soccer.js) ----
+at
+in
+up
+on
+it
+am
+go
+me
+no
+is
+stamp
+frost
+twist
+crisp
+plant

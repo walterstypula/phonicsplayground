@@ -148,7 +148,15 @@
 
       function sayPrompt() {
         if (!info) { return; }
-        if (pics) { api.say('Hook on the ' + info.tokens.join(', then the ')); return; }
+        if (pics) {
+          /* "hook on the cat, then the hat" said as its recorded pieces */
+          api.say('Hook on the');
+          info.tokens.forEach(function (t, i) {
+            if (i) { api.say('then the', { queue: true }); }
+            api.sayWord(t, { queue: true });
+          });
+          return;
+        }
         if (letters) {
           api.say('Spell');
           api.sayWord(info.word, { queue: true });

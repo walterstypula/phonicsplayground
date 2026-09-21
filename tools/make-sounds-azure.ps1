@@ -28,7 +28,10 @@ param(
   [string]$WordsFile = '',   # a list of whole words or syllables to record into audio/words
   [switch]$Force,            # remake word clips that are already there
   [string]$Ipa = '',         # try a different phonetic spelling for the one sound in -Only
-  [double]$KeepMs = 95       # how much of the vowel to keep on a sound cut short of one
+  [double]$KeepMs = 95,      # how much of the vowel to keep on a sound cut short of one
+  [int]$Rate = 0,            # sample rate in Hz; 0 means 48000. 24000 suits whole words
+  [switch]$Spoken,           # write to audio\spoken (whole words and phrases) not audio\words
+  [switch]$Mp3               # encoded rather than PCM; for clips that are played on their own
 )
 
 $ErrorActionPreference = 'Stop'
@@ -92,7 +95,15 @@ $CUT_BEFORE_VOWEL = @('b', 'd', 'g')
 $CUT_AFTER_VOWEL = @()
 $IPA_OVERRIDE = @{ b = "b$([char]0x0259)"; d = "d$([char]0x0259)"; g = "$([char]0x0261)$([char]0x0259)" }
 
-$RATE = 48000      # fricatives like s, f and th live at 5-10 kHz, so ask for the full band
+# The single sounds are asked for at 48 kHz because fricatives like s, f and th carry
+# most of themselves above 5 kHz, and that is the first thing a narrow band throws away.
+# A whole word does not need the same: nothing in "basket" lives above 12 kHz, and at
+# 24 kHz it is half the bytes for no audible difference. Both are plain uncompressed PCM,
+# so neither has been through a lossy codec - the smaller one simply stops sooner.
+$RATE = if ($Rate -gt 0) { $Rate } else { 48000 }
+$FORMAT = if ($Mp3) { "audio-$([int]($RATE / 1000))khz-48kbitrate-mono-mp3" }
+          else { "riff-$([int]($RATE / 1000))khz-16bit-mono-pcm" }
+$EXT = if ($Mp3) { 'mp3' } else { 'wav' }
 $ENDPOINT = "https://$REGION.tts.speech.microsoft.com/cognitiveservices/v1"
 
 function Unescape-Ipa($s) {
@@ -112,7 +123,7 @@ function Get-Pcm($said, $speed) {
   $headers = @{
     'Ocp-Apim-Subscription-Key' = $KEY
     'Content-Type'              = 'application/ssml+xml'
-    'X-Microsoft-OutputFormat'  = 'riff-48khz-16bit-mono-pcm'
+    'X-Microsoft-OutputFormat'  = $FORMAT
     'User-Agent'                = 'phonics-playground'
   }
   $tmp = [IO.Path]::GetTempFileName()
@@ -140,6 +151,10 @@ function Get-Pcm($said, $speed) {
 
     $raw = [IO.File]::ReadAllBytes($tmp)
     if ($raw.Length -lt 64) { throw 'Azure sent no audio' }
+    # An encoded format is kept exactly as it arrived: there is no editing an mp3 without
+    # decoding and re-encoding it, which would need a tool this script does not have and
+    # would cost a generation of quality to no purpose.
+    if ($FORMAT -notlike 'riff-*') { return ,$raw }
     # the samples start after the RIFF header's "data" marker
     $offset = 44
     for ($i = 0; $i -lt [Math]::Min($raw.Length - 4, 400); $i++) {
@@ -317,7 +332,12 @@ foreach ($s in $SOUNDS) {
 if ($WordsFile) {
   $listPath = Join-Path $root $WordsFile
   if (-not (Test-Path $listPath)) { throw "No such list: $listPath" }
-  $wordsOut = Join-Path $root 'audio\words'
+  # Syllables and whole words are kept apart because the same spelling means different
+  # things in each. The "to" of tomato is "toh" and the word "to" is "too"; the "read" of
+  # bread rhymes with bed and the word "read" with seed. One folder for both would let a
+  # syllable answer for a word, silently and in the wrong voice.
+  $bucket = if ($Spoken) { 'spoken' } else { 'words' }
+  $wordsOut = Join-Path $root "audio\$bucket"
   New-Item -ItemType Directory -Force $wordsOut | Out-Null
 
   # A line is either a word to be read as text ("rabbit"), or a syllable with the sounds it
@@ -342,7 +362,12 @@ if ($WordsFile) {
       }
       if ($ok) { $items += @{ name = $name; ipa = $ipa } }
     } else {
-      $items += @{ name = $line; ipa = '' }
+      # A whole phrase is saved under a name made of its letters and nothing else, so
+      # that "Order up!" becomes order-up.wav. The game slugs what it is about to say the
+      # same way before looking for a recording of it. A single word slugs to itself, so
+      # every clip recorded before this existed is still found under the same name.
+      $slug = ($line -replace "[^a-z0-9]+", '-').Trim('-')
+      if ($slug) { $items += @{ name = $slug; text = $line; ipa = '' } }
     }
   }
   $items = $items | Group-Object { $_.name } | ForEach-Object { $_.Group[0] }
@@ -351,28 +376,37 @@ if ($WordsFile) {
   foreach ($item in $items) {
     $w = $item.name
     # a clip that is already there is kept, so a second run only fills what is missing
-    if ((Test-Path (Join-Path $wordsOut "$w.wav")) -and -not $Force) { continue }
+    if ((Test-Path (Join-Path $wordsOut "$w.$EXT")) -and -not $Force) { continue }
     $said = if ($item.ipa) {
       "<phoneme alphabet='ipa' ph='$(Unescape-Ipa $item.ipa)'>x</phoneme>"
     } else {
-      [Security.SecurityElement]::Escape($w)
+      # what is spoken is the line as written; $w is only what the file is called
+      [Security.SecurityElement]::Escape($(if ($item.text) { $item.text } else { $w }))
     }
     try {
-      $pcm = Get-Pcm $said 'slow'
+      $got = Get-Pcm $said 'slow'
     } catch {
       Write-Output "  $w  FAILED: $($_.Exception.Message)"; $failed += $w; continue
     }
-    $ms = Save-Clip $pcm (Join-Path $wordsOut "$w.wav")
-    if (-not $ms) { Write-Output "  $w  (silent - skipped)"; $failed += $w; continue }
-    $made += "$w.wav"
-    Write-Output ("  {0,-10} {1,4} ms  {2}" -f $w, $ms, $(if ($item.ipa) { 'phonemes' } else { 'text' }))
+    $path = Join-Path $wordsOut "$w.$EXT"
+    if ($Mp3) {
+      # already encoded; trimming and levelling would mean a decode and a re-encode
+      [IO.File]::WriteAllBytes($path, $got)
+      Write-Output ("  {0,-10} {1,6:N0} bytes  {2}" -f $w, $got.Length, $(if ($item.ipa) { 'phonemes' } else { 'text' }))
+    } else {
+      $ms = Save-Clip $got $path
+      if (-not $ms) { Write-Output "  $w  (silent - skipped)"; $failed += $w; continue }
+      Write-Output ("  {0,-10} {1,4} ms  {2}" -f $w, $ms, $(if ($item.ipa) { 'phonemes' } else { 'text' }))
+    }
+    $made += "$w.$EXT"
   }
 
-  $have = Get-ChildItem $wordsOut -Filter *.wav | ForEach-Object { $_.Name }
+  # both kinds are listed: the blended clips stay PCM, the spoken ones are encoded
+  $have = Get-ChildItem $wordsOut -Include *.wav, *.mp3 -Recurse | ForEach-Object { $_.Name } | Sort-Object
   $clipsJs = Join-Path $root 'audio\clips.js'
   $text = [IO.File]::ReadAllText($clipsJs)
   $list = ($have | ForEach-Object { "'$_'" }) -join ', '
-  $text = [regex]::Replace($text, 'words: \[[^\]]*\]', "words: [$list]")
+  $text = [regex]::Replace($text, "$bucket`: \[[^\]]*\]", "$bucket`: [$list]")
   [IO.File]::WriteAllText($clipsJs, $text)
   Write-Output "Made $($made.Count) word clips; $($have.Count) listed in audio/clips.js."
   if ($failed.Count) { Write-Output "Not made: $($failed -join ', ')" }

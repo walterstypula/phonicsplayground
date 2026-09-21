@@ -77,15 +77,20 @@ Choices are fewer and everything moves more slowly.
 
 ## Sound
 
-The games teach American English. Speech plays from recordings in `audio/` where
-they exist, and from the browser's built-in speech synthesis for everything else, so
-the games work with no recordings at all. The game picks the most natural American
-voice the device has (Edge "Natural", Chrome "Google", Apple "Enhanced" voices first);
-the **Voice** button on the front page steps through the others and remembers the pick.
+The games teach American English, and everything they say is a recording in `audio/` —
+one voice, so the game sounds the same on a laptop, a tablet and a phone. That matters
+more than it sounds: a device voice differs on every device, and a child who hears the
+sounds blended in one voice and the word said in another is being given two teachers.
 
-A built-in voice cannot say a single sound on its own, so sounding out ("s... ee... d")
-uses the 41 sound clips in `audio/sounds/`, made offline by `tools/make-sounds.ps1`.
-See `audio/README.md` for how they are made and how to swap in human recordings. Nothing is ever fetched from an online service.
+The browser's own speech synthesis is still there as a fallback for anything with no
+recording, so the games work with no audio files at all. The **Voice** button on the
+front page picks which device voice that fallback uses, and remembers the choice.
+
+A built-in voice cannot say a single sound on its own anyway, which is where this
+started: sounding out ("s... ee... d") needs the 43 sound clips in `audio/sounds/`.
+`audio/README.md` explains how all of them are made, which format each folder uses and
+why, and how to check that nothing has fallen back to the device voice. Nothing is ever
+fetched from an online service at play time.
 
 The **Sound** button mutes everything. If a browser has no voice installed, the
 games still work and the word is shown instead.
@@ -99,7 +104,11 @@ index.html          menu, heads-up display, results overlay
 css/style.css
 js/words.js         the word bank, graded into five levels
 js/audio.js         speech (recordings first, then the device voice) and generated sound effects
-audio/              recorded sounds and words, listed in audio/clips.js
+audio/sounds/       the 43 single sounds, 48 kHz wav - blended, so uncompressed
+audio/words/        syllables the long words split into, 24 kHz wav - blended too
+audio/spoken/       whole words, phrases and sentences, mp3 - played on their own
+audio/clips.js      what exists in each of the three, since a page cannot list a folder
+stories/            the Story Time shelf, plus how to contribute one
 js/engine.js        canvas fitting, input, game loop, particles, scoring
 js/art.js           the character kit: glossy eyes, blinks, faces, shading, a posable kid
 js/rules.js         shared "find every word that ..." rules

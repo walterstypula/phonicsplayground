@@ -438,7 +438,10 @@
       if (item) {
         PH.speech.say(item.w, { rate: 0.7, queue: o.queue });
         PH.speech.say(PH.soundHint(item.w), { rate: 0.55, queue: true });
-        PH.speech.say('like ' + item.key, { rate: 0.75, queue: true });
+        /* "like" and the keyword said separately, so both are recordings rather than one
+           glued-together string that matches none */
+        PH.speech.say('like', { rate: 0.75, queue: true });
+        PH.speech.sayWord(item.key, { queue: true });
       } else {
         PH.speech.sayWord(text, o);
       }
