@@ -2,7 +2,8 @@
 (function (PH) {
   'use strict';
 
-  var ORDER = ['wordhunt', 'claw', 'bubbles', 'builder', 'rhyme', 'fishing'];
+  var ORDER = ['wordhunt', 'claw', 'bubbles', 'builder', 'rhyme', 'fishing',
+    'octopus', 'lava', 'pilot', 'munchers', 'soccer', 'giant', 'burger', 'pipes'];
   var $ = function (id) { return document.getElementById(id); };
 
   var dom = {
@@ -57,7 +58,7 @@
       var g = PH.games[id];
       if (!g) { return; }
       var b = document.createElement('button');
-      b.className = 'card c' + i;
+      b.className = 'card c' + (i % 6);
       b.innerHTML = '<span class="icon">' + g.icon + '</span>' +
         '<span class="name">' + g.name + '</span>' +
         '<span class="blurb">' + g.blurb + '</span>';
@@ -107,7 +108,7 @@
   $('btn-voice').addEventListener('click', function () {
     PH.sfx.warmUp();
     var name = PH.speech.nextVoice();
-    this.textContent = '🗣️ ' + String(name).split(/[ (]/)[0];
+    this.textContent = '🗣️ ' + String(name);
   });
 
   /* ---------- boot ---------- */

@@ -191,6 +191,79 @@
     return s.charAt(s.length - 1);
   };
 
+  /* 'v' for chunks carrying a vowel sound, 'c' for consonant chunks */
+  PH.graphemeClass = function (g) { return /[aeiou]/.test(g) ? 'v' : 'c'; };
+
+  /* Swapping one letter can turn an innocent word into a rude or hurtful one
+     (duck -> ..., ship -> ...). Every made-up word is checked against this list
+     before a child can see it. Substring matches, so it errs on the side of caution. */
+  var BLOCK = ['fuc', 'fuk', 'fuq', 'fck', 'shit', 'shat', 'sht', 'cunt', 'cun', 'cum', 'kum',
+    'cock', 'cok', 'kok', 'dic', 'dik', 'dyk', 'sex', 'tit', 'twat', 'wank', 'piss', 'pis',
+    'ass', 'arse', 'bum', 'butt', 'crap', 'damn', 'hell', 'jiz', 'rape', 'slut', 'slag',
+    'whor', 'hoe', 'prick', 'puss', 'vag', 'bich', 'bitch', 'boob', 'poo', 'pee', 'wee',
+    'turd', 'fart', 'pube', 'nude', 'nud', 'hump', 'suck', 'kill', 'dead', 'die', 'gun',
+    'fag', 'gay', 'homo', 'lez', 'nig', 'nazi', 'kike', 'coon', 'spic', 'wog', 'jap',
+    'gook', 'paki', 'chink', 'jew', 'nob', 'knob', 'tard', 'poof', 'fany', 'fann', 'weed',
+    'clit', 'porn', 'gash', 'hore', 'shag', 'sod', 'teat', 'cack', 'drug', 'hate', 'fat',
+    'twit', 'stup', 'dumb', 'ugly', 'idiot', 'moron', 'spaz', 'mong', 'retar', 'queer',
+    'muff', 'dong', 'willy', 'spunk', 'semen', 'anal', 'anus', 'smeg', 'skank', 'bugg',
+    'bollo', 'minge', 'titt', 'nipp', 'perv', 'pimp', 'scum', 'vomit', 'barf', 'bomb', 'stab'];
+
+  PH.isClean = function (s) {
+    s = String(s).toLowerCase();
+    for (var i = 0; i < BLOCK.length; i++) {
+      if (s.indexOf(BLOCK[i]) >= 0) { return false; }
+    }
+    return true;
+  };
+
+  function differsByOne(a, b) {
+    if (a.length !== b.length) { return false; }
+    var d = 0;
+    for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) { d++; } }
+    return d === 1;
+  }
+
+  /* Words that look almost like `word`: real bank words one chunk away first,
+     then made-up ones built by swapping one chunk for another of the same kind.
+     Returns [{w, real}] - never the word itself, never anything on the blocklist. */
+  PH.nearMisses = function (word, pool, n) {
+    var classes = { v: {}, c: {} };
+    pool.forEach(function (w) {
+      w.g.forEach(function (g) { classes[PH.graphemeClass(g)][g] = 1; });
+    });
+    var realSet = {};
+    PH.wordsUpTo(5).forEach(function (w) { realSet[w.w] = 1; });
+
+    var seen = {};
+    seen[word.w] = 1;
+    var real = [];
+    pool.forEach(function (w) {
+      if (!seen[w.w] && differsByOne(w.g, word.g)) { seen[w.w] = 1; real.push({ w: w.w, real: true }); }
+    });
+    real.sort(function () { return Math.random() - 0.5; });
+
+    /* never swap a silent magic e - that would not change what the word sounds like */
+    var swappable = PH.soundGraphemes(word).length;
+    var made = [];
+    for (var tries = 0; tries < 300 && made.length < n * 2; tries++) {
+      var i = Math.floor(Math.random() * swappable);
+      var g = word.g[i];
+      var opts = Object.keys(classes[PH.graphemeClass(g)]).filter(function (x) { return x !== g; });
+      if (!opts.length) { continue; }
+      var arr = word.g.slice();
+      arr[i] = opts[Math.floor(Math.random() * opts.length)];
+      var s = arr.join('');
+      if (seen[s] || !PH.isClean(s)) { continue; }
+      seen[s] = 1;
+      made.push({ w: s, real: !!realSet[s] });
+    }
+
+    /* at most one real look-alike, the rest made up, so every round is solvable by reading */
+    var out = real.slice(0, 1).concat(made);
+    return out.slice(0, n);
+  };
+
   /* graphemes common enough in a level to build a whole round around */
   PH.soundsFor = function (level, minMatches) {
     minMatches = minMatches || 4;

@@ -45,7 +45,7 @@
       if (!list.length) { return 'No voices installed'; }
       voiceIndex = (voiceIndex + 1) % list.length;
       voice = list[voiceIndex];
-      speech.say('Hello, I am ' + voice.name.split(/[ (]/)[0]);
+      speech.say('Hello, I am ' + voice.name.split(/[ (]/)[1]);
       return voice.name;
     },
 
@@ -72,11 +72,11 @@
       speech.say(word, { rate: opts.rate || 0.72, pitch: 1.05, queue: opts.queue });
     },
 
-    /* "c ... a ... t ... cat" */
+    /* "c ... a ... t ... cat" (magic e stays silent and makes the vowel long) */
     soundOut: function (word) {
       speech.cancel();
-      word.g.forEach(function (g) {
-        speech.say(PH.soundHint(g), { rate: 0.55, queue: true });
+      PH.soundHintsFor(word).forEach(function (h) {
+        speech.say(h, { rate: 0.55, queue: true });
       });
       speech.say(word.w, { rate: 0.7, queue: true });
     },
@@ -88,7 +88,7 @@
      These spellings are approximations - the keyword prompts carry the real weight. */
   var HINTS = {
     a: 'ah', b: 'buh', c: 'kuh', d: 'duh', e: 'eh', f: 'fff', g: 'guh', h: 'huh',
-    i: 'ih', j: 'juh', k: 'kuh', l: 'lll', m: 'mmm', n: 'nnn', o: 'oh', p: 'puh',
+    i: 'ih', j: 'juh', k: 'kuh', l: 'lll', m: 'mmm', n: 'nnn', o: 'aw', p: 'puh',
     q: 'kwuh', r: 'rrr', s: 'sss', t: 'tuh', u: 'uh', v: 'vvv', w: 'wuh',
     x: 'kss', y: 'yuh', z: 'zzz',
     sh: 'shhh', ch: 'chuh', th: 'thhh', ck: 'kuh', ll: 'lll', ng: 'ng',
@@ -97,6 +97,18 @@
     ir: 'er', ur: 'er', er: 'er'
   };
   PH.soundHint = function (g) { return HINTS[g] || g; };
+
+  /* The spoken sounds of a whole word, in order. A magic e (c-a-k-e) is silent and
+     turns the vowel before it long, so "cake" is "kuh - ay - kuh", never "kuh - ah - kuh". */
+  var LONG = { a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'yoo' };
+  PH.soundHintsFor = function (word) {
+    var sounds = PH.soundGraphemes(word);
+    var magic = sounds.length < word.g.length;   /* soundGraphemes dropped a final e */
+    return sounds.map(function (g, i) {
+      if (magic && i === sounds.length - 2 && LONG[g]) { return LONG[g]; }
+      return PH.soundHint(g);
+    });
+  };
 
   /* ---------------- Sound effects ---------------- */
   var ctx = null;
@@ -175,6 +187,23 @@
     splash: function () { noise(0, 0.25, 500, 0.2); slide(600, 200, 0, 0.2, 'sine', 0.1); },
     boing: function () { slide(500, 180, 0, 0.25, 'triangle', 0.18); },
     chomp: function () { slide(300, 90, 0, 0.14, 'square', 0.14); },
+    hop: function () { slide(260, 720, 0, 0.16, 'triangle', 0.16); },
+    sizzle: function () { noise(0, 0.45, 3200, 0.16); slide(400, 120, 0, 0.3, 'sawtooth', 0.06); },
+    coins: function () {
+      [1318, 1568, 2093, 1760, 2349].forEach(function (f, i) { tone(f, i * 0.06, 0.12, 'square', 0.07); });
+    },
+    cheer: function () {
+      for (var i = 0; i < 6; i++) { noise(i * 0.09, 0.5, 900 + i * 180, 0.1); }
+      [523, 659, 784, 1046].forEach(function (f, i) { tone(f, 0.1 + i * 0.08, 0.2, 'triangle', 0.14); });
+    },
+    crash: function () {
+      noise(0, 0.35, 2400, 0.22);
+      tone(520, 0, 0.18, 'square', 0.1); tone(390, 0.05, 0.2, 'square', 0.08);
+    },
+    poof: function () { noise(0, 0.18, 400, 0.12); },
+    rumble: function () { slide(90, 50, 0, 0.9, 'sawtooth', 0.14); noise(0, 0.8, 150, 0.2); },
+    drip: function () { slide(1400, 700, 0, 0.08, 'sine', 0.12); },
+    kick: function () { slide(160, 60, 0, 0.12, 'sine', 0.35); noise(0, 0.05, 600, 0.2); },
     win: function () {
       [523, 659, 784, 1046, 1318].forEach(function (f, i) { tone(f, i * 0.09, 0.3, 'triangle', 0.2); });
     }

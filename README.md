@@ -1,6 +1,6 @@
 # Phonics Playground
 
-Six listening-and-reading games for children aged 4 to 9. Plain HTML, CSS and
+Fourteen listening-and-reading games for children aged 4 to 9. Plain HTML, CSS and
 JavaScript: no build step, no frameworks, no asset files, no network calls.
 
 ## Playing
@@ -21,9 +21,22 @@ level can be nudged up or down with the **change level** button.
 | Feed the Monster | Builds the spoken word from sound chunks, in order | Segmenting and spelling |
 | Rhyme Rockets | Flies to the planet whose word rhymes | Rhyme and word families |
 | Sound Fishing | Hooks the fish showing the first or last sound of a word | Isolating onsets and codas |
+| Octopus Treasure Hunt | Picks the chest with the spoken word from look-alikes like lip, zip, cip | Careful letter-by-letter decoding |
+| The Floor is Lava | Hops stone to stone over lava by tapping the word it hears | Fast recognition, with a goal to reach |
+| Pilot Wings | Flies through the ring holding the sound missing from a word | Which spelling makes which sound |
+| Word Munchers | Walks a grid munching every word that fits a rule, dodging the Troggle | Sorting by sound, first sound or rhyme |
+| Penalty Kick | Counts the sounds in a word, kicks at that number | Segmenting sounds; claps (syllables) at level 5 |
+| Don't Wake the Giant | Slides a pillow to catch falling words that fit a rule before they crash | Sorting by sound, first sound or rhyme, under time pressure |
+| Burger Time | Sends a chef up ladders to stomp sound chunks onto the burger in order | Building a word sound by sound |
+| Leaky Pipes | Hears a word only as separate sounds, then fixes the leak showing it | Blending sounds into a word |
 
-Every game runs six rounds, gives a star per correct answer, and never fails the
-child: a wrong tap wobbles and gives a hint, then play continues.
+Every game gives a star per correct answer and never fails the child: a wrong
+tap wobbles and gives a hint, then play continues. The Troggle in Word Munchers
+only bumps the Muncher back to the start, and it does not appear at level 1.
+
+Octopus Treasure Hunt makes up look-alike words by swapping one letter. Every
+made-up word is checked against a blocklist in `js/words.js` so a swap can never
+put a rude or hurtful word in front of a child.
 
 ## Levels
 
@@ -51,6 +64,7 @@ css/style.css
 js/words.js         the word bank, graded into five levels
 js/audio.js         speech synthesis wrapper and generated sound effects
 js/engine.js        canvas fitting, input, game loop, particles, scoring
+js/rules.js         shared "find every word that ..." rules
 js/main.js          menu and wiring
 js/games/*.js       one file per game
 ```
