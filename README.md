@@ -1,6 +1,6 @@
 # Phonics Playground
 
-Fourteen listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
+Fifteen listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
 JavaScript: no build step, no frameworks, no asset files, no network calls.
 
 ## Playing
@@ -29,6 +29,11 @@ level can be nudged up or down with the **change level** button.
 | Don't Wake the Giant | Slides a pillow to catch falling words that fit a rule before they crash | Sorting by sound, first sound or rhyme, under time pressure |
 | Burger Time | Sends a chef up ladders to stomp sound chunks onto the burger in order | Building a word sound by sound |
 | Leaky Pipes | Hears a word only as separate sounds, then fixes the leak showing it | Blending sounds into a word |
+| Space Jumper | Runs and jumps through a space platformer, head-bumping the block with the spoken word to open each star gate | Word recognition, in a Mario-style level |
+
+Space Jumper plays with the arrow keys and space, with the on-screen buttons, or
+by tapping a block, which sends the astronaut to run over and bump it. At the
+pre-reader levels there are no gaps or aliens.
 
 Every game gives a star per correct answer and never fails the child: a wrong
 tap wobbles and gives a hint, then play continues. The Troggle in Word Munchers

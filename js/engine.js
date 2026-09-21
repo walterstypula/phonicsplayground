@@ -232,7 +232,8 @@
         var r = canvas.getBoundingClientRect();
         return {
           x: (e.clientX - r.left) / r.width * W,
-          y: (e.clientY - r.top) / r.height * H
+          y: (e.clientY - r.top) / r.height * H,
+          id: e.pointerId          /* lets a game track two fingers: hold "right" and tap "jump" */
         };
       }
       canvas.addEventListener('pointerdown', function (e) {
@@ -247,9 +248,16 @@
       canvas.addEventListener('pointerup', function (e) {
         if (self.game && self.game.up) { self.game.up(toLocal(e)); }
       });
+      canvas.addEventListener('pointercancel', function (e) {
+        if (self.game && self.game.up) { self.game.up(toLocal(e)); }
+      });
       window.addEventListener('keydown', function (e) {
         if (!self.running) { return; }
         if (self.game && self.game.key) { self.game.key(e); }
+      });
+      window.addEventListener('keyup', function (e) {
+        if (!self.running) { return; }
+        if (self.game && self.game.keyUp) { self.game.keyUp(e); }
       });
       document.addEventListener('visibilitychange', function () {
         if (document.hidden) { PH.speech.cancel(); }
