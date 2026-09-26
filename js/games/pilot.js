@@ -117,7 +117,13 @@
           } else {
             api.say('That makes');
             var made = target.g.slice(); made[gap] = best.g;
-            if (PH.isClean(made.join(''))) { api.sayWord(made.join(''), { queue: true }); }
+            /* The swap usually makes a word nobody has recorded - "ckip", "layf" - and the
+               device voice guesses at those. Its sounds, one by one, are always right. */
+            var madeWord = made.join('');
+            if (PH.isClean(madeWord)) {
+              if (PH.speech.hasClip(madeWord)) { api.sayWord(madeWord, { queue: true }); }
+              else { PH.soundsIn(madeWord).forEach(function (h) { api.say(h, { rate: 0.55, queue: true }); }); }
+            }
           }
           api.say('Listen again.', { queue: true });
           api.sayWord(target.w, { queue: true });

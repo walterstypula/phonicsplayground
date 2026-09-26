@@ -141,7 +141,12 @@
         timer += dt;
         if (state === 'land') {
           alien.y = U.lerp(-160, 300, U.clamp(timer / 1.1, 0, 1));
-          if (timer > 1.2) { state = 'ask'; timer = 0; sayName(target.w); alien.wave = 1; }
+          /* The name plays from the sound clips, which do not wait their turn behind the
+             voice, so the alien holds its tongue until "Find the alien's name" is done -
+             or a few seconds at most, in case a browser never says it has finished. */
+          if (timer > 1.2 && (!PH.speech.busy() || timer > 5)) {
+            state = 'ask'; timer = 0; sayName(target.w); alien.wave = 1;
+          }
         } else if (state === 'named') {
           var t = tags.filter(function (x) { return x.right; })[0];
           if (t && t.fly < 1) {

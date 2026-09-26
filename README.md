@@ -1,6 +1,6 @@
 # Phonics Playground
 
-Twenty-six listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
+Twenty-seven listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
 JavaScript: no build step, no frameworks, no asset files, no network calls.
 
 ## Playing
@@ -22,6 +22,7 @@ level can be nudged up or down with the **change level** button.
 | Rhyme Rockets | Flies to the planet whose word rhymes | Rhyme and word families |
 | Sound Fishing | Hooks the fish showing the first or last sound of a word | Isolating onsets and codas |
 | Octopus Treasure Hunt | Picks the chest with the spoken word from look-alikes like lip, zip, cip | Careful letter-by-letter decoding |
+| Hungry Octopus | Steers one of the octopus's tentacles with a finger to grab the sea creature carrying the spoken word, and feeds it | Word recognition among look-alikes, with fine motor control |
 | The Floor is Lava | Hops stone to stone over lava by tapping the word it hears | Fast recognition, with a goal to reach |
 | Pilot Wings | Flies through the ring holding the sound missing from a word | Which spelling makes which sound |
 | Penalty Kick | Counts the sounds in a word, kicks at that number | Segmenting sounds; claps (syllables) at level 5 |

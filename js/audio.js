@@ -441,9 +441,25 @@
       opts = opts || {};
       if (!opts.queue) { speech.cancel(); }
       text = String(text);
-      queue.push({ text: text, opts: opts, clip: clipFor(text) });
+      var clip = clipFor(text);
+      /* A phrase put together while playing - "a cow on a house" from the Spellbook,
+         a line from a story added since the last recording session - has no recording
+         of its own. If every word in it has one, those are played in a row, so it is
+         still the one voice the child knows; only failing that does the device speak. */
+      if (!clip) {
+        var parts = text.split(/\s+/).filter(Boolean);
+        if (parts.length > 1 && parts.every(function (p) { return clipFor(p); })) {
+          parts.forEach(function (p) { queue.push({ text: p, opts: opts, clip: clipFor(p) }); });
+          next();
+          return;
+        }
+      }
+      queue.push({ text: text, opts: opts, clip: clip });
       next();
     },
+
+    /* whether there is a recording for this word or phrase */
+    hasClip: function (text) { return !!clipFor(String(text)); },
 
     /* a single word, said slowly and clearly */
     sayWord: function (word, opts) {
