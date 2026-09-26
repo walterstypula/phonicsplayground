@@ -105,20 +105,21 @@
         state = 'slide'; timer = 0;
         api.setProgress(round, ROUNDS);
         api.setPrompt('Slide and blend', { word: word.w, show: true, repeat: sayPrompt });
-        sayPrompt();
+        if (round === 1) { sayPrompt(); }
       }
 
+      /* Never the word itself: hearing it first gives away the very thing the child is
+         about to blend. The instruction is said once, at the start; after that the word
+         on screen and the snail are prompt enough, and more talk only gets in the way. */
       function sayPrompt() {
         if (!word) { return; }
-        api.say(voiceOn ? 'Slide the snail and sound it out with me' : 'Slide the snail and sound it out');
-        api.sayWord(word.w, { queue: true });
+        api.say('Slide the snail');
       }
 
       function setVoice(on) {
         voiceOn = on;
         try { localStorage.setItem('ph-blend-voice', on ? 'on' : 'off'); } catch (e) { /* private mode */ }
-        api.sfx.click();
-        api.say(on ? 'I will sound it out with you' : 'Your turn to say the sounds');
+        api.sfx.click();       /* the button's own label says what changed */
       }
 
       /* ---------------- sliding ---------------- */
@@ -160,8 +161,7 @@
         PH.blend.stop(); held = null;   /* the last sound gives way to the whole word */
         api.addStar(1);
         api.sfx.great();
-        api.say('You blended it');
-        api.sayWord(word.w, { queue: true });
+        api.sayWord(word.w);     /* the word they just blended, and nothing else */
         parts.forEach(function (p) {
           api.burst(p.cx, 250, ['#ffd23f', '#8ef0ff', '#ff8fab'], 10, { gravity: 60, minSpeed: 40, maxSpeed: 150, shape: 'star' });
         });

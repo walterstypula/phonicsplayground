@@ -530,15 +530,136 @@
     });
   }
 
+  /* Holding a sound. Looping a quarter second from the middle of the clip was heard as
+     "ah ah ah ah": a recorded vowel swells and fades and its pitch drifts, so every pass
+     through the loop is a fresh little syllable. A held sound instead repeats a stretch
+     only a few pitch cycles long, cut exactly on those cycles and with its loudness
+     evened out, so it goes on as one steady aaaaa. A hiss (s, sh, f) has no cycles, and
+     a short loop of noise buzzes, so it keeps a long stretch crossfaded into itself.
+     Glides and two-part vowels (w, y, ay, igh...) change as they are said and have no
+     middle to hold, so they play once.                                                 */
+  var GLIDES = { w: 1, y: 1, ay: 1, igh: 1, oi: 1, ow: 1, oh: 1, yoo: 1 };
+  var holds = {};
+
+  function rms(d, from, len) {
+    var s = 0;
+    for (var i = from; i < from + len; i++) { s += d[i] * d[i]; }
+    return Math.sqrt(s / len);
+  }
+
+  /* how alike two stretches of the clip are, -1 to 1 */
+  function likeness(d, a, b, len) {
+    var ab = 0, aa = 0, bb = 0;
+    for (var i = 0; i < len; i++) { ab += d[a + i] * d[b + i]; aa += d[a + i] * d[a + i]; bb += d[b + i] * d[b + i]; }
+    return aa && bb ? ab / Math.sqrt(aa * bb) : 0;
+  }
+
+  function makeHold(a, buf) {
+    var sr = buf.sampleRate, n = buf.length, src = buf.getChannelData(0);
+    var frame = Math.round(sr * 0.01), f, loud = [], peak = 0;
+    for (f = 0; f + frame <= n; f += frame) { var r = rms(src, f, frame); loud.push(r); peak = Math.max(peak, r); }
+    /* The steady part: the longest unbroken run of frames at least half as loud as the
+       loudest (a third, if that is too short). Unbroken, because a recording can open
+       with a little puff and a gap before the sound proper. */
+    function run(level) {
+      var bestFrom = 0, bestLen = 0, from = -1;
+      for (var k = 0; k <= loud.length; k++) {
+        if (k < loud.length && loud[k] >= peak * level) { if (from < 0) { from = k; } continue; }
+        if (from >= 0 && k - from > bestLen) { bestFrom = from; bestLen = k - from; }
+        from = -1;
+      }
+      return { lo: bestFrom * frame, hi: (bestFrom + bestLen) * frame };
+    }
+    var steady = run(0.5);
+    if (steady.hi - steady.lo < sr * 0.08) { steady = run(0.35); }
+    if (steady.hi - steady.lo < sr * 0.08) { return null; }
+    var lo = steady.lo, hi = steady.hi;
+    var mid = Math.round((lo + hi) / 2);
+
+    /* is it voiced, and if so how long is one cycle (70-400 Hz) */
+    var win = Math.round(sr * 0.03), minLag = Math.round(sr / 400), maxLag = Math.round(sr / 70);
+    var start = mid - Math.round((win + maxLag) / 2), best = 0, period = 0, lag;
+    if (start < lo) { start = lo; }
+    for (lag = minLag; lag <= maxLag && start + lag + win < hi; lag++) {
+      var c = likeness(src, start, start + lag, win);
+      if (c > best) { best = c; period = lag; }
+    }
+
+    var loopStart, loopLen, fade;
+    var voiced = best > 0.75 && period > 0;
+    if (voiced) {
+      /* a whole number of cycles, about 40 ms, then nudged to where the end lines up
+         best with the start */
+      var cycles = Math.max(2, Math.round(sr * 0.04 / period));
+      loopStart = start;
+      var want = cycles * period, bestEnd = want, bestC = -2, span = Math.round(period / 4);
+      for (lag = want - span; lag <= want + span; lag++) {
+        if (loopStart + lag + period >= hi) { break; }
+        var e = likeness(src, loopStart, loopStart + lag, period);
+        if (e > bestC) { bestC = e; bestEnd = lag; }
+      }
+      loopLen = bestEnd;
+      fade = Math.min(period, Math.round(loopLen / 2));
+    } else {
+      /* noise: as much of the steady part as there is, blended end into start */
+      fade = Math.min(Math.round(sr * 0.04), Math.round((hi - lo) / 4));
+      loopStart = lo + fade;          /* so what it blends back into is steady too */
+      loopLen = Math.min(hi - loopStart, Math.round(sr * 0.3));
+      if (loopLen < fade * 2) { return null; }
+    }
+    if (loopStart < fade || loopStart + loopLen > n) { return null; }
+
+    /* the new clip: the attack as recorded, then the loop */
+    var end = loopStart + loopLen;
+    var out = a.createBuffer(1, end, sr), d = out.getChannelData(0), i;
+    for (i = 0; i < end; i++) { d[i] = src[i]; }
+    /* the last `fade` samples blend into what comes just before the loop's start, so
+       jumping from the end back to the start joins mid-sound instead of clicking */
+    for (i = 0; i < fade; i++) {
+      var t = (i + 1) / fade;
+      d[end - fade + i] = src[end - fade + i] * Math.cos(t * Math.PI / 2) +
+        src[loopStart - fade + i] * Math.sin(t * Math.PI / 2);
+    }
+    /* A long loop of hiss can still swell and fade inside itself, so its loudness is
+       evened out to match the start. The gain moves smoothly and is 1 at both seams, so
+       the joins stay where the crossfade put them. A voiced loop is too short to need it. */
+    var step = Math.round(sr * 0.02), body = loopLen - fade;
+    if (!voiced && body > step * 3) {
+      var ref = rms(src, loopStart, step), gains = [], c0;
+      for (c0 = 0; c0 + step <= body; c0 += step) {
+        var here = rms(src, loopStart + c0, step);
+        gains.push(here ? Math.min(3, Math.max(0.33, ref / here)) : 1);
+      }
+      gains[0] = 1; gains[gains.length - 1] = 1;
+      for (i = 0; i < body; i++) {
+        var pos = Math.min(gains.length - 1, i / step), k0 = Math.floor(pos);
+        var k1 = Math.min(gains.length - 1, k0 + 1);
+        d[loopStart + i] *= gains[k0] + (gains[k1] - gains[k0]) * (pos - k0);
+      }
+    }
+    return { buf: out, loopStart: loopStart / sr, loopEnd: end / sr };
+  }
+
+  function holdFor(a, id, buf) {
+    if (!id || STOPS[id] || GLIDES[id] || buf.duration < 0.22) { return null; }
+    if (holds[id] === undefined || holds[id].src !== buf) {
+      var h = null;
+      try { h = makeHold(a, buf); } catch (e) { h = null; }
+      holds[id] = { src: buf, hold: h };
+    }
+    return holds[id].hold;
+  }
+
   /* one clip, starting at `at`, fading in over whatever is still sounding */
   function startClip(a, id, buf, at, hold) {
     var src = a.createBufferSource();
     var gain = a.createGain();
-    src.buffer = buf;
-    if (hold && !STOPS[id] && buf.duration > 0.22) {
+    var h = hold ? holdFor(a, id, buf) : null;
+    src.buffer = h ? h.buf : buf;      /* a source takes its buffer once and only once */
+    if (h) {
       src.loop = true;
-      src.loopStart = buf.duration * 0.35;   /* the steady middle, past the attack */
-      src.loopEnd = buf.duration * 0.78;     /* and before it tails away */
+      src.loopStart = h.loopStart;
+      src.loopEnd = h.loopEnd;
     }
     gain.gain.setValueAtTime(0.0001, at);
     gain.gain.linearRampToValueAtTime(1, at + 0.025);
