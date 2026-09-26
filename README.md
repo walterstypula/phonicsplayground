@@ -1,6 +1,6 @@
 # Phonics Playground
 
-Twenty-one listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
+Twenty-six listening-and-reading games for children aged 3 to 9. Plain HTML, CSS and
 JavaScript: no build step, no frameworks, no asset files, no network calls.
 
 ## Playing
@@ -36,6 +36,11 @@ level can be nudged up or down with the **change level** button.
 | Frog Hop | Changes one sound to turn one word into the next (cat, hat, hot, dot) to hop up to a fly | Swapping sounds within a word |
 | Whack-a-Mole | Bonks the mole holding the tricky word it hears; moles speed up with a streak | Sight words that break the phonics rules |
 | Sentence Train | Hooks word carriages onto an engine in order to build a sentence, then watches it chug away | Word order, capital letters and periods |
+| Letter Dash | Hears a letter name and taps it among look-alikes, capital or small, for one minute | Naming letters at a glance (DIBELS Letter Naming) |
+| Quick Words | Hears a sight word and taps it among look-alikes (was, saw, what) for one minute | Instant sight-word reading (DIBELS Word Reading) |
+| Alien Names | Hears an alien say its made-up name and finds the tag that spells it | Decoding words that cannot be guessed (DIBELS Nonsense Words) |
+| Maze Path | Picks the word that makes sense in each sentence of a short story | Reading for meaning (DIBELS Maze) |
+| Practice Minute | Reads a one-minute sheet aloud while a grown-up marks errors; scores are kept | The format of the DIBELS screening itself |
 
 Sentence Train keeps a count of carriages earned in the browser, and the menu card
 shows the child's train growing. At ages 8 and 9 the sentence is not read aloud:
@@ -52,6 +57,32 @@ tap wobbles and gives a hint, then play continues.
 Octopus Treasure Hunt makes up look-alike words by swapping one letter. Every
 made-up word is checked against a blocklist in `js/words.js` so a swap can never
 put a rude or hurtful word in front of a child.
+
+## Practising for DIBELS 8
+
+Many schools screen reading with DIBELS 8: short one-minute tasks read aloud to a
+tester, three or four times a year from kindergarten to third grade. Five games aim
+at it directly, and several older ones help too:
+
+| DIBELS task | Grades | What it checks | Practise with |
+| --- | --- | --- | --- |
+| Letter Naming | K-1 | Naming a sheet of mixed capital and small letters | Letter Dash, Practice Minute (Letters) |
+| Phonemic Segmentation | K-1 | Saying every sound in a spoken word | Practice Minute (Sounds), Penalty Kick, Sound Fishing |
+| Nonsense Word Fluency | K-3 | Reading made-up words, whole or sound by sound | Alien Names, Practice Minute (Made-up), Stretchy Snail |
+| Word Reading Fluency | K-3 | Reading real words, many of them sight words | Quick Words, Practice Minute (Words), Whack-a-Mole |
+| Oral Reading Fluency | 1-3 | Reading a story aloud for a minute | Practice Minute (Story), Story Time |
+| Maze | 2-3 | Choosing the word that makes sense in a story | Maze Path |
+
+The test is spoken and a game cannot hear, so Practice Minute puts a grown-up in the
+tester's chair: the child reads aloud, the grown-up taps anything read wrong, and the
+score for each sheet is kept (per level, in the browser) so progress shows over time.
+The sheets are practice in the test's format, not the test's items, and the scores are
+for comparing with each other, not with the school's benchmark goals.
+
+The material behind them is in `js/words.js`: made-up words in the patterns the test
+uses (VC and CVC through first grade; silent e, r-controlled, blends and digraphs from
+second grade), the Dolch sight words by grade, all 26 letters weighted by how often
+they appear in print, and the Maze passages.
 
 ## Levels
 

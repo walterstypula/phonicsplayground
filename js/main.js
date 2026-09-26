@@ -4,7 +4,9 @@
 
   var ORDER = ['wordhunt', 'claw', 'bubbles', 'builder', 'rhyme', 'fishing',
     'octopus', 'lava', 'pilot', 'soccer', 'giant', 'sandwich', 'pipes', 'space',
-    'wizard', 'tracing', 'snail', 'story', 'ladder', 'moles', 'train'];
+    'wizard', 'tracing', 'snail', 'story', 'ladder', 'moles', 'train',
+    /* practice for the DIBELS 8 reading screening schools give */
+    'letterdash', 'quickwords', 'alien', 'maze', 'practice'];
   var $ = function (id) { return document.getElementById(id); };
 
   var dom = {

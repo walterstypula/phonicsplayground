@@ -294,6 +294,176 @@
     5: ['actually', 'answer', 'believe', 'breath', 'build', 'caught', 'certain', 'different', 'early', 'enough', 'eight', 'heard', 'heart', 'island', 'minute', 'often', 'promise', 'question', 'though', 'through', 'weight', 'women']
   };
 
+  /* ---------- for the DIBELS 8 screening ----------
+     Schools screen reading with DIBELS 8: six one-minute tasks (Maze is three) read to a
+     grown-up who marks what the child gets wrong. Letter Naming, Phonemic Segmentation,
+     Nonsense Word Fluency, Word Reading Fluency, Oral Reading Fluency and Maze. None of
+     the test's own items are copied here; these are practice material in the same shapes. */
+
+  /* Nonsense words, by the patterns the test uses. Kindergarten and first grade see
+     only VC and CVC; second and third grade add silent e and r-controlled (CVCe, CVrC)
+     and blends and digraphs (CVCC, CCVC). Every one was checked not to be a real word a
+     child would know, or anything rude, and to be sayable. A made-up word is the fairest
+     test of decoding there is: it cannot be remembered, only read.                    */
+  PH.NONSENSE = {
+    VC: ['ab', 'ag', 'af', 'ev', 'ep', 'eb', 'ib', 'ip', 'iv', 'ig', 'ob', 'og', 'op', 'ov',
+      'uf', 'ud', 'ug', 'uz', 'ut', 'ek', 'uv', 'az', 'ez', 'im', 'ol', 'ul', 'ef', 'ik'],
+    CVC: ['vop', 'taf', 'sig', 'ral', 'nim', 'pev', 'zot', 'keb', 'lud', 'fim', 'jat', 'dap',
+      'sut', 'ruv', 'mip', 'bim', 'kig', 'wup', 'yat', 'loz', 'tiv', 'rog', 'nup', 'vek',
+      'sab', 'hef', 'gub', 'dut', 'lom', 'pim', 'zeg', 'rud', 'vab', 'fod', 'tup', 'hig',
+      'nof', 'bef', 'wib', 'zid', 'jum', 'kep', 'mub', 'pag', 'reb', 'sov'],
+    CVCC: ['lomp', 'bist', 'rult', 'gesk', 'nulp', 'vint', 'sosk', 'jelp', 'dilk', 'vusk',
+      'bamp', 'zenk', 'nask', 'fulp', 'telk', 'hisp', 'yump', 'kest', 'dask', 'vemp',
+      'mont', 'rilk', 'pand', 'wost'],
+    CCVC: ['stip', 'blem', 'frob', 'glin', 'trab', 'sheb', 'thop', 'plig', 'crun', 'snav',
+      'drim', 'spet', 'flon', 'clud', 'skab', 'swib', 'shap', 'thib', 'smod', 'glap',
+      'tref', 'blon', 'stoz', 'frep', 'chim', 'brin'],
+    CVCe: ['fape', 'bime', 'lote', 'sume', 'tade', 'vope', 'gade', 'hime', 'nube', 'zole',
+      'jite', 'fote', 'bape', 'wime', 'dape', 'tove', 'rike', 'mave', 'nole', 'zite',
+      'jabe', 'kune', 'loke', 'sime'],
+    CVrC: ['barp', 'sorn', 'tirk', 'murt', 'ferb', 'karm', 'dorp', 'lirt', 'gurb', 'narb',
+      'forl', 'parn', 'vurt', 'jork', 'tarb', 'mirp', 'borf', 'hurp', 'zirn', 'torb',
+      'nirg', 'marf', 'serp', 'kord']
+  };
+  /* which patterns a level practises: the test's kindergarten and first grade forms are
+     VC and CVC only, and from second grade (level 3) all six are mixed together */
+  PH.nonsenseFor = function (levelId) {
+    var kinds = levelId >= 3 ? ['VC', 'CVC', 'CVCe', 'CVrC', 'CVCC', 'CCVC'] : ['VC', 'CVC'];
+    var out = [];
+    kinds.forEach(function (k) {
+      PH.NONSENSE[k].filter(PH.isClean).forEach(function (w) {
+        out.push({ w: w, g: w.split(''), rime: w.replace(/^[^aeiou]+/, ''), level: levelId, kind: k });
+      });
+    });
+    return out;
+  };
+
+  /* Sight words for Word Reading Fluency, which mixes the common words a child cannot
+     sound out (the, was, of) with the common ones they can (in, we, no), all words met
+     early and often. These are the Dolch lists, public since the 1940s, in the grade
+     each is usually learnt; a level reviews the grade before as well as its own.       */
+  var DOLCH = {
+    prePrimer: ['a', 'and', 'away', 'big', 'blue', 'can', 'come', 'down', 'find', 'for',
+      'funny', 'go', 'help', 'here', 'I', 'in', 'is', 'it', 'jump', 'little', 'look', 'make',
+      'me', 'my', 'not', 'one', 'play', 'red', 'run', 'said', 'see', 'the', 'three', 'to',
+      'two', 'up', 'we', 'where', 'yellow', 'you'],
+    primer: ['all', 'am', 'are', 'at', 'ate', 'be', 'black', 'brown', 'but', 'came', 'did',
+      'do', 'eat', 'four', 'get', 'good', 'have', 'he', 'into', 'like', 'must', 'new', 'no',
+      'now', 'on', 'our', 'out', 'please', 'pretty', 'ran', 'ride', 'saw', 'say', 'she', 'so',
+      'soon', 'that', 'there', 'they', 'this', 'too', 'under', 'want', 'was', 'well', 'went',
+      'what', 'white', 'who', 'will', 'with', 'yes'],
+    first: ['after', 'again', 'an', 'any', 'as', 'ask', 'by', 'could', 'every', 'fly', 'from',
+      'give', 'going', 'had', 'has', 'her', 'him', 'his', 'how', 'just', 'know', 'let', 'live',
+      'may', 'of', 'old', 'once', 'open', 'over', 'put', 'round', 'some', 'stop', 'take',
+      'thank', 'them', 'then', 'think', 'walk', 'were', 'when'],
+    second: ['always', 'around', 'because', 'been', 'before', 'best', 'both', 'buy', 'call',
+      'cold', 'does', 'fast', 'first', 'five', 'found', 'gave', 'goes', 'green', 'its',
+      'made', 'many', 'off', 'or', 'pull', 'read', 'right', 'sing', 'sit', 'sleep', 'tell',
+      'their', 'these', 'those', 'upon', 'us', 'use', 'very', 'wash', 'which', 'why', 'wish',
+      'work', 'would', 'write', 'your'],
+    third: ['about', 'better', 'bring', 'carry', 'clean', 'cut', 'done', 'draw', 'drink',
+      'eight', 'fall', 'far', 'full', 'got', 'grow', 'hold', 'hot', 'hurt', 'if', 'keep',
+      'kind', 'laugh', 'light', 'long', 'much', 'myself', 'never', 'only', 'own', 'pick',
+      'seven', 'shall', 'show', 'six', 'small', 'start', 'ten', 'today', 'together', 'try',
+      'warm']
+  };
+  PH.SIGHT = {
+    '-1': DOLCH.prePrimer,
+    0: DOLCH.prePrimer,
+    1: DOLCH.prePrimer.concat(DOLCH.primer),
+    2: DOLCH.primer.concat(DOLCH.first),
+    3: DOLCH.first.concat(DOLCH.second),
+    4: DOLCH.second.concat(DOLCH.third),
+    5: DOLCH.third.concat(DOLCH.second)
+  };
+  PH.sightFor = function (levelId) {
+    return (PH.SIGHT[levelId] || PH.SIGHT[1]).map(function (w) {
+      return { w: w, g: w.split(''), rime: w.replace(/^[^aeiou]+/i, ''), level: levelId };
+    });
+  };
+
+  /* Letters for Letter Naming Fluency: all 26, capital and small. The test weights them
+     by how often each is met in print, so the everyday ones come up most and q, x and z
+     only now and then. Weight 3 is common, 2 middling, 1 rare.                        */
+  var LETTER_WEIGHT = {
+    a: 3, b: 2, c: 2, d: 2, e: 3, f: 2, g: 2, h: 2, i: 3, j: 1, k: 1, l: 2, m: 2,
+    n: 3, o: 3, p: 2, q: 1, r: 3, s: 3, t: 3, u: 2, v: 1, w: 2, x: 1, y: 1, z: 1
+  };
+  PH.ALPHABET = Object.keys(LETTER_WEIGHT);
+  /* a run of letters in the order a practice sheet would print them: weighted, mixed
+     case, and never the same letter twice in a row */
+  PH.letterRun = function (n) {
+    var bag = [];
+    PH.ALPHABET.forEach(function (l) {
+      for (var k = 0; k < LETTER_WEIGHT[l]; k++) { bag.push(l, l.toUpperCase()); }
+    });
+    var out = [];
+    while (out.length < n) {
+      var c = bag[Math.floor(Math.random() * bag.length)];
+      var prev = out[out.length - 1];
+      if (prev && prev.toLowerCase() === c.toLowerCase()) { continue; }
+      out.push(c);
+    }
+    return out;
+  };
+
+  /* Maze: short passages with one gap in each sentence and three words to choose from,
+     the right one first. As in the test, the wrong two do not fit the sentence at all -
+     usually the wrong kind of word - so the task is reading for sense, not guessing
+     between two good answers. The test starts in second grade (level 3); the easier
+     passages let a younger reader try the idea. "[right|wrong|wrong]" marks the gap.  */
+  PH.MAZE = {
+    1: [
+      { title: 'Pig and Hen', lines: ['Pig had a big [nap|red|sit].', 'Hen sat on a [log|ran|hot].',
+        'Pig and Hen [ran|cup|wet] to the pond.', 'The sun was [hot|dog|hop].', 'Hen got in the [tub|sad|dig].'] },
+      { title: 'Tom and the Bug', lines: ['Tom has a pet [bug|fun|sat].', 'The bug is in a [box|ran|big].',
+        'It can [hop|mat|red] and run.', 'Tom gave it a [bun|sit|hot].', 'The bug got [fat|cup|dig].'] },
+      { title: 'The Red Van', lines: ['Dad has a red [van|sit|big].', 'We sat in the [back|hop|wet].',
+        'The van went up a [hill|ran|sad].', 'Mom had a [map|run|hot].', 'We had fun in the [sun|dig|fed].'] }
+    ],
+    2: [
+      { title: 'The Toy Ship', lines: ['Beth and Chad went to the [shop|jump|fresh].', 'They got a toy [ship|swim|much].',
+        'The ship had a black [flag|sing|fast].', 'Chad put the ship in the [bath|chop|thin].', 'It did not [sink|desk|pond].'] },
+      { title: 'Frog on a Log', lines: ['A frog sat on a [log|hop|wet].', 'It had a snack of a [bug|swim|soft].',
+        'Then the frog [jumped|fast|pond] in the pond.', 'It swam past a [duck|thick|crash].', 'The duck said, "Quack, [quack|lamp|stick]!"'] },
+      { title: 'Stan and the Dog', lines: ['Stan had lunch on a [bench|trip|glad].', 'He had a ham and cheese [sandwich|swam|thick].',
+        'A big dog came [up|lunch|stamp] to him.', 'The dog sat and [begged|shelf|brick].', 'Stan gave the dog a [chip|drank|swim].'] }
+    ],
+    3: [
+      { title: 'A Day at the Lake', lines: ['On a hot day, we went to the [lake|smile|green].', 'Dad put up a big blue [tent|ride|sleep].',
+        'Kate and I swam in the cool [water|seven|jumped].', 'We ate cake and [grapes|swim|slowly] for lunch.',
+        'At night we [looked|green|table] at the stars.', 'Then we fell [asleep|bright|river] in the tent.'] },
+      { title: 'The Snail Race', lines: ['Two snails had a [race|slow|green].', 'One snail was called Speedy, but he was very [slow|boat|sleep].',
+        'The other snail did not [stop|green|tail].', 'She went up a leaf and down a [stem|sleep|bright].',
+        'Speedy took a nap in the [shade|quick|ran].', 'The snail who did not stop [won|leaf|soap] the race.'] },
+      { title: 'A Rainy Day', lines: ['It rained all [day|cake|ride] on Sunday.', 'Jake could not play [outside|seven|wait].',
+        'He made a boat from a paper [plate|swim|sleepy].', 'He set the boat on a [puddle|smile|eat].',
+        'The boat did not [sink|road|green].', 'Jake gave a big [cheer|wet|feet].'] }
+    ],
+    4: [
+      { title: 'The Lost Kite', lines: ['Last spring, Carmen got a bright red [kite|shout|under].', 'She took it to the park on a windy [morning|jumped|softly].',
+        'The wind pulled the kite high into the [sky|brown|laughed].', 'Then the string [snapped|garden|purple] in half.',
+        'The kite floated over the trees and [landed|forest|sharp] on a farm.', 'A kind farmer found it and [brought|silver|river] it back.'] },
+      { title: 'Owls at Night', lines: ['Owls are birds that hunt at [night|hurt|brown].', 'They have large eyes that help them [see|corn|round] in the dark.',
+        'An owl can turn its head almost all the way [around|third|shirt].', 'Its soft feathers let it fly without a [sound|turned|quickly].',
+        'Owls eat mice, bugs, and other small [animals|morning|loud].', 'In the day, most owls [sleep|green|forty] in trees.'] },
+      { title: 'The Class Garden', lines: ['Our class planted a garden near the [school|thirsty|burned].', 'We dug holes and dropped in the [seeds|shouted|purple].',
+        'Every morning, someone gave the plants [water|jumping|fork].', 'Soon small green [sprouts|quietly|under] poked up from the dirt.',
+        'By June, we had corn, beans, and [carrots|loudly|swam].', 'We shared the food with our [families|thirty|slowly].'] }
+    ],
+    5: [
+      { title: 'The Dragon Who Was Afraid', lines: ['Once there was a dragon who was afraid of the [dark|quickly|jumped].', 'Every night, he hid under a blanket in his [cave|softly|happy].',
+        'One evening, a tiny firefly flew [inside|breakfast|hungry].', 'Its glowing light made the cave feel [cozy|umbrella|slowly].',
+        'The dragon and the firefly became best [friends|yellow|climbed].', 'Now the dragon is not [scared|pencil|river] anymore.'] },
+      { title: 'How Bees Make Honey', lines: ['Bees fly from flower to flower to collect [nectar|quickly|hopped].', 'They carry it back to the [hive|purple|softly].',
+        'Inside, the bees store the nectar in wax [cells|flying|happy].', 'They fan it with their wings until it becomes [thick|window|carried].',
+        'This sweet, sticky food is called [honey|buzzing|under].', 'Bees eat the honey during the long, cold [winter|sticky|ate].'] },
+      { title: 'The Science Fair', lines: ['Maya wanted to win a prize at the science [fair|laughed|quiet].', 'She built a small volcano out of clay and [paper|slowly|happy].',
+        'She mixed baking soda and vinegar inside the [volcano|jumping|bright].', 'Red foam bubbled up and [spilled|kitchen|tiny] over the sides.',
+        'The judges clapped and [cheered|table|purple] for Maya.', 'She won a shiny blue [ribbon|slowly|shouted].'] }
+    ]
+  };
+
   PH.LEVELS = [
     { id: -1, name: 'Tiny Tots · Pictures', focus: 'Listening, matching, rhymes and clapping', mode: 'pictures', words: PICTURES },
     { id: 0, name: 'Little Letters', focus: 'Letter shapes and the sounds they make', mode: 'letters', words: LETTERS }

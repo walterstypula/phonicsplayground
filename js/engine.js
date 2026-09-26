@@ -484,7 +484,8 @@
 
     setProgress: function (done, total) {
       this.done = done; this.total = total;
-      this.dom.progress.textContent = done + ' / ' + total;
+      /* a game played against the clock has no set number of rounds, and says total 0 */
+      this.dom.progress.textContent = total ? done + ' / ' + total : '';
     },
 
     addStar: function (n) {

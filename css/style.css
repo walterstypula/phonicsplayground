@@ -192,6 +192,7 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
   padding:8px 14px;font-size:14px;font-weight:600;color:var(--ink-soft);
 }
 .starcount{color:var(--gold)}
+.progress:empty{display:none}   /* games against the clock have no round count */
 
 /* ---------- Stage ---------- */
 #stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:14px;min-height:0}
