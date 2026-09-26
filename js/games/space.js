@@ -90,11 +90,7 @@
         var t = U.pick(pool.length > 6 ? pool : api.words);
         recent.push(t.w);
         if (recent.length > 5) { recent.shift(); }
-        var alike = U.shuffle(api.words.filter(function (w) {
-          return w.w !== t.w && (w.rime === t.rime || PH.firstSound(w) === PH.firstSound(t));
-        }));
-        var other = U.shuffle(api.words.filter(function (w) { return w.w !== t.w && alike.indexOf(w) < 0; }));
-        var words = U.shuffle([t].concat(alike.slice(0, 1).concat(other).slice(0, 2)));
+        var words = U.shuffle([t].concat(PH.lookAlikes(t, api.words, 2)));
         var ctx = PH.Engine.ctx;
         S.blocks.forEach(function (b, n) {
           b.text = words[n].w;

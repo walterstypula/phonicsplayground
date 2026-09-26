@@ -36,12 +36,7 @@
         recent.push(target.w);
         if (recent.length > 5) { recent.shift(); }
         /* look-alikes that share a first sound or ending make it about real reading */
-        var alike = U.shuffle(api.words.filter(function (w) {
-          return w.w !== target.w && (w.rime === target.rime || PH.firstSound(w) === PH.firstSound(target));
-        }));
-        var other = U.shuffle(api.words.filter(function (w) { return w.w !== target.w && alike.indexOf(w) < 0; }));
-        var picks = alike.slice(0, 1).concat(other).slice(0, 2);
-        var words = U.shuffle([target].concat(picks));
+        var words = U.shuffle([target].concat(PH.lookAlikes(target, api.words, 2)));
         var ctx = PH.Engine.ctx;
         c.stones.forEach(function (s, k) {
           s.text = words[k].w;

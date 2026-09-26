@@ -158,7 +158,9 @@
       function finishWord() {
         if (state !== 'slide') { return; }
         state = 'done'; timer = 0; dragging = false;
-        PH.blend.stop(); held = null;   /* the last sound gives way to the whole word */
+        /* the last sound gives way to the whole word, but a short one like the g of "pig"
+           is let finish first rather than clipped */
+        PH.blend.release(); held = null;
         api.addStar(1);
         api.sfx.great();
         api.sayWord(word.w);     /* the word they just blended, and nothing else */

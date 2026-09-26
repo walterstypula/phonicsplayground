@@ -513,10 +513,18 @@
       .catch(function () { buffers[key] = null; loading[key] = false; });
   }
 
-  function stopBlend(fade) {
+  /* `heldOnly` lets go of the sounds being held and leaves the rest to finish: a /g/ is
+     over in a seventh of a second, and fading it the moment the snail moves on or the
+     finger lifts leaves only half of it. */
+  function stopBlend(fade, heldOnly) {
     if (!playing.length) { return; }
     var a = ac(), list = playing;
     playing = [];
+    if (heldOnly) {
+      playing = list.filter(function (p) { return !p.node.loop; });
+      list = list.filter(function (p) { return p.node.loop; });
+      if (!list.length) { return; }
+    }
     if (!a) { return; }
     var t = a.currentTime;
     fade = fade === undefined ? 0.06 : fade;
@@ -730,7 +738,7 @@
     },
 
     /* let go of a held sound: it tails off rather than stopping dead */
-    release: function () { stopBlend(0.12); },
+    release: function () { stopBlend(0.12, true); },
     stop: function () { stopBlend(0.03); }
   };
   PH.blend = blend;

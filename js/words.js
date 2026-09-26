@@ -435,6 +435,32 @@
     return out.slice(0, n);
   };
 
+  /* Real words from `pool` to sit beside `word` as the wrong answers, the most alike
+     first. Put "pencil" among words that start with other letters and a child finds it
+     by its p without reading any further; beside "pig" and "pan" the whole word has to
+     be read. So a shared first sound counts for most, then a shared ending, then the
+     same length. A little chance mixes up the order, so equally good choices take
+     turns. Single letters have nothing to compare, and come back in any order. */
+  PH.lookAlikes = function (word, pool, n) {
+    var first = PH.firstSound(word), last = PH.lastSound(word);
+    return pool
+      .filter(function (w) { return w.w !== word.w; })
+      .map(function (w) {
+        var score = Math.random() * 1.5;
+        if (!word.letter) {
+          if (PH.firstSound(w) === first) { score += 4; }
+          else if (w.w.charAt(0) === word.w.charAt(0)) { score += 3; }
+          if (w.rime === word.rime) { score += 2; }
+          else if (PH.lastSound(w) === last) { score += 1.5; }
+          if (Math.abs(w.w.length - word.w.length) <= 1) { score += 1; }
+        }
+        return { w: w, score: score };
+      })
+      .sort(function (a, b) { return b.score - a.score; })
+      .slice(0, n)
+      .map(function (s) { return s.w; });
+  };
+
   /* graphemes common enough in a level to build a whole round around */
   PH.soundsFor = function (level, minMatches) {
     minMatches = minMatches || 4;

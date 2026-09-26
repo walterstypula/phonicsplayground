@@ -43,7 +43,7 @@
         if (recent.length > 5) { recent.shift(); }
 
         var n = api.pre ? (round <= 3 ? 3 : 4) : (round <= 2 ? 4 : 5);
-        var others = U.shuffle(api.words.filter(function (w) { return w.w !== target.w; })).slice(0, n - 1);
+        var others = PH.lookAlikes(target, api.words, n - 1);
         var list = U.shuffle([target].concat(others));
 
         var left = 240, right = api.W - 110;

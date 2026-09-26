@@ -36,7 +36,7 @@
         var n = api.pre ? 3 : (round <= 2 ? 3 : 4);
         /* ages 3 and 4: other real pictures or letters, never made-up words */
         var misses3 = api.pre
-          ? U.shuffle(api.words.filter(function (w) { return w.w !== target.w; })).slice(0, n - 1)
+          ? PH.lookAlikes(target, api.words, n - 1)
             .map(function (w) { return { w: w.w, real: true }; })
           : PH.nearMisses(target, api.words, n - 1);
         /* top up with ordinary words if the generator came up short */
