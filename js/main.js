@@ -9,6 +9,11 @@
     'letterdash', 'quickwords', 'alien', 'maze', 'practice'];
   var $ = function (id) { return document.getElementById(id); };
 
+  /* Where a parent or teacher can reach the developer: a Google Form, so no email address
+     sits on the page for spam robots to collect. The link stays hidden until this is set.
+     Paste the form's "Send" link here (Send > link icon in the form editor). */
+  var FEEDBACK_FORM = 'https://forms.gle/Bf5ckkmsLLLiYdTP6';
+
   var dom = {
     menu: $('menu'), play: $('play'), cards: $('cards'), ages: $('ages'),
     levelNote: $('level-note'), promptText: $('prompt-text'), peek: $('btn-peek'),
@@ -120,51 +125,60 @@
     this.setAttribute('aria-pressed', String(state.soundOn));
   });
 
-  /* ---------- the voice picker ----------
-     The list of voices usually turns up a moment after the page does, so the picker is
-     drawn whenever it changes as well as once at the start. */
-  function renderVoices() {
-    var sel = $('voice-select');
-    var list = PH.speech.voices();
-    var now = PH.speech.voice();
-    if (!list.length) {
-      sel.innerHTML = '<option>No voices installed</option>';
-      sel.disabled = true;
-      $('btn-voice-prev').disabled = $('btn-voice-next').disabled = true;
-      return;
-    }
-    sel.disabled = false;
-    $('btn-voice-prev').disabled = $('btn-voice-next').disabled = list.length < 2;
-    sel.innerHTML = list.map(function (v) {
-      return '<option value="' + v.name.replace(/"/g, '&quot;') + '">' + v.label + '</option>';
-    }).join('');
-    if (now) { sel.value = now.name; }
+  /* ---------- the grown-ups check ----------
+     The feedback button is on every screen, so a child will tap it. Before anything
+     leaves the game, a grown-up answers a sum written out in words - "What is fourteen
+     times seven?" - which takes an adult a moment and a child who cannot read the words
+     no time at all to give up on. A new sum every time, so it cannot be learnt. */
+  var TEENS = ['twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  var ONES = ['three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  var gateAnswer = 0;
+
+  function askGrownUp(note) {
+    var a = Math.floor(Math.random() * TEENS.length), b = Math.floor(Math.random() * ONES.length);
+    gateAnswer = (a + 12) * (b + 3);
+    $('gate-q').textContent = 'What is ' + TEENS[a] + ' times ' + ONES[b] + '?';
+    $('gate-msg').textContent = note || '';
+    $('gate-answer').value = '';
+    $('gate').classList.remove('hidden');
+    $('gate-answer').focus();
   }
 
-  $('voice-select').addEventListener('change', function () {
-    PH.sfx.warmUp();
-    PH.speech.setVoice(this.value);
+  function closeGate() { $('gate').classList.add('hidden'); }
+
+  function openFeedback() {
+    PH.sfx.click();
+    PH.speech.cancel();
+    askGrownUp();
+  }
+  $('btn-feedback').addEventListener('click', openFeedback);
+  $('btn-feedback-play').addEventListener('click', openFeedback);
+  $('gate-cancel').addEventListener('click', closeGate);
+  $('gate').addEventListener('click', function (e) { if (e.target === this) { closeGate(); } });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('gate').classList.contains('hidden')) { closeGate(); }
   });
-  $('btn-voice-prev').addEventListener('click', function () {
-    PH.sfx.warmUp();
-    var v = PH.speech.stepVoice(-1);
-    if (v) { $('voice-select').value = v.name; }
+  $('gate-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (parseInt($('gate-answer').value, 10) === gateAnswer) {
+      closeGate();
+      window.open(FEEDBACK_FORM, '_blank', 'noopener');
+    } else {
+      askGrownUp('Not quite - here is another one.');
+    }
   });
-  $('btn-voice-next').addEventListener('click', function () {
-    PH.sfx.warmUp();
-    var v = PH.speech.stepVoice(1);
-    if (v) { $('voice-select').value = v.name; }
-  });
-  PH.speech.onVoicesChanged(renderVoices);
 
   /* ---------- boot ---------- */
   state.levelId = PH.levelForAge(state.age);
   PH.setAudioEnabled(state.soundOn);
   $('btn-sound').textContent = state.soundOn ? '🔊 Sound: on' : '🔇 Sound: off';
+  if (FEEDBACK_FORM) {
+    $('btn-feedback').hidden = false;
+    $('btn-feedback-play').hidden = false;
+  }
   renderAges();
   renderLevelNote();
   renderCards();
-  renderVoices();
   PH.Engine.init($('canvas'), dom);
 
   if (!PH.speech.supported) {

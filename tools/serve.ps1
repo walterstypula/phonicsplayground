@@ -1,11 +1,13 @@
 # Tiny static file server for local testing. The games also run straight from
 # index.html on the file system - this is only here for the preview pane.
+# Usage: .\tools\serve.ps1 [-Port 8080]   (defaults to 5173)
+param([int]$Port = 5173)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add('http://localhost:5173/')
+$listener.Prefixes.Add("http://localhost:$Port/")
 $listener.Start()
-Write-Output "serving $root on http://localhost:5173/"
+Write-Output "serving $root on http://localhost:$Port/"
 while ($listener.IsListening) {
   try {
     $ctx = $listener.GetContext()

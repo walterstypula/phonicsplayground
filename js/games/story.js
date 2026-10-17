@@ -307,6 +307,8 @@
           ctx.textAlign = 'center';
           ctx.font = U.font(30, '700');
           ctx.fillText(t, x + widths[i] / 2, y + 2);
+          /* the same dot or dash under each sound as Stretchy Snail uses */
+          PH.art.soundMark(ctx, x + widths[i] / 2, y + 34, widths[i] - 8, t.length, on ? LIT[i % LIT.length] : null);
           x += widths[i] + gapX;
         });
         ctx.textAlign = 'left';

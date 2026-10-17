@@ -340,12 +340,14 @@
       canvas.addEventListener('pointercancel', function (e) {
         if (self.game && self.game.up) { self.game.up(toLocal(e)); }
       });
+      /* keys typed into a box on the page - the grown-ups check - are not game controls */
+      function typing(e) { return e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName); }
       window.addEventListener('keydown', function (e) {
-        if (!self.running) { return; }
+        if (!self.running || typing(e)) { return; }
         if (self.game && self.game.key) { self.game.key(e); }
       });
       window.addEventListener('keyup', function (e) {
-        if (!self.running) { return; }
+        if (!self.running || typing(e)) { return; }
         if (self.game && self.game.keyUp) { self.game.keyUp(e); }
       });
       document.addEventListener('visibilitychange', function () {

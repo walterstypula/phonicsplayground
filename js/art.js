@@ -131,6 +131,27 @@
       art.eye(ctx, x + gap / 2, y, r, o);
     },
 
+    /* "Dots and dashes", the marks teachers put under a word to show its sounds: a dot
+       under a letter that makes a sound on its own, a dash under two or three letters
+       that make one sound together (sh, ee, igh). Centred on cx, at most w wide. A mark
+       is grey until its sound is reached, then takes the colour it is given. */
+    soundMark: function (ctx, cx, y, w, letters, colour) {
+      var on = !!colour;
+      ctx.fillStyle = on ? colour : 'rgba(43,35,70,.2)';
+      ctx.beginPath();
+      if (letters > 1) {
+        var dw = Math.max(30, w * 0.8);
+        U.roundRect(ctx, cx - dw / 2, y - 7, dw, 14, 7);
+      } else {
+        ctx.arc(cx, y, 11, 0, TAU);
+      }
+      ctx.fill();
+      if (on) {                              /* a little shine once it is lit */
+        ctx.fillStyle = 'rgba(255,255,255,.55)';
+        ctx.beginPath(); ctx.arc(cx - (letters > 1 ? 0 : 3), y - 3, 2.5, 0, TAU); ctx.fill();
+      }
+    },
+
     cheeks: function (ctx, x, y, gap, r, col) {
       ctx.fillStyle = col || 'rgba(255,110,140,.35)';
       ctx.beginPath();

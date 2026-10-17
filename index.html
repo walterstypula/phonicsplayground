@@ -10,6 +10,9 @@
 
 <!-- ============ MENU ============ -->
 <section id="menu" class="screen">
+  <div class="topbar">
+    <button id="btn-feedback" class="mini feedback" hidden>✉️ Grown-ups: send feedback</button>
+  </div>
   <h1 class="logo"><span>Phonics</span> <em>Playground</em></h1>
   <p class="tagline">Listen, look, and play!</p>
 
@@ -24,13 +27,6 @@
 
   <footer class="grownups">
     <button id="btn-sound" class="mini" aria-pressed="true">🔊 Sound: on</button>
-    <div class="mini voicebar">
-      <button id="btn-voice-prev" class="voice-step" aria-label="Previous voice" title="Previous voice">◀</button>
-      <span class="voice-ico" aria-hidden="true">🗣️</span>
-      <label class="visually-hidden" for="voice-select">Voice</label>
-      <select id="voice-select" title="Choose the voice"></select>
-      <button id="btn-voice-next" class="voice-step" aria-label="Next voice" title="Next voice">▶</button>
-    </div>
     <span class="hint">Tip: headphones help a lot. Works offline.</span>
   </footer>
 </section>
@@ -41,12 +37,13 @@
     <button id="btn-back" class="hud-btn">◀ Menu</button>
 
     <div id="prompt" class="prompt">
-      <button id="btn-say" class="say" title="Say it again">🔊</button>
+      <button id="btn-say" class="say" title="Say it again" aria-label="Say it again"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
       <span id="prompt-text">Listen…</span>
       <button id="btn-peek" class="peek hidden" title="Show the word">👀</button>
     </div>
 
     <div class="hud-right">
+      <button id="btn-feedback-play" class="hud-btn feedback-hud" title="Feedback (for grown-ups)" aria-label="Send feedback (for grown-ups)" hidden>✉️</button>
       <span id="progress" class="progress">0 / 0</span>
       <span id="stars" class="starcount">⭐ 0</span>
     </div>
@@ -69,6 +66,23 @@
     </div>
   </div>
 </section>
+
+<!-- ============ GROWN-UPS CHECK ============
+     Stands between a child and anything that leaves the game. The question is written
+     out in words, so a child who cannot yet read them cannot answer it. -->
+<div id="gate" class="gate hidden" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <form id="gate-form" class="results-card gate-card" autocomplete="off">
+    <h2 id="gate-title">For grown-ups</h2>
+    <p class="gate-why">To send feedback, please answer:</p>
+    <label id="gate-q" class="gate-q" for="gate-answer">What is fourteen times three?</label>
+    <input id="gate-answer" class="gate-answer" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" aria-describedby="gate-msg">
+    <p id="gate-msg" class="gate-msg" aria-live="polite"></p>
+    <div class="results-btns">
+      <button type="button" id="gate-cancel" class="big ghost">Cancel</button>
+      <button type="submit" class="big">Continue</button>
+    </div>
+  </form>
+</div>
 
 <script src="js/words.js"></script>
 <script src="audio/clips.js"></script>

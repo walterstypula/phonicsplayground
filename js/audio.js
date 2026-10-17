@@ -6,7 +6,6 @@
 
   /* ---------------- Voices ---------------- */
   var voice = null;
-  var voiceIndex = 0;
   var enabled = true;
 
   function englishVoices() {
@@ -34,48 +33,21 @@
     return s;
   }
 
-  /* best first, so the Voice button also steps from better to worse */
-  function rankedVoices() {
-    return englishVoices().sort(function (a, b) { return score(b) - score(a); });
-  }
-
-  /* "Microsoft Zira - English (United States)" is the whole truth and far too much of it
-     for a button: the part worth showing is the name and where it is from. */
-  function shortName(v) {
-    var n = (v.name || '')
-      .replace(/^(Microsoft|Google|Apple)\s+/i, '')
-      .replace(/\s*[-–]\s*English.*$/i, '')
-      .replace(/\s*\((Natural|Enhanced|Premium|Online.*?)\)\s*/ig, ' ')
-      .replace(/\s+English\s*$/i, '')
-      .trim() || v.name;
-    var lang = (v.lang || '').replace('_', '-');
-    return lang ? n + ' (' + lang + ')' : n;
-  }
-
+  /* The best of the device's voices is simply used. Nearly everything the games say is a
+     recording now, so the device voice only fills the odd gap, and there is no longer a
+     picker for it. The list usually arrives after the page does, and a browser can swap
+     it out later, so the choice is made again whenever it changes. */
   function chooseVoice() {
-    var list = rankedVoices();
-    if (!list.length) { return; }
-    var saved = null;
-    try { saved = localStorage.getItem('ph-voice'); } catch (e) { /* private mode */ }
-    for (var j = 0; j < list.length; j++) {
-      if (saved && list[j].name === saved) { voice = list[j]; voiceIndex = j; return; }
-    }
-    voice = list[0];
-    voiceIndex = 0;
-  }
-
-  /* The list usually arrives after the page does, so whoever draws the voice picker asks
-     to be told when it lands - and again if the browser swaps the list out later. */
-  var voiceWatchers = [];
-  function voicesChanged() {
-    chooseVoice();
-    for (var i = 0; i < voiceWatchers.length; i++) { voiceWatchers[i](); }
+    var list = englishVoices().sort(function (a, b) { return score(b) - score(a); });
+    if (list.length) { voice = list[0]; }
   }
 
   if ('speechSynthesis' in window) {
     chooseVoice();
-    window.speechSynthesis.onvoiceschanged = voicesChanged;
+    window.speechSynthesis.onvoiceschanged = chooseVoice;
   }
+  /* a voice chosen with the old picker is no longer looked at; tidy it away */
+  try { localStorage.removeItem('ph-voice'); } catch (e) { /* private mode */ }
 
   /* ---------------- The 43 sounds of American English the games use ----------------
      A sound is passed around as "/id" (for example "/ee"), never as a made-up spelling,
@@ -390,45 +362,9 @@
   var speech = {
     supported: ('speechSynthesis' in window),
 
-    /* the installed English voices, best first - some sound much clearer than others */
-    voices: function () {
-      return rankedVoices().map(function (v) { return { name: v.name, label: shortName(v) }; });
-    },
-
-    /* the one being used, as { name, label }, or null before any voice has loaded */
-    voice: function () {
-      return voice ? { name: voice.name, label: shortName(voice) } : null;
-    },
-
-    /* tell me when the browser's list of voices arrives or changes */
-    onVoicesChanged: function (fn) { voiceWatchers.push(fn); },
-
-    /* pick one by name. `quiet` skips the hello, for restoring a voice without fuss. */
-    setVoice: function (name, quiet) {
-      var list = rankedVoices();
-      for (var i = 0; i < list.length; i++) {
-        if (list[i].name === name) {
-          voice = list[i]; voiceIndex = i;
-          try { localStorage.setItem('ph-voice', voice.name); } catch (e) { /* private mode */ }
-          if (!quiet) { speech.say('Hello, I am ' + shortName(voice).replace(/\s*\(.*\)$/, '')); }
-          return speech.voice();
-        }
-      }
-      return speech.voice();
-    },
-
-    /* step through the list: +1 for the next voice, -1 to go back to the one before */
-    stepVoice: function (by) {
-      var list = rankedVoices();
-      if (!list.length) { return null; }
-      var i = (voiceIndex + (by || 1)) % list.length;
-      if (i < 0) { i += list.length; }
-      return speech.setVoice(list[i].name);
-    },
-
     cancel: function () {
       queue = []; busy = false; turn++;
-      stopBlend(0.03);          /* a held blending sound stops with everything else */
+      stopBlend(0.03);          /* a blended sound stops with everything else */
       clearTimeout(guard);
       if (current && current.pause) { try { current.pause(); } catch (e) { /* ignore */ } }
       current = null;
@@ -495,19 +431,22 @@
 
   /* ---------------- Blending ----------------
      Sounding a word out is not the same as playing its sounds one after another. A child
-     blends by running each sound into the next without a gap, and by holding the ones
-     that can be held: mmmaaannn, not "m" ... "a" ... "n".
+     blends by running each sound into the next without a gap: mmmaaannn, not "m" ... "a"
+     ... "n".
 
      An <audio> element cannot do that. It takes about 13 ms to start - 130 ms the first
      time - and the only way to play the next sound is to cut the last one dead, which in
      practice happened 40 ms into a half-second clip. The result is a stutter of chopped
-     beginnings. So blending plays through Web Audio from clips decoded up front: the next
-     sound fades in across the tail of the one before it, and a sound that can be held
-     loops its own middle for as long as the finger rests on it.
+     beginnings. So blending plays through Web Audio from clips decoded up front, and the
+     next sound fades in across the tail of the one before it.
+
+     Each sound plays once, as it was recorded; the ones that can be held (mmm, sss, aaa)
+     were recorded long for exactly this. Making one last longer by looping a slice of its
+     middle was tried twice, and both times it was heard as the sound repeating quickly -
+     "ah ah ah" - rather than stretching.
 
      Anything that cannot be played this way answers false, and the caller falls back to
      the ordinary queue.                                                                */
-  var STOPS = { b: 1, d: 1, g: 1, k: 1, p: 1, t: 1, ch: 1, j: 1, kw: 1, ks: 1 };
   var buffers = {}, loading = {}, playing = [];
 
   /* "/m" is one of the 43 sounds; anything else is a syllable or word recorded in words/ */
@@ -529,18 +468,10 @@
       .catch(function () { buffers[key] = null; loading[key] = false; });
   }
 
-  /* `heldOnly` lets go of the sounds being held and leaves the rest to finish: a /g/ is
-     over in a seventh of a second, and fading it the moment the snail moves on or the
-     finger lifts leaves only half of it. */
-  function stopBlend(fade, heldOnly) {
+  function stopBlend(fade) {
     if (!playing.length) { return; }
     var a = ac(), list = playing;
     playing = [];
-    if (heldOnly) {
-      playing = list.filter(function (p) { return !p.node.loop; });
-      list = list.filter(function (p) { return p.node.loop; });
-      if (!list.length) { return; }
-    }
     if (!a) { return; }
     var t = a.currentTime;
     fade = fade === undefined ? 0.06 : fade;
@@ -554,137 +485,11 @@
     });
   }
 
-  /* Holding a sound. Looping a quarter second from the middle of the clip was heard as
-     "ah ah ah ah": a recorded vowel swells and fades and its pitch drifts, so every pass
-     through the loop is a fresh little syllable. A held sound instead repeats a stretch
-     only a few pitch cycles long, cut exactly on those cycles and with its loudness
-     evened out, so it goes on as one steady aaaaa. A hiss (s, sh, f) has no cycles, and
-     a short loop of noise buzzes, so it keeps a long stretch crossfaded into itself.
-     Glides and two-part vowels (w, y, ay, igh...) change as they are said and have no
-     middle to hold, so they play once.                                                 */
-  var GLIDES = { w: 1, y: 1, ay: 1, igh: 1, oi: 1, ow: 1, oh: 1, yoo: 1 };
-  var holds = {};
-
-  function rms(d, from, len) {
-    var s = 0;
-    for (var i = from; i < from + len; i++) { s += d[i] * d[i]; }
-    return Math.sqrt(s / len);
-  }
-
-  /* how alike two stretches of the clip are, -1 to 1 */
-  function likeness(d, a, b, len) {
-    var ab = 0, aa = 0, bb = 0;
-    for (var i = 0; i < len; i++) { ab += d[a + i] * d[b + i]; aa += d[a + i] * d[a + i]; bb += d[b + i] * d[b + i]; }
-    return aa && bb ? ab / Math.sqrt(aa * bb) : 0;
-  }
-
-  function makeHold(a, buf) {
-    var sr = buf.sampleRate, n = buf.length, src = buf.getChannelData(0);
-    var frame = Math.round(sr * 0.01), f, loud = [], peak = 0;
-    for (f = 0; f + frame <= n; f += frame) { var r = rms(src, f, frame); loud.push(r); peak = Math.max(peak, r); }
-    /* The steady part: the longest unbroken run of frames at least half as loud as the
-       loudest (a third, if that is too short). Unbroken, because a recording can open
-       with a little puff and a gap before the sound proper. */
-    function run(level) {
-      var bestFrom = 0, bestLen = 0, from = -1;
-      for (var k = 0; k <= loud.length; k++) {
-        if (k < loud.length && loud[k] >= peak * level) { if (from < 0) { from = k; } continue; }
-        if (from >= 0 && k - from > bestLen) { bestFrom = from; bestLen = k - from; }
-        from = -1;
-      }
-      return { lo: bestFrom * frame, hi: (bestFrom + bestLen) * frame };
-    }
-    var steady = run(0.5);
-    if (steady.hi - steady.lo < sr * 0.08) { steady = run(0.35); }
-    if (steady.hi - steady.lo < sr * 0.08) { return null; }
-    var lo = steady.lo, hi = steady.hi;
-    var mid = Math.round((lo + hi) / 2);
-
-    /* is it voiced, and if so how long is one cycle (70-400 Hz) */
-    var win = Math.round(sr * 0.03), minLag = Math.round(sr / 400), maxLag = Math.round(sr / 70);
-    var start = mid - Math.round((win + maxLag) / 2), best = 0, period = 0, lag;
-    if (start < lo) { start = lo; }
-    for (lag = minLag; lag <= maxLag && start + lag + win < hi; lag++) {
-      var c = likeness(src, start, start + lag, win);
-      if (c > best) { best = c; period = lag; }
-    }
-
-    var loopStart, loopLen, fade;
-    var voiced = best > 0.75 && period > 0;
-    if (voiced) {
-      /* a whole number of cycles, about 40 ms, then nudged to where the end lines up
-         best with the start */
-      var cycles = Math.max(2, Math.round(sr * 0.04 / period));
-      loopStart = start;
-      var want = cycles * period, bestEnd = want, bestC = -2, span = Math.round(period / 4);
-      for (lag = want - span; lag <= want + span; lag++) {
-        if (loopStart + lag + period >= hi) { break; }
-        var e = likeness(src, loopStart, loopStart + lag, period);
-        if (e > bestC) { bestC = e; bestEnd = lag; }
-      }
-      loopLen = bestEnd;
-      fade = Math.min(period, Math.round(loopLen / 2));
-    } else {
-      /* noise: as much of the steady part as there is, blended end into start */
-      fade = Math.min(Math.round(sr * 0.04), Math.round((hi - lo) / 4));
-      loopStart = lo + fade;          /* so what it blends back into is steady too */
-      loopLen = Math.min(hi - loopStart, Math.round(sr * 0.3));
-      if (loopLen < fade * 2) { return null; }
-    }
-    if (loopStart < fade || loopStart + loopLen > n) { return null; }
-
-    /* the new clip: the attack as recorded, then the loop */
-    var end = loopStart + loopLen;
-    var out = a.createBuffer(1, end, sr), d = out.getChannelData(0), i;
-    for (i = 0; i < end; i++) { d[i] = src[i]; }
-    /* the last `fade` samples blend into what comes just before the loop's start, so
-       jumping from the end back to the start joins mid-sound instead of clicking */
-    for (i = 0; i < fade; i++) {
-      var t = (i + 1) / fade;
-      d[end - fade + i] = src[end - fade + i] * Math.cos(t * Math.PI / 2) +
-        src[loopStart - fade + i] * Math.sin(t * Math.PI / 2);
-    }
-    /* A long loop of hiss can still swell and fade inside itself, so its loudness is
-       evened out to match the start. The gain moves smoothly and is 1 at both seams, so
-       the joins stay where the crossfade put them. A voiced loop is too short to need it. */
-    var step = Math.round(sr * 0.02), body = loopLen - fade;
-    if (!voiced && body > step * 3) {
-      var ref = rms(src, loopStart, step), gains = [], c0;
-      for (c0 = 0; c0 + step <= body; c0 += step) {
-        var here = rms(src, loopStart + c0, step);
-        gains.push(here ? Math.min(3, Math.max(0.33, ref / here)) : 1);
-      }
-      gains[0] = 1; gains[gains.length - 1] = 1;
-      for (i = 0; i < body; i++) {
-        var pos = Math.min(gains.length - 1, i / step), k0 = Math.floor(pos);
-        var k1 = Math.min(gains.length - 1, k0 + 1);
-        d[loopStart + i] *= gains[k0] + (gains[k1] - gains[k0]) * (pos - k0);
-      }
-    }
-    return { buf: out, loopStart: loopStart / sr, loopEnd: end / sr };
-  }
-
-  function holdFor(a, id, buf) {
-    if (!id || STOPS[id] || GLIDES[id] || buf.duration < 0.22) { return null; }
-    if (holds[id] === undefined || holds[id].src !== buf) {
-      var h = null;
-      try { h = makeHold(a, buf); } catch (e) { h = null; }
-      holds[id] = { src: buf, hold: h };
-    }
-    return holds[id].hold;
-  }
-
   /* one clip, starting at `at`, fading in over whatever is still sounding */
-  function startClip(a, id, buf, at, hold) {
+  function startClip(a, buf, at) {
     var src = a.createBufferSource();
     var gain = a.createGain();
-    var h = hold ? holdFor(a, id, buf) : null;
-    src.buffer = h ? h.buf : buf;      /* a source takes its buffer once and only once */
-    if (h) {
-      src.loop = true;
-      src.loopStart = h.loopStart;
-      src.loopEnd = h.loopEnd;
-    }
+    src.buffer = buf;
     gain.gain.setValueAtTime(0.0001, at);
     gain.gain.linearRampToValueAtTime(1, at + 0.025);
     src.connect(gain); gain.connect(a.destination);
@@ -696,8 +501,7 @@
   function bufferFor(hint) {
     if (!hint) { return null; }
     if (!buffers[hint]) { loadClip(hint); return null; }
-    var id = String(hint).charAt(0) === '/' ? String(hint).slice(1) : '';
-    return { id: id, buf: buffers[hint] };
+    return buffers[hint];
   }
 
   var blend = {
@@ -716,16 +520,15 @@
       keys.forEach(function (k) { if (k) { loadClip(k); } });
     },
 
-    /* Play one sound, fading in over whatever is still sounding. `hold` keeps a sound
-       that can be held going until release() - a real mmmmm, not the same clip restarted.
-       Returns false if there is no decoded clip, so the caller can say it the slow way. */
-    play: function (hint, hold) {
+    /* Play one sound, fading in over whatever is still sounding. Returns false if there
+       is no decoded clip, so the caller can say it the slow way. */
+    play: function (hint) {
       if (!enabled || !blend.supported) { return false; }
       var a = ac();
-      var clip = bufferFor(hint);
-      if (!a || !clip) { return false; }
+      var buf = bufferFor(hint);
+      if (!a || !buf) { return false; }
       stopBlend(0.05);
-      startClip(a, clip.id, clip.buf, a.currentTime, hold);
+      startClip(a, buf, a.currentTime);
       return true;
     },
 
@@ -745,16 +548,14 @@
       stopBlend(0.04);
       var at = a.currentTime + 0.02;
       for (i = 0; i < clips.length; i++) {
-        startClip(a, clips[i].id, clips[i].buf, at, false);
+        startClip(a, clips[i], at);
         /* the next sound comes in over the tail of this one, which is what makes a run of
            sounds a syllable instead of a list */
-        at += Math.max(0.07, clips[i].buf.duration - 0.06);
+        at += Math.max(0.07, clips[i].duration - 0.06);
       }
       return true;
     },
 
-    /* let go of a held sound: it tails off rather than stopping dead */
-    release: function () { stopBlend(0.12, true); },
     stop: function () { stopBlend(0.03); }
   };
   PH.blend = blend;

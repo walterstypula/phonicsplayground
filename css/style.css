@@ -133,27 +133,27 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 .mini:hover{border-color:rgba(35,42,69,.2)}
 .mini:active{transform:translateY(1px)}
 .hint{font-size:13px;color:var(--ink-faint)}
+/* the grown-ups' corner at the top of the menu: small and out of the way */
+.topbar{flex:none;align-self:stretch;display:flex;justify-content:flex-end;margin:-6px -6px 4px 0}
+.feedback{color:var(--ink-soft);font-size:13px;padding:6px 12px}
+.feedback[hidden],.feedback-hud[hidden]{display:none}
+.feedback-hud{padding:7px 11px;font-size:16px;font-family:var(--emoji);line-height:1}
 
-/* the voice picker: step back and forth, or open the list and choose one outright */
-.voicebar{display:flex;align-items:center;gap:6px;padding:4px 8px}
-.voicebar:active{transform:none}
-.voice-ico{font-family:var(--emoji);font-size:14px;line-height:1}
-.voice-step{
-  background:none;border-radius:50%;width:24px;height:24px;font-size:11px;
-  color:var(--ink-soft);display:flex;align-items:center;justify-content:center;
-  transition:background .12s ease, color .12s ease;
+/* ---------- Grown-ups check ---------- */
+.gate{
+  position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  background:rgba(35,42,69,.5);backdrop-filter:blur(3px);padding:16px;
 }
-.voice-step:hover{background:rgba(35,42,69,.07);color:var(--ink)}
-.voice-step:disabled{opacity:.35;cursor:default;background:none}
-#voice-select{
-  font-family:inherit;font-size:14px;color:var(--ink);background:none;border:none;
-  padding:4px 2px;max-width:190px;cursor:pointer;
+.gate-card{width:380px;max-width:100%}
+.gate-card::before{display:none}
+.gate-why{margin:0 0 10px !important}
+.gate-q{display:block;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:14px}
+.gate-answer{
+  width:140px;font:inherit;font-size:26px;text-align:center;padding:10px 12px;
+  border:2px solid var(--line);border-radius:14px;color:var(--ink);background:var(--surface);
 }
-#voice-select:focus{outline:none}
-.visually-hidden{
-  position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
-  clip:rect(0 0 0 0);white-space:nowrap;border:0;
-}
+.gate-answer:focus{outline:none;border-color:var(--blue)}
+.gate-msg{min-height:20px;margin:8px 0 14px !important;color:var(--pink) !important;font-size:14px !important}
 
 /* ---------- HUD ---------- */
 #hud{
@@ -184,8 +184,25 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 .peek{background:var(--teal);box-shadow:0 2px 8px rgba(27,131,120,.4)}
 .say:hover,.peek:hover{transform:translateY(-1px)}
 .say:active,.peek:active{transform:translateY(1px);box-shadow:none}
-.say{animation:pulse 2.8s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+/* the one button a child hunts for, so it is the biggest and brightest thing up here,
+   with a ring that keeps rippling out of it to draw the eye */
+.say{
+  position:relative;width:56px;height:56px;font-size:28px;margin-left:-8px;
+  background:radial-gradient(circle at 35% 30%, #ffd666, #f59e0b 70%);
+  border:3px solid #fff;
+  box-shadow:0 0 0 3px var(--orange), 0 4px 14px rgba(201,104,31,.45);
+  display:inline-flex;align-items:center;justify-content:center;padding:0;
+  animation:pulse 2.4s ease-in-out infinite;
+}
+.say svg{filter:drop-shadow(0 1px 1px rgba(120,60,0,.45))}
+.say::after{
+  content:"";position:absolute;inset:-6px;border-radius:50%;pointer-events:none;
+  border:3px solid var(--orange);opacity:0;
+  animation:ripple 2.4s ease-out infinite;
+}
+.say:active{box-shadow:0 0 0 3px var(--orange)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes ripple{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(1.45);opacity:0}}
 .hud-right{display:flex;gap:8px;align-items:center}
 .progress,.starcount{
   background:var(--surface);border:1px solid var(--line);border-radius:999px;

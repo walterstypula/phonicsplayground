@@ -115,8 +115,8 @@ more than it sounds: a device voice differs on every device, and a child who hea
 sounds blended in one voice and the word said in another is being given two teachers.
 
 The browser's own speech synthesis is still there as a fallback for anything with no
-recording, so the games work with no audio files at all. The **Voice** button on the
-front page picks which device voice that fallback uses, and remembers the choice.
+recording, so the games work with no audio files at all. It picks the clearest American
+English voice the device has by itself; there is nothing to choose.
 
 A built-in voice cannot say a single sound on its own anyway, which is where this
 started: sounding out ("s... ee... d") needs the 43 sound clips in `audio/sounds/`.

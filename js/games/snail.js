@@ -1,15 +1,12 @@
 /* Stretchy Snail - drag the snail under a word and stretch each sound into the next one.
    Blending falls apart when a child says the sounds as separate words ("c" ... "a" ... "t"
    and back to the beginning); it comes together when one sound runs into the next without
-   a gap. The snail sets that pace: it cannot be hurried, and the sound under it holds for
-   as long as it sits there. "Sound it with me" decides who does the saying. */
+   a gap. The snail sets that pace: it cannot be hurried, and each sound plays as the
+   snail reaches its letter, running on into the next. "Sound it with me" decides who
+   does the saying. */
 (function (PH) {
   'use strict';
   var U = PH.util;
-
-  /* sounds that can be held (mmmm, ssss, a vowel) as against the ones that stop dead.
-     /t/ cannot be stretched, and asking a child to try is what produces "tuh". */
-  var STOPS = { b: 1, d: 1, g: 1, k: 1, p: 1, t: 1, ch: 1, j: 1, kw: 1, ks: 1 };
 
   PH.games.snail = {
     id: 'snail',
@@ -34,7 +31,7 @@
 
       var round = 0, word = null, parts = [], next = 0;
       var trackX0 = 0, trackX1 = 0, snailX = 0, snailBob = 0;
-      var dragging = false, linger = 0, state = 'slide', timer = 0, idle = 0, held = null;
+      var dragging = false, state = 'slide', timer = 0, idle = 0;
       var trail = [], queue = [], hints = 0;
       var flowers = [], i;
       for (i = 0; i < 26; i++) {
@@ -79,8 +76,11 @@
           p.lit = 0;
           x += p.w + gap;
         });
-        trackX0 = list[0].x - 70;
-        trackX1 = list[list.length - 1].x + list[list.length - 1].w + 70;
+        /* The track starts just before the word and stops just past it. With a long run-up
+           or run-out the snail sat a long way from the letters, and children stopped at
+           the last letter - which is where they should stop - short of a finish line. */
+        trackX0 = list[0].x - 36;
+        trackX1 = list[list.length - 1].x + list[list.length - 1].w + 30;
         return list;
       }
 
@@ -101,7 +101,7 @@
           needed = needed.concat(soundsOf(p.hint));          /* and the sounds to fall back on */
         });
         PH.blend.warm(needed);
-        next = 0; snailX = trackX0; dragging = false; linger = 0; trail = []; idle = 0;
+        next = 0; snailX = trackX0; dragging = false; trail = []; idle = 0;
         state = 'slide'; timer = 0;
         api.setProgress(round, ROUNDS);
         api.setPrompt('Slide and blend', { word: word.w, show: true, repeat: sayPrompt });
@@ -123,14 +123,14 @@
       }
 
       /* ---------------- sliding ---------------- */
-      /* One of the 43 sounds is played and held for as long as the snail sits on it. A
-         syllable - "ap", "oon", "ter" - is none of them, and handing it to the voice as
+      /* One of the 43 sounds is played once, as recorded - the ones that can be held were
+         recorded long, so mmm and sss already stretch. A syllable - "ap", "oon", "ter" - is none of them, and handing it to the voice as
          text gets it read out as letters ("A. P.") or as whatever word it resembles ("to"
          becomes "two"), so syllables are recorded too, spoken as one piece. Failing that
          its own sounds are run together, which is passable but audibly stitched. */
       function sound(hint) {
         if (!voiceOn || !hint) { return; }
-        if (PH.blend.play(hint, true)) { return; }
+        if (PH.blend.play(hint)) { return; }
         if (PH.blend.sequence(soundsOf(hint))) { return; }
         api.say(hint, { rate: 0.6 });
       }
@@ -140,41 +140,35 @@
       }
 
       function lightUpTo(x) {
-        while (next < parts.length && x >= parts[next].cx) {
+        /* a sound counts once the snail is on its letter, not only past its exact middle:
+           a small finger stopping on the last letter has reached it */
+        while (next < parts.length && x >= parts[next].cx - Math.min(18, parts[next].w * 0.3)) {
           var p = parts[next];
           p.lit = 0.001;          /* counts up from here, so the letter pops as it lights */
           next++;
-          linger = 0;
           if (p.hint) {
             sound(p.hint);
-            held = p;
             api.sfx.twinkle();
             api.burst(p.cx, 250, ['#fff3a0', '#8ef0ff'], 6, { gravity: 40, minSpeed: 30, maxSpeed: 90 });
           }
         }
-        if (next >= parts.length && x >= trackX1 - 12) { finishWord(); }
+        /* reaching the last sound is the end: the word is blended */
+        if (next >= parts.length) { finishWord(); }
       }
 
       function finishWord() {
         if (state !== 'slide') { return; }
         state = 'done'; timer = 0; dragging = false;
-        /* the last sound gives way to the whole word, but a short one like the g of "pig"
-           is let finish first rather than clipped */
-        PH.blend.release(); held = null;
+        /* the last sound is left to finish - a short one like the g of "pig" would
+           otherwise be clipped - and then the whole word follows */
         api.addStar(1);
         api.sfx.great();
-        api.sayWord(word.w);     /* the word they just blended, and nothing else */
+        /* the word they just blended, and nothing else - queued, because starting the
+           voice afresh cancels everything playing, the last sound included */
+        api.sayWord(word.w, { queue: true });
         parts.forEach(function (p) {
           api.burst(p.cx, 250, ['#ffd23f', '#8ef0ff', '#ff8fab'], 10, { gravity: 60, minSpeed: 40, maxSpeed: 150, shape: 'star' });
         });
-      }
-
-      /* the piece the snail is sitting on, or null between pieces */
-      function under(x) {
-        for (var n = 0; n < parts.length; n++) {
-          if (x >= parts[n].x - 10 && x <= parts[n].x + parts[n].w + 10) { return parts[n]; }
-        }
-        return null;
       }
 
       function down(p) {
@@ -201,11 +195,7 @@
         lightUpTo(snailX);
       }
 
-      function up() {
-        dragging = false;
-        PH.blend.release();      /* letting go of the snail lets go of the sound */
-        held = null;
-      }
+      function up() { dragging = false; }
 
       function update(dt) {
         snailBob += dt;
@@ -215,16 +205,6 @@
 
         if (state === 'slide') {
           idle += dt;
-          /* A held sound sustains itself, so all this has to do is decide when to let go:
-             when the snail leaves the letter, when the finger lifts, or after a few
-             seconds, so a snail parked on an "mmm" does not drone on for ever. */
-          var p = under(snailX);
-          if (held && p === held && dragging) {
-            linger += dt;
-            if (linger > 3) { PH.blend.release(); held = null; }
-          } else if (held) {
-            PH.blend.release(); held = null; linger = 0;
-          }
         } else if (state === 'done') {
           timer += dt;
           if (PH.speech.settled(timer, 2.4)) { newRound(); }
@@ -306,6 +286,13 @@
           ctx.strokeText(p.text, 0, 0);
           ctx.fillText(p.text, 0, 0);
           ctx.restore();
+        });
+
+        /* a dot or dash under each sound: where the snail is going next, and which letters
+           make one sound together. The silent e makes none, so it gets no mark. */
+        parts.forEach(function (p, n) {
+          if (!p.hint) { return; }
+          PH.art.soundMark(ctx, p.cx, 300, p.w, p.text.length, p.lit ? LIT[n % LIT.length] : null);
         });
 
         /* the track the snail runs along, dotted so it reads as a path */
